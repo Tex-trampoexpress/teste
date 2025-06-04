@@ -582,6 +582,66 @@ footer {
   display: inline-block;
 }
 
+/* Add new styles for Terms and About pages */
+.legal-content,
+.about-content {
+  padding-top: 100px;
+}
+
+.content-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+}
+
+.content-container h1 {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.content-container section {
+  margin-bottom: 2rem;
+}
+
+.content-container h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.content-container p,
+.content-container ul {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.content-container ul {
+  list-style-position: inside;
+  padding-left: 1rem;
+}
+
+.content-container li {
+  margin-bottom: 0.5rem;
+}
+
+.about-section {
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.about-section:last-child {
+  border-bottom: none;
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 2.5rem;
@@ -618,6 +678,19 @@ footer {
 
   .status-toggle {
     flex-direction: column;
+  }
+
+  .content-container {
+    padding: 1.5rem;
+    margin: 0 1rem;
+  }
+
+  .content-container h1 {
+    font-size: 2rem;
+  }
+
+  .content-container h2 {
+    font-size: 1.3rem;
   }
 }
 
