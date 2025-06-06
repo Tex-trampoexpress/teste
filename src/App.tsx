@@ -1,163 +1,174 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import { DatabaseService, Usuario } from './lib/database'
-import { toast, Toaster } from 'react-hot-toast'
+import { DatabaseService } from './lib/database'
+import './index.css'
+
+interface Usuario {
+  id: string
+  nome: string | null
+  whatsapp: string | null
+  descricao: string | null
+  tags: string[]
+  foto_url: string | null
+  localizacao: string | null
+  status: string | null
+  criado_em: string | null
+}
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('home')
-  const [user, setUser] = useState<any>(null)
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [status, setStatus] = useState<'available' | 'busy'>('available')
   const [location, setLocation] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
+  const [status, setStatus] = useState('available')
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string>('')
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
+  const dbService = new DatabaseService()
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadUserProfile(session.user.id)
-        loadUsuarios()
-      }
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadUserProfile(session.user.id)
-        loadUsuarios()
-      }
-    })
-
-    return () => subscription.unsubscribe()
+    checkUser()
+    loadUsuarios()
   }, [])
 
-  const loadUserProfile = async (userId: string) => {
-    try {
-      const profile = await DatabaseService.getUsuario(userId)
-      if (profile) {
-        setName(profile.nome || '')
-        setPhone(profile.whatsapp || '')
-        setDescription(profile.descricao || '')
-        setTags(profile.tags || [])
-        setStatus(profile.status)
-        setLocation(profile.localizacao || '')
-        setAvatarUrl(profile.foto_url || '')
-      }
-    } catch (error) {
-      console.log('Profile not found, will create new one')
-    }
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setCurrentUser(user)
   }
 
   const loadUsuarios = async () => {
     try {
-      const data = await DatabaseService.getUsuarios({ status: 'available' })
+      const data = await dbService.getUsuarios()
       setUsuarios(data)
     } catch (error) {
-      console.error('Error loading usuarios:', error)
+      console.error('Erro ao carregar usuários:', error)
     }
   }
 
-  const handlePhoneAuth = async () => {
+  const handleLogin = async () => {
     if (!phone || phone.length < 10) {
-      toast.error('Por favor, insira um número de telefone válido')
+      alert('Por favor, insira um número de telefone válido')
       return
     }
-
+    
     setLoading(true)
     try {
-      // For demo purposes, we'll create a mock user
-      // In production, you'd implement proper phone authentication
-      const mockUser = {
-        id: `user_${Date.now()}`,
-        phone: phone,
-        email: `${phone}@temp.com`
+      // Simulate phone verification - in real app, use proper auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: `${phone}@temp.com`,
+        password: phone
+      })
+      
+      if (error) {
+        // If user doesn't exist, create account
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: `${phone}@temp.com`,
+          password: phone
+        })
+        if (signUpError) throw signUpError
       }
       
-      setUser(mockUser)
       setCurrentScreen('profile')
-      toast.success('Número verificado com sucesso!')
     } catch (error) {
-      toast.error('Erro na verificação do número')
+      console.error('Erro no login:', error)
+      alert('Erro ao fazer login. Tente novamente.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPhotoFile(file)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const addTag = () => {
+    if (tagInput.trim() && tags.length < 3 && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim()])
+      setTagInput('')
+    }
+  }
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove))
+  }
+
+  const handleTagKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addTag()
     }
   }
 
   const handleSaveProfile = async () => {
     if (!name.trim()) {
-      toast.error('Por favor, preencha seu nome')
+      alert('Por favor, preencha seu nome')
       return
     }
-
+    
     if (tags.length === 0) {
-      toast.error('Por favor, adicione pelo menos uma tag de serviço')
+      alert('Por favor, adicione pelo menos uma tag de serviço')
       return
     }
 
     setLoading(true)
     try {
-      const profileData: Partial<Usuario> = {
-        id: user.id,
-        nome: name.trim(),
-        whatsapp: phone,
-        descricao: description.trim(),
-        tags: tags,
-        foto_url: avatarUrl,
-        localizacao: location.trim(),
-        status: status
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      let fotoUrl = ''
+      if (photoFile) {
+        fotoUrl = await dbService.uploadPhoto(photoFile, user.id)
       }
 
-      await DatabaseService.upsertUsuario(profileData)
-      await loadUsuarios()
-      
-      toast.success('Perfil salvo com sucesso!')
+      await dbService.createUsuario({
+        id: user.id,
+        nome: name,
+        whatsapp: phone,
+        descricao: description,
+        tags,
+        foto_url: fotoUrl,
+        localizacao: location,
+        status
+      })
+
+      alert('Perfil salvo com sucesso!')
       setCurrentScreen('feed')
+      loadUsuarios()
     } catch (error) {
-      console.error('Error saving profile:', error)
-      toast.error('Erro ao salvar perfil')
+      console.error('Erro ao salvar perfil:', error)
+      alert('Erro ao salvar perfil. Tente novamente.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSearch = async (searchTerm: string) => {
-    if (!searchTerm.trim()) {
-      loadUsuarios()
-      return
-    }
-
-    try {
-      const data = await DatabaseService.getUsuarios({ 
-        search: searchTerm.trim(),
-        status: 'available' 
-      })
-      setUsuarios(data)
-    } catch (error) {
-      console.error('Error searching:', error)
-      toast.error('Erro na busca')
-    }
-  }
-
   const formatWhatsAppLink = (whatsapp: string, nome: string) => {
     const cleanPhone = whatsapp.replace(/\D/g, '')
-    const message = `Olá ${nome}, vi seu perfil no TEX e gostaria de conversar sobre seus serviços!`
+    const message = `Olá ${nome}! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
     return `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
   }
 
   return (
-    <>
-      <Toaster position="top-center" />
-      
-      <header>
-        <div className="logo">TEX</div>
-        <div className="search-icon">
+    <div className="min-h-screen bg-black text-white">
+      <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
+        <div className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
+          TEX
+        </div>
+        <div className="text-yellow-400 text-xl cursor-pointer hover:scale-110 transition-transform">
           <i className="fas fa-search"></i>
         </div>
       </header>
@@ -171,24 +182,23 @@ function App() {
               <input 
                 type="text" 
                 placeholder="Procure serviços, pessoas ou encontros..."
-                onChange={(e) => handleSearch(e.target.value)}
+                aria-label="Campo de busca"
               />
               <button 
                 className="explore-btn" 
-                onClick={() => user ? setCurrentScreen('feed') : setCurrentScreen('verify')}
+                type="button"
+                onClick={() => setCurrentScreen('feed')}
               >
-                {user ? 'Ver Perfis' : 'Explorar Agora'}
+                Explorar Agora
               </button>
             </div>
-            {!user && (
-              <button 
-                className="whatsapp-login-btn"
-                onClick={() => setCurrentScreen('verify')}
-              >
-                <i className="fab fa-whatsapp"></i>
-                Entrar com WhatsApp
-              </button>
-            )}
+            <button 
+              className="whatsapp-login-btn"
+              onClick={() => setCurrentScreen('verify')}
+            >
+              <i className="fab fa-whatsapp"></i>
+              Entrar com WhatsApp
+            </button>
           </div>
         </main>
       )}
@@ -210,7 +220,7 @@ function App() {
             </div>
             <button 
               className="verify-btn"
-              onClick={handlePhoneAuth}
+              onClick={handleLogin}
               disabled={loading}
             >
               {loading ? 'Verificando...' : 'Verificar Número'}
@@ -227,24 +237,26 @@ function App() {
             <div className="profile-setup">
               <div className="photo-upload">
                 <div className="photo-preview">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Profile" />
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Profile preview" />
                   ) : (
                     <i className="fas fa-camera"></i>
                   )}
                 </div>
                 <input 
-                  type="url" 
-                  placeholder="URL da foto (opcional)"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  type="file" 
+                  id="photo-input" 
+                  accept="image/*"
+                  onChange={handlePhotoChange}
                 />
+                <label htmlFor="photo-input">Escolher Foto</label>
               </div>
               
               <div className="form-group">
-                <label>Nome</label>
+                <label htmlFor="name">Nome</label>
                 <input 
                   type="text" 
+                  id="name" 
                   placeholder="Seu nome completo"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -252,9 +264,10 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label>Descrição</label>
+                <label htmlFor="description">Descrição</label>
                 <textarea 
-                  placeholder="Conte sobre você e seus serviços..."
+                  id="description" 
+                  placeholder="Descreva seus serviços..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
@@ -262,9 +275,10 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label>Localização</label>
+                <label htmlFor="location">Localização</label>
                 <input 
                   type="text" 
+                  id="location" 
                   placeholder="Sua cidade/região"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -277,16 +291,9 @@ function App() {
                   <input 
                     type="text" 
                     placeholder="Digite uma tag e pressione Enter"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        const tag = e.currentTarget.value.trim()
-                        if (tag && tags.length < 3 && !tags.includes(tag)) {
-                          setTags([...tags, tag])
-                          e.currentTarget.value = ''
-                        }
-                      }
-                    }}
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={handleTagKeyPress}
                   />
                   <div className="tags-container">
                     {tags.map(tag => (
@@ -294,8 +301,8 @@ function App() {
                         #{tag}
                         <i 
                           className="fas fa-times" 
-                          onClick={() => setTags(tags.filter(t => t !== tag))}
-                        />
+                          onClick={() => removeTag(tag)}
+                        ></i>
                       </div>
                     ))}
                   </div>
@@ -338,17 +345,19 @@ function App() {
       {currentScreen === 'feed' && (
         <main className="screen active">
           <div className="feed">
-            <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h2 className="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
               Profissionais Disponíveis
             </h2>
             {usuarios.map(usuario => (
-              <div key={usuario.id} className="profile-card">
+              <div key={usuario.id} className="profile-card mb-4">
                 <div className="profile-header">
                   <div className="profile-pic">
                     {usuario.foto_url ? (
                       <img src={usuario.foto_url} alt={usuario.nome || 'Usuário'} />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', background: 'var(--gradient)', borderRadius: '50%' }} />
+                      <div className="w-full h-full bg-gray-600 rounded-full flex items-center justify-center">
+                        <i className="fas fa-user text-2xl"></i>
+                      </div>
                     )}
                   </div>
                   <div className="profile-info">
@@ -357,11 +366,9 @@ function App() {
                       <p className="description">{usuario.descricao}</p>
                     )}
                     {usuario.localizacao && (
-                      <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                        📍 {usuario.localizacao}
-                      </p>
+                      <p className="text-sm text-gray-400">📍 {usuario.localizacao}</p>
                     )}
-                    <span className={`status status-${usuario.status}`}>
+                    <span className={`status ${usuario.status === 'available' ? 'status-available' : 'status-busy'}`}>
                       {usuario.status === 'available' ? 'Disponível' : 'Ocupado'}
                     </span>
                   </div>
@@ -374,10 +381,10 @@ function App() {
                     ))}
                   </div>
                 )}
-
+                
                 {usuario.whatsapp && (
                   <a 
-                    href={formatWhatsAppLink(usuario.whatsapp, usuario.nome || 'Usuário')}
+                    href={formatWhatsAppLink(usuario.whatsapp, usuario.nome || 'Profissional')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="whatsapp-btn"
@@ -392,19 +399,18 @@ function App() {
         </main>
       )}
 
-      <footer>
+      <footer className="bg-black/80 backdrop-blur-md p-6 text-center">
         <nav className="footer-nav">
-          <a href="#" onClick={() => setCurrentScreen('home')}>Home</a>
-          {user && <a href="#" onClick={() => setCurrentScreen('feed')}>Feed</a>}
-          {user && <a href="#" onClick={() => setCurrentScreen('profile')}>Perfil</a>}
-          <a href="/src/pages/about.html">Sobre</a>
-          <a href="/src/pages/terms.html">Termos</a>
+          <button onClick={() => setCurrentScreen('home')}>Home</button>
+          <button onClick={() => setCurrentScreen('feed')}>Feed</button>
+          <a href="src/pages/about.html">Sobre</a>
+          <a href="src/pages/terms.html">Termos</a>
         </nav>
         <div className="copyright">
           © 2025 TrampoExpress. Todos os direitos reservados.
         </div>
       </footer>
-    </>
+    </div>
   )
 }
 
