@@ -3,112 +3,11 @@
   <head>
     <title>TEX - Do trampo ao encontro</title>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="stylesheet" href="styles.css" />
-    <script type="module" src="/src/script.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   </head>
   <body>
-    <header>
-      <div class="logo">TEX</div>
-      <div class="search-icon">
-        <i class="fas fa-search"></i>
-      </div>
-    </header>
-    
-    <!-- Home Screen -->
-    <main id="home-screen" class="screen active">
-      <div class="hero-container">
-        <h1>Do Trampo ao Encontro.<br><span>Tá no TEX.</span></h1>
-        <div class="search-box">
-          <input 
-            type="text" 
-            placeholder="Procure serviços, pessoas ou encontros..."
-            aria-label="Campo de busca"
-          >
-          <button class="explore-btn" type="button">
-            Explorar Agora
-          </button>
-        </div>
-        <button class="whatsapp-login-btn">
-          <i class="fab fa-whatsapp"></i>
-          Entrar com WhatsApp
-        </button>
-      </div>
-    </main>
-
-    <!-- Verify Screen -->
-    <main id="verify-screen" class="screen">
-      <div class="form-container">
-        <h2>Verificação WhatsApp</h2>
-        <p>Digite seu número para continuar</p>
-        <div class="phone-input">
-          <span class="country-code">+55</span>
-          <input type="tel" placeholder="(00) 00000-0000" id="phone-number">
-        </div>
-        <button class="verify-btn">
-          Verificar Número
-        </button>
-      </div>
-    </main>
-
-    <!-- Profile Setup Screen -->
-    <main id="profile-screen" class="screen">
-      <div class="form-container">
-        <h2>Configure seu Perfil</h2>
-        <div class="profile-setup">
-          <div class="photo-upload">
-            <div class="photo-preview">
-              <i class="fas fa-camera"></i>
-            </div>
-            <input type="file" id="photo-input" accept="image/*">
-            <label for="photo-input">Escolher Foto</label>
-          </div>
-          
-          <div class="form-group">
-            <label for="name">Nome</label>
-            <input type="text" id="name" placeholder="Seu nome completo">
-          </div>
-
-          <div class="form-group">
-            <label>Tags de Serviço (até 3)</label>
-            <div class="tags-input">
-              <input type="text" id="tag-input" placeholder="Digite uma tag e pressione Enter">
-              <div class="tags-container"></div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Status</label>
-            <div class="status-toggle">
-              <button class="status-btn active" data-status="available">
-                <span class="dot available"></span>
-                Disponível
-              </button>
-              <button class="status-btn" data-status="busy">
-                <span class="dot busy"></span>
-                Ocupado
-              </button>
-            </div>
-          </div>
-
-          <button class="save-profile-btn">
-            Salvar Perfil
-          </button>
-        </div>
-      </div>
-    </main>
-
-    <footer>
-      <nav class="footer-nav">
-        <a href="#">Sobre</a>
-        <a href="#">Contato</a>
-        <a href="src/pages/terms.html">Termos</a>
-        <a href="src/pages/about.html">Sobre</a>
-      </nav>
-      <div class="copyright">
-        © 2025 TrampoExpress. Todos os direitos reservados.
-      </div>
-    </footer>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
