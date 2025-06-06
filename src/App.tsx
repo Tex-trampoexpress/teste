@@ -166,7 +166,7 @@ function App() {
       {currentScreen === 'home' && (
         <main className="screen active">
           <div className="hero-container">
-            <h1>Do Trampo ao Encontro.<br><span>Tá no TEX.</span></h1>
+            <h1>Do Trampo ao Encontro.<br /><span>Tá no TEX.</span></h1>
             <div className="search-box">
               <input 
                 type="text" 
