@@ -44,7 +44,7 @@ function App() {
 
   const loadUsuarios = async () => {
     try {
-      const data = await dbService.getUsuarios()
+      const data = await DatabaseService.getUsuarios()
       setUsuarios(data)
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
