@@ -935,12 +935,163 @@ function App() {
         </main>
       )}
 
+      {/* About Screen */}
+      {currentScreen === 'about' && (
+        <main className="screen active">
+          <div className="content-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={handleBackToPrevious}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+            
+            <div className="about-content">
+              <h1 className="page-title">
+                <i className="fas fa-info-circle"></i>
+                Sobre a TEX Conecta
+              </h1>
+              
+              <div className="content-section">
+                <p className="intro-text">
+                  A TEX Conecta é uma plataforma digital feita para conectar clientes a prestadores de serviços autônomos, 
+                  com foco em praticidade, agilidade e liberdade.
+                </p>
+                
+                <div className="features-grid">
+                  <div className="feature-card">
+                    <i className="fas fa-bolt"></i>
+                    <h3>Simples e rápida</h3>
+                    <p>Encontre profissionais em segundos</p>
+                  </div>
+                  <div className="feature-card">
+                    <i className="fas fa-handshake"></i>
+                    <h3>Sem burocracia</h3>
+                    <p>Contato direto via WhatsApp</p>
+                  </div>
+                  <div className="feature-card">
+                    <i className="fas fa-users"></i>
+                    <h3>Sem intermediação</h3>
+                    <p>Negociação livre entre as partes</p>
+                  </div>
+                </div>
+                
+                <div className="warning-box">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <p>
+                    <strong>Atenção:</strong> A TEX Conecta não intermedia e não assume qualquer responsabilidade 
+                    sobre os serviços prestados. Toda responsabilidade pelo serviço é do profissional contratado.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* Terms Screen */}
+      {currentScreen === 'terms' && (
+        <main className="screen active">
+          <div className="content-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={handleBackToPrevious}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+            
+            <div className="terms-content">
+              <h1 className="page-title">
+                <i className="fas fa-gavel"></i>
+                Termos de Uso
+              </h1>
+              
+              <div className="content-section">
+                <div className="terms-section">
+                  <h2>
+                    <i className="fas fa-link"></i>
+                    Conexão entre as partes
+                  </h2>
+                  <p>A TEX Conecta atua apenas como um canal de contato. Não participa das negociações nem das execuções de serviço.</p>
+                </div>
+
+                <div className="terms-section">
+                  <h2>
+                    <i className="fas fa-tools"></i>
+                    Prestadores de Serviços
+                  </h2>
+                  <ul>
+                    <li>São autônomos e independentes</li>
+                    <li>Não possuem vínculo com a plataforma</li>
+                    <li>Devem manter seus dados e conduta profissional atualizados</li>
+                  </ul>
+                </div>
+
+                <div className="terms-section">
+                  <h2>
+                    <i className="fas fa-user-friends"></i>
+                    Clientes
+                  </h2>
+                  <ul>
+                    <li>Não precisam se cadastrar</li>
+                    <li>Contratam livremente os serviços</li>
+                    <li>São responsáveis por suas escolhas e avaliações</li>
+                  </ul>
+                </div>
+
+                <div className="terms-section coming-soon">
+                  <h2>
+                    <i className="fas fa-star"></i>
+                    Sistema de Avaliação
+                    <span className="badge">Em breve</span>
+                  </h2>
+                  <p>Após o serviço, os clientes poderão:</p>
+                  <ul>
+                    <li>✅ Avaliar o prestador com 1 a 5 estrelas</li>
+                    <li>✅ Deixar um comentário sobre a experiência</li>
+                  </ul>
+                  <p className="highlight">Essas avaliações ajudarão outros usuários a fazerem boas escolhas!</p>
+                </div>
+
+                <div className="terms-section">
+                  <h2>
+                    <i className="fas fa-shield-alt"></i>
+                    Política de Privacidade
+                  </h2>
+                  <p>A TEX Conecta respeita a privacidade dos usuários. Os dados fornecidos são usados exclusivamente para:</p>
+                  <ul>
+                    <li>Exibir perfis</li>
+                    <li>Permitir o contato via WhatsApp</li>
+                  </ul>
+                  <p><strong>Não vendemos, alugamos ou compartilhamos dados com terceiros.</strong></p>
+                </div>
+
+                <div className="terms-section">
+                  <h2>
+                    <i className="fas fa-undo"></i>
+                    Cancelamentos e Reembolsos
+                  </h2>
+                  <p>A TEX Conecta não se responsabiliza por cancelamentos ou reembolsos. 
+                     Esses acordos devem ser tratados diretamente entre o cliente e o prestador.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
       <footer className="bg-black/80 backdrop-blur-md p-6 text-center">
         <nav className="footer-nav">
           <button onClick={handleBackToHome}>Home</button>
           <button onClick={() => navigateToScreen('feed')}>Feed</button>
-          <a href="src/pages/about.html">Sobre</a>
-          <a href="src/pages/terms.html">Termos</a>
+          <button onClick={() => navigateToScreen('about')}>Sobre</button>
+          <button onClick={() => navigateToScreen('terms')}>Termos</button>
         </nav>
         <div className="copyright">
           © 2025 TrampoExpress. Todos os direitos reservados.
