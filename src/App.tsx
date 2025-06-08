@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { DatabaseService } from './lib/database'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
 import './index.css'
 
 interface Usuario {
@@ -471,6 +472,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <PWAInstallPrompt />
+      
       <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
         <div 
           className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent cursor-pointer"
