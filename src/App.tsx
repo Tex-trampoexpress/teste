@@ -40,8 +40,20 @@ function App() {
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [searchRadius, setSearchRadius] = useState(10) // km
   const [sortByDistance, setSortByDistance] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   const dbService = new DatabaseService()
+
+  // Detectar scroll para efeito do logo
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      setIsScrolled(scrollTop > 50)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Criar usuários de exemplo com coordenadas
   const createExampleUsers = () => {
@@ -474,14 +486,20 @@ function App() {
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
-      <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-center items-center z-50">
-        <div 
-          className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent cursor-pointer"
-          onClick={handleBackToHome}
-        >
-          TEX
+      {/* Logo TEX fixo no canto superior direito */}
+      <div 
+        className={`fixed top-6 right-6 z-50 cursor-pointer transition-all duration-500 ease-out ${
+          isScrolled 
+            ? 'tex-logo-scrolled' 
+            : 'tex-logo-normal'
+        }`}
+        onClick={handleBackToHome}
+      >
+        <div className="tex-logo-container">
+          <span className="tex-logo-text">TEX</span>
+          <div className="tex-logo-glow"></div>
         </div>
-      </header>
+      </div>
 
       {/* Home Screen */}
       {currentScreen === 'home' && (
