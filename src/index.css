@@ -99,6 +99,36 @@ header {
   display: flex;
 }
 
+/* Back Button */
+.back-button-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.back-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.back-button i {
+  font-size: 0.8rem;
+}
+
 /* Home Screen */
 .hero-container {
   text-align: center;
@@ -577,6 +607,13 @@ input:focus, textarea:focus {
   margin-bottom: 2rem;
 }
 
+.no-results-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
 .explore-all-btn {
   background: var(--gradient);
   color: var(--black);
@@ -591,6 +628,25 @@ input:focus, textarea:focus {
 .explore-all-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.back-home-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.back-home-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .profile-card {
@@ -808,6 +864,10 @@ footer {
   }
 
   .status-toggle {
+    flex-direction: column;
+  }
+
+  .no-results-actions {
     flex-direction: column;
   }
 }

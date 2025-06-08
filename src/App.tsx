@@ -31,6 +31,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [previousScreen, setPreviousScreen] = useState('home')
 
   const dbService = new DatabaseService()
 
@@ -237,8 +238,24 @@ function App() {
   const handleSearch = (term: string) => {
     setSearchTerm(term)
     if (term.trim() !== '') {
+      setPreviousScreen(currentScreen)
       setCurrentScreen('feed')
     }
+  }
+
+  const handleBackToHome = () => {
+    setSearchTerm('')
+    setCurrentScreen('home')
+  }
+
+  const handleBackToPrevious = () => {
+    setSearchTerm('')
+    setCurrentScreen(previousScreen)
+  }
+
+  const navigateToScreen = (screen: string) => {
+    setPreviousScreen(currentScreen)
+    setCurrentScreen(screen)
   }
 
   return (
@@ -246,7 +263,7 @@ function App() {
       <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
         <div 
           className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent cursor-pointer"
-          onClick={() => setCurrentScreen('home')}
+          onClick={handleBackToHome}
         >
           TEX
         </div>
@@ -283,7 +300,7 @@ function App() {
             </div>
             <button 
               className="whatsapp-login-btn"
-              onClick={() => setCurrentScreen('verify')}
+              onClick={() => navigateToScreen('verify')}
             >
               <i className="fab fa-whatsapp"></i>
               Entrar com WhatsApp
@@ -296,6 +313,15 @@ function App() {
       {currentScreen === 'verify' && (
         <main className="screen active">
           <div className="form-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={handleBackToPrevious}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
             <h2>Entre com seu WhatsApp</h2>
             <p>Este número será usado para clientes entrarem em contato com você</p>
             <div className="phone-input">
@@ -327,6 +353,15 @@ function App() {
       {currentScreen === 'profile' && (
         <main className="screen active">
           <div className="form-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={handleBackToPrevious}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
             <h2>Configure seu Perfil</h2>
             <div className="profile-setup">
               <div className="photo-upload">
@@ -448,6 +483,15 @@ function App() {
         <main className="screen active">
           <div className="feed">
             <div className="search-header">
+              <div className="back-button-container">
+                <button 
+                  className="back-button"
+                  onClick={handleBackToHome}
+                >
+                  <i className="fas fa-arrow-left"></i>
+                  Início
+                </button>
+              </div>
               <div className="search-bar">
                 <i className="fas fa-search"></i>
                 <input 
@@ -481,12 +525,21 @@ function App() {
                 <i className="fas fa-search"></i>
                 <h3>Nenhum resultado encontrado</h3>
                 <p>Tente buscar por outros termos ou explore todos os profissionais</p>
-                <button 
-                  className="explore-all-btn"
-                  onClick={() => setSearchTerm('')}
-                >
-                  Ver Todos os Profissionais
-                </button>
+                <div className="no-results-actions">
+                  <button 
+                    className="explore-all-btn"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    Ver Todos os Profissionais
+                  </button>
+                  <button 
+                    className="back-home-btn"
+                    onClick={handleBackToHome}
+                  >
+                    <i className="fas fa-home"></i>
+                    Voltar ao Início
+                  </button>
+                </div>
               </div>
             ) : (
               usuariosFiltrados.map(usuario => (
@@ -549,8 +602,8 @@ function App() {
 
       <footer className="bg-black/80 backdrop-blur-md p-6 text-center">
         <nav className="footer-nav">
-          <button onClick={() => setCurrentScreen('home')}>Home</button>
-          <button onClick={() => setCurrentScreen('feed')}>Feed</button>
+          <button onClick={handleBackToHome}>Home</button>
+          <button onClick={() => navigateToScreen('feed')}>Feed</button>
           <a href="src/pages/about.html">Sobre</a>
           <a href="src/pages/terms.html">Termos</a>
         </nav>
