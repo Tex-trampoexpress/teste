@@ -37,7 +37,7 @@ function App() {
 
   useEffect(() => {
     loadUsuarios()
-    // Adicionar alguns usuários de exemplo para teste
+    // Adicionar usuários de exemplo para teste
     addExampleUsers()
   }, [])
 
@@ -62,7 +62,7 @@ function App() {
         id: 'exemplo1',
         nome: 'João Silva',
         whatsapp: '11999887766',
-        descricao: 'Eletricista com 10 anos de experiência. Atendo residencial e comercial.',
+        descricao: 'Eletricista com 10 anos de experiência. Atendo residencial e comercial com garantia.',
         tags: ['eletricista', 'residencial', 'comercial'],
         foto_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'São Paulo, SP',
@@ -84,7 +84,7 @@ function App() {
         id: 'exemplo3',
         nome: 'Carlos Pereira',
         whatsapp: '11977665544',
-        descricao: 'Encanador especializado em vazamentos e instalações. Atendimento 24h.',
+        descricao: 'Encanador especializado em vazamentos e instalações. Atendimento 24h emergencial.',
         tags: ['encanador', 'vazamento', '24h'],
         foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Belo Horizonte, MG',
@@ -100,6 +100,182 @@ function App() {
         foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Curitiba, PR',
         status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo5',
+        nome: 'Pedro Oliveira',
+        whatsapp: '11955443322',
+        descricao: 'Desenvolvedor web especializado em React e Node.js. Criação de sites e sistemas.',
+        tags: ['programador', 'website', 'sistema'],
+        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'São Paulo, SP',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo6',
+        nome: 'Lucia Fernandes',
+        whatsapp: '11944332211',
+        descricao: 'Cabeleireira e manicure. Atendimento domiciliar e no salão. Especialista em cortes modernos.',
+        tags: ['cabeleireira', 'manicure', 'domiciliar'],
+        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Salvador, BA',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo7',
+        nome: 'Roberto Machado',
+        whatsapp: '11933221100',
+        descricao: 'Mecânico automotivo com 15 anos de experiência. Especialista em carros nacionais e importados.',
+        tags: ['mecânico', 'automotivo', 'carros'],
+        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Porto Alegre, RS',
+        status: 'busy',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo8',
+        nome: 'Fernanda Lima',
+        whatsapp: '11922110099',
+        descricao: 'Personal trainer e nutricionista. Treinos personalizados e acompanhamento nutricional.',
+        tags: ['personal', 'nutrição', 'fitness'],
+        foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Brasília, DF',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo9',
+        nome: 'Marcos Souza',
+        whatsapp: '11911009988',
+        descricao: 'Pintor residencial e comercial. Trabalho com texturas, grafiato e pintura decorativa.',
+        tags: ['pintor', 'textura', 'decoração'],
+        foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Recife, PE',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo10',
+        nome: 'Juliana Rocha',
+        whatsapp: '11900998877',
+        descricao: 'Fotógrafa profissional. Casamentos, eventos, ensaios e fotos corporativas.',
+        tags: ['fotógrafa', 'casamento', 'eventos'],
+        foto_url: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Florianópolis, SC',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo11',
+        nome: 'André Barbosa',
+        whatsapp: '11899887766',
+        descricao: 'Chef de cozinha. Buffets para eventos, aulas de culinária e consultoria gastronômica.',
+        tags: ['chef', 'buffet', 'culinária'],
+        foto_url: 'https://images.pexels.com/photos/1367269/pexels-photo-1367269.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'São Paulo, SP',
+        status: 'busy',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo12',
+        nome: 'Camila Alves',
+        whatsapp: '11888776655',
+        descricao: 'Psicóloga clínica. Atendimento presencial e online. Especialista em ansiedade e depressão.',
+        tags: ['psicóloga', 'online', 'terapia'],
+        foto_url: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Rio de Janeiro, RJ',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo13',
+        nome: 'Diego Santos',
+        whatsapp: '11877665544',
+        descricao: 'Jardineiro e paisagista. Manutenção de jardins, poda de árvores e projetos paisagísticos.',
+        tags: ['jardineiro', 'paisagismo', 'poda'],
+        foto_url: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Campinas, SP',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo14',
+        nome: 'Beatriz Cardoso',
+        whatsapp: '11866554433',
+        descricao: 'Advogada especialista em direito trabalhista e previdenciário. Consultoria jurídica.',
+        tags: ['advogada', 'trabalhista', 'consultoria'],
+        foto_url: 'https://images.pexels.com/photos/1181562/pexels-photo-1181562.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Belo Horizonte, MG',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo15',
+        nome: 'Rafael Mendes',
+        whatsapp: '11855443322',
+        descricao: 'Técnico em informática. Manutenção de computadores, instalação de redes e suporte técnico.',
+        tags: ['informática', 'computador', 'suporte'],
+        foto_url: 'https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Fortaleza, CE',
+        status: 'busy',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo16',
+        nome: 'Patrícia Gomes',
+        whatsapp: '11844332211',
+        descricao: 'Veterinária. Consultas, vacinas e cirurgias. Atendimento domiciliar para pets.',
+        tags: ['veterinária', 'pets', 'domiciliar'],
+        foto_url: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Curitiba, PR',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo17',
+        nome: 'Thiago Costa',
+        whatsapp: '11833221100',
+        descricao: 'Personal organizer. Organização de ambientes residenciais e comerciais.',
+        tags: ['organização', 'ambientes', 'consultoria'],
+        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'São Paulo, SP',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo18',
+        nome: 'Vanessa Silva',
+        whatsapp: '11822110099',
+        descricao: 'Esteticista e micropigmentadora. Limpeza de pele, massagens e procedimentos estéticos.',
+        tags: ['estética', 'micropigmentação', 'massagem'],
+        foto_url: 'https://images.pexels.com/photos/1239288/pexels-photo-1239288.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Goiânia, GO',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo19',
+        nome: 'Lucas Ferreira',
+        whatsapp: '11811009988',
+        descricao: 'Professor de música. Aulas de violão, piano e canto. Presencial e online.',
+        tags: ['música', 'violão', 'piano'],
+        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Natal, RN',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo20',
+        nome: 'Gabriela Martins',
+        whatsapp: '11800998877',
+        descricao: 'Arquiteta e urbanista. Projetos residenciais, comerciais e acompanhamento de obras.',
+        tags: ['arquiteta', 'projetos', 'obras'],
+        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Vitória, ES',
+        status: 'busy',
         criado_em: new Date().toISOString()
       }
     ]
