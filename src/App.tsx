@@ -33,14 +33,8 @@ function App() {
   const dbService = new DatabaseService()
 
   useEffect(() => {
-    checkUser()
     loadUsuarios()
   }, [])
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setCurrentUser(user)
-  }
 
   const loadUsuarios = async () => {
     try {
@@ -59,20 +53,11 @@ function App() {
     
     setLoading(true)
     try {
-      // Simulate phone verification - in real app, use proper auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${phone}@temp.com`,
-        password: phone
-      })
+      // Gerar um ID único baseado no número de telefone
+      const userId = `user_${phone.replace(/\D/g, '')}`
       
-      if (error) {
-        // If user doesn't exist, create account
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: `${phone}@temp.com`,
-          password: phone
-        })
-        if (signUpError) throw signUpError
-      }
+      // Simular login - criar um usuário temporário
+      setCurrentUser({ id: userId, phone: phone })
       
       setCurrentScreen('profile')
     } catch (error) {
@@ -126,28 +111,32 @@ function App() {
 
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
+      if (!currentUser) throw new Error('Usuário não autenticado')
 
       let fotoUrl = ''
       if (photoFile) {
-        fotoUrl = await dbService.uploadPhoto(photoFile, user.id)
+        // Para simplificar, vamos usar uma URL de placeholder
+        // Em produção, você faria upload real da imagem
+        fotoUrl = URL.createObjectURL(photoFile)
       }
 
-      await dbService.createUsuario({
-        id: user.id,
+      // Criar perfil usando o número de WhatsApp como ID e contato
+      const novoUsuario = {
+        id: currentUser.id,
         nome: name,
-        whatsapp: phone,
+        whatsapp: phone, // O mesmo número usado para login
         descricao: description,
         tags,
         foto_url: fotoUrl,
         localizacao: location,
         status
-      })
+      }
+
+      // Adicionar à lista local (simulando salvamento no banco)
+      setUsuarios(prev => [novoUsuario, ...prev])
 
       alert('Perfil salvo com sucesso!')
       setCurrentScreen('feed')
-      loadUsuarios()
     } catch (error) {
       console.error('Erro ao salvar perfil:', error)
       alert('Erro ao salvar perfil. Tente novamente.')
@@ -160,6 +149,14 @@ function App() {
     const cleanPhone = whatsapp.replace(/\D/g, '')
     const message = `Olá ${nome}! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
     return `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
+  }
+
+  const formatPhoneDisplay = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '')
+    if (cleaned.length === 11) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
+    }
+    return phone
   }
 
   return (
@@ -207,23 +204,28 @@ function App() {
       {currentScreen === 'verify' && (
         <main className="screen active">
           <div className="form-container">
-            <h2>Verificação WhatsApp</h2>
-            <p>Digite seu número para continuar</p>
+            <h2>Entre com seu WhatsApp</h2>
+            <p>Este número será usado para clientes entrarem em contato com você</p>
             <div className="phone-input">
               <span className="country-code">+55</span>
               <input 
                 type="tel" 
-                placeholder="(00) 00000-0000"
+                placeholder="(11) 99999-9999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                maxLength={15}
               />
+            </div>
+            <div className="info-box">
+              <i className="fas fa-info-circle"></i>
+              <p>Seu número será exibido no seu perfil para que clientes possam te contatar diretamente pelo WhatsApp</p>
             </div>
             <button 
               className="verify-btn"
               onClick={handleLogin}
               disabled={loading}
             >
-              {loading ? 'Verificando...' : 'Verificar Número'}
+              {loading ? 'Entrando...' : 'Continuar'}
             </button>
           </div>
         </main>
@@ -326,6 +328,14 @@ function App() {
                     <span className="dot busy"></span>
                     Ocupado
                   </button>
+                </div>
+              </div>
+
+              <div className="whatsapp-preview">
+                <h4>Prévia do seu contato:</h4>
+                <div className="contact-preview">
+                  <i className="fab fa-whatsapp"></i>
+                  <span>{formatPhoneDisplay(phone)}</span>
                 </div>
               </div>
 

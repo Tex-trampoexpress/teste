@@ -254,6 +254,30 @@ input:focus, textarea:focus {
   font-weight: 600;
 }
 
+.info-box {
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  text-align: left;
+}
+
+.info-box i {
+  color: var(--whatsapp-green);
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .verify-btn {
   width: 100%;
   padding: 1.2rem;
@@ -411,6 +435,33 @@ input:focus, textarea:focus {
 .status-btn.active {
   background: rgba(255, 255, 255, 0.1);
   border-color: var(--cyan);
+}
+
+.whatsapp-preview {
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.whatsapp-preview h4 {
+  margin-bottom: 0.8rem;
+  color: var(--whatsapp-green);
+  font-size: 0.9rem;
+}
+
+.contact-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.contact-preview i {
+  color: var(--whatsapp-green);
+  font-size: 1.2rem;
 }
 
 .save-profile-btn {
