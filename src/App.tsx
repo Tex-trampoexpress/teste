@@ -27,14 +27,89 @@ function App() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string>('')
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [usuariosFiltrados, setUsuariosFiltrados] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const dbService = new DatabaseService()
 
   useEffect(() => {
     loadUsuarios()
+    // Adicionar alguns usuários de exemplo para teste
+    addExampleUsers()
   }, [])
+
+  useEffect(() => {
+    // Filtrar usuários baseado no termo de busca
+    if (searchTerm.trim() === '') {
+      setUsuariosFiltrados(usuarios)
+    } else {
+      const filtered = usuarios.filter(usuario => 
+        usuario.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        usuario.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        usuario.localizacao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        usuario.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      setUsuariosFiltrados(filtered)
+    }
+  }, [searchTerm, usuarios])
+
+  const addExampleUsers = () => {
+    const exemplos = [
+      {
+        id: 'exemplo1',
+        nome: 'João Silva',
+        whatsapp: '11999887766',
+        descricao: 'Eletricista com 10 anos de experiência. Atendo residencial e comercial.',
+        tags: ['eletricista', 'residencial', 'comercial'],
+        foto_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'São Paulo, SP',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo2',
+        nome: 'Maria Santos',
+        whatsapp: '11988776655',
+        descricao: 'Designer gráfica freelancer. Criação de logos, cartões e materiais publicitários.',
+        tags: ['design', 'logo', 'publicidade'],
+        foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Rio de Janeiro, RJ',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo3',
+        nome: 'Carlos Pereira',
+        whatsapp: '11977665544',
+        descricao: 'Encanador especializado em vazamentos e instalações. Atendimento 24h.',
+        tags: ['encanador', 'vazamento', '24h'],
+        foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Belo Horizonte, MG',
+        status: 'busy',
+        criado_em: new Date().toISOString()
+      },
+      {
+        id: 'exemplo4',
+        nome: 'Ana Costa',
+        whatsapp: '11966554433',
+        descricao: 'Professora particular de matemática e física. Ensino fundamental e médio.',
+        tags: ['professora', 'matemática', 'física'],
+        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Curitiba, PR',
+        status: 'available',
+        criado_em: new Date().toISOString()
+      }
+    ]
+    
+    setUsuarios(prev => {
+      // Evitar duplicatas
+      const existingIds = prev.map(u => u.id)
+      const newUsers = exemplos.filter(ex => !existingIds.includes(ex.id))
+      return [...prev, ...newUsers]
+    })
+  }
 
   const loadUsuarios = async () => {
     try {
@@ -159,10 +234,20 @@ function App() {
     return phone
   }
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term)
+    if (term.trim() !== '') {
+      setCurrentScreen('feed')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
-        <div className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
+        <div 
+          className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent cursor-pointer"
+          onClick={() => setCurrentScreen('home')}
+        >
           TEX
         </div>
         <div className="text-yellow-400 text-xl cursor-pointer hover:scale-110 transition-transform">
@@ -180,13 +265,20 @@ function App() {
                 type="text" 
                 placeholder="Procure serviços, pessoas ou encontros..."
                 aria-label="Campo de busca"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch(searchTerm)
+                  }
+                }}
               />
               <button 
                 className="explore-btn" 
                 type="button"
-                onClick={() => setCurrentScreen('feed')}
+                onClick={() => handleSearch(searchTerm)}
               >
-                Explorar Agora
+                {searchTerm.trim() ? 'Buscar' : 'Explorar Agora'}
               </button>
             </div>
             <button 
@@ -355,56 +447,102 @@ function App() {
       {currentScreen === 'feed' && (
         <main className="screen active">
           <div className="feed">
-            <h2 className="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
-              Profissionais Disponíveis
-            </h2>
-            {usuarios.map(usuario => (
-              <div key={usuario.id} className="profile-card mb-4">
-                <div className="profile-header">
-                  <div className="profile-pic">
-                    {usuario.foto_url ? (
-                      <img src={usuario.foto_url} alt={usuario.nome || 'Usuário'} />
-                    ) : (
-                      <div className="w-full h-full bg-gray-600 rounded-full flex items-center justify-center">
-                        <i className="fas fa-user text-2xl"></i>
-                      </div>
-                    )}
-                  </div>
-                  <div className="profile-info">
-                    <h2>{usuario.nome}</h2>
-                    {usuario.descricao && (
-                      <p className="description">{usuario.descricao}</p>
-                    )}
-                    {usuario.localizacao && (
-                      <p className="text-sm text-gray-400">📍 {usuario.localizacao}</p>
-                    )}
-                    <span className={`status ${usuario.status === 'available' ? 'status-available' : 'status-busy'}`}>
-                      {usuario.status === 'available' ? 'Disponível' : 'Ocupado'}
-                    </span>
-                  </div>
-                </div>
-                
-                {usuario.tags && usuario.tags.length > 0 && (
-                  <div className="hashtags">
-                    {usuario.tags.map(tag => (
-                      <span key={tag}>#{tag}</span>
-                    ))}
-                  </div>
-                )}
-                
-                {usuario.whatsapp && (
-                  <a 
-                    href={formatWhatsAppLink(usuario.whatsapp, usuario.nome || 'Profissional')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="whatsapp-btn"
+            <div className="search-header">
+              <div className="search-bar">
+                <i className="fas fa-search"></i>
+                <input 
+                  type="text" 
+                  placeholder="Buscar por nome, serviço ou localização..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button 
+                    className="clear-search"
+                    onClick={() => setSearchTerm('')}
                   >
-                    <i className="fab fa-whatsapp"></i>
-                    Conversar no WhatsApp
-                  </a>
+                    <i className="fas fa-times"></i>
+                  </button>
                 )}
               </div>
-            ))}
+              {searchTerm && (
+                <div className="search-results-info">
+                  <p>{usuariosFiltrados.length} resultado(s) para "{searchTerm}"</p>
+                </div>
+              )}
+            </div>
+
+            <h2 className="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
+              {searchTerm ? 'Resultados da Busca' : 'Profissionais Disponíveis'}
+            </h2>
+            
+            {usuariosFiltrados.length === 0 ? (
+              <div className="no-results">
+                <i className="fas fa-search"></i>
+                <h3>Nenhum resultado encontrado</h3>
+                <p>Tente buscar por outros termos ou explore todos os profissionais</p>
+                <button 
+                  className="explore-all-btn"
+                  onClick={() => setSearchTerm('')}
+                >
+                  Ver Todos os Profissionais
+                </button>
+              </div>
+            ) : (
+              usuariosFiltrados.map(usuario => (
+                <div key={usuario.id} className="profile-card mb-4">
+                  <div className="profile-header">
+                    <div className="profile-pic">
+                      {usuario.foto_url ? (
+                        <img src={usuario.foto_url} alt={usuario.nome || 'Usuário'} />
+                      ) : (
+                        <div className="w-full h-full bg-gray-600 rounded-full flex items-center justify-center">
+                          <i className="fas fa-user text-2xl"></i>
+                        </div>
+                      )}
+                    </div>
+                    <div className="profile-info">
+                      <h2>{usuario.nome}</h2>
+                      {usuario.descricao && (
+                        <p className="description">{usuario.descricao}</p>
+                      )}
+                      {usuario.localizacao && (
+                        <p className="text-sm text-gray-400">📍 {usuario.localizacao}</p>
+                      )}
+                      <span className={`status ${usuario.status === 'available' ? 'status-available' : 'status-busy'}`}>
+                        {usuario.status === 'available' ? 'Disponível' : 'Ocupado'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {usuario.tags && usuario.tags.length > 0 && (
+                    <div className="hashtags">
+                      {usuario.tags.map(tag => (
+                        <span 
+                          key={tag}
+                          className="tag-clickable"
+                          onClick={() => handleSearch(tag)}
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {usuario.whatsapp && (
+                    <a 
+                      href={formatWhatsAppLink(usuario.whatsapp, usuario.nome || 'Profissional')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="whatsapp-btn"
+                    >
+                      <i className="fab fa-whatsapp"></i>
+                      Conversar no WhatsApp
+                    </a>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </main>
       )}

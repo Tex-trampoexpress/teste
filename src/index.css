@@ -496,6 +496,103 @@ input:focus, textarea:focus {
   margin-top: 2rem;
 }
 
+/* Search Header */
+.search-header {
+  margin-bottom: 2rem;
+}
+
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-bar i {
+  color: var(--gold);
+  margin-right: 0.8rem;
+}
+
+.search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--white);
+  outline: none;
+}
+
+.search-bar input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.clear-search {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0.2rem;
+  margin-left: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.clear-search:hover {
+  color: var(--white);
+}
+
+.search-results-info {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.no-results i {
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 1rem;
+}
+
+.no-results h3 {
+  margin-bottom: 0.5rem;
+  color: var(--white);
+}
+
+.no-results p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2rem;
+}
+
+.explore-all-btn {
+  background: var(--gradient);
+  color: var(--black);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.explore-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
 .profile-card {
   background: rgba(0, 0, 0, 0.6);
   border-radius: 20px;
@@ -578,6 +675,16 @@ input:focus, textarea:focus {
   border-radius: 20px;
   font-size: 0.8rem;
   color: var(--cyan);
+}
+
+.tag-clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tag-clickable:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .whatsapp-btn {
