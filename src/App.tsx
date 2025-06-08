@@ -219,9 +219,9 @@ function App() {
         setUserLocation({ lat: -23.5505, lng: -46.6333 })
       },
       {
-        enableHighAccuracy: true,
-        timeout: 30000, // Aumentado de 10000 para 30000 (30 segundos)
-        maximumAge: 300000 // 5 minutos
+        enableHighAccuracy: false, // Mudado para false para ser mais rápido
+        timeout: 15000, // Reduzido para 15 segundos
+        maximumAge: 600000 // 10 minutos
       }
     )
   }
@@ -474,26 +474,12 @@ function App() {
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
-      <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
+      <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-center items-center z-50">
         <div 
           className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent cursor-pointer"
           onClick={handleBackToHome}
         >
           TEX
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={getUserLocation}
-            className={`text-xl cursor-pointer hover:scale-110 transition-transform ${
-              locationPermission === 'granted' ? 'text-green-400' : 'text-yellow-400'
-            }`}
-            title={locationPermission === 'granted' ? 'Localização ativa' : 'Ativar localização'}
-          >
-            <i className="fas fa-map-marker-alt"></i>
-          </button>
-          <div className="text-yellow-400 text-xl cursor-pointer hover:scale-110 transition-transform">
-            <i className="fas fa-search"></i>
-          </div>
         </div>
       </header>
 
