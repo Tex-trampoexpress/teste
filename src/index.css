@@ -211,7 +211,11 @@ h1 {
   font-size: 3.5rem;
   margin-bottom: 2rem;
   line-height: 1.2;
-  text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  color: #FFFFFF;
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
 }
 
 h1 span {
@@ -221,6 +225,8 @@ h1 span {
   font-size: 4rem;
   display: block;
   margin-top: 0.5rem;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
 }
 
 .search-box {
