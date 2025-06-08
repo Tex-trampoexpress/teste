@@ -9,4 +9,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
+// Check if the URL is still using placeholder values
+if (supabaseUrl.includes('your-project-id') || supabaseUrl === 'your_supabase_project_url') {
+  throw new Error(
+    'Please replace the placeholder Supabase URL in your .env file with your actual Supabase project URL (https://your-project-id.supabase.co)'
+  )
+}
+
+if (supabaseAnonKey.includes('your_supabase_anon_key') || supabaseAnonKey === 'your_supabase_anon_key') {
+  throw new Error(
+    'Please replace the placeholder Supabase anonymous key in your .env file with your actual Supabase anonymous key'
+  )
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
