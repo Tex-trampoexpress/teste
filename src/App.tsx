@@ -219,7 +219,7 @@ function App() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 30000, // Aumentado de 10000 para 30000 (30 segundos)
         maximumAge: 300000 // 5 minutos
       }
     )
