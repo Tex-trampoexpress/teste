@@ -339,10 +339,24 @@ function App() {
   }
 
   const addTag = () => {
-    if (tagInput.trim() && tags.length < 3 && !tags.includes(tagInput.trim().toLowerCase())) {
-      const newTag = tagInput.trim().toLowerCase()
-      setTags([...tags, newTag])
+    const trimmedTag = tagInput.trim().toLowerCase()
+    
+    // Debug: vamos ver o que está acontecendo
+    console.log('Tentando adicionar tag:', trimmedTag)
+    console.log('Tags atuais:', tags)
+    console.log('Condições:', {
+      temTexto: !!trimmedTag,
+      menorQue3: tags.length < 3,
+      naoExiste: !tags.includes(trimmedTag)
+    })
+    
+    if (trimmedTag && tags.length < 3 && !tags.includes(trimmedTag)) {
+      const newTags = [...tags, trimmedTag]
+      setTags(newTags)
       setTagInput('')
+      console.log('Tag adicionada! Novas tags:', newTags)
+    } else {
+      console.log('Tag não foi adicionada')
     }
   }
 
@@ -358,13 +372,18 @@ function App() {
   }
 
   const handleSaveProfile = async () => {
+    console.log('Tentando salvar perfil...')
+    console.log('Nome:', name.trim())
+    console.log('Tags:', tags)
+    console.log('Quantidade de tags:', tags.length)
+    
     if (!name.trim()) {
       alert('Por favor, preencha seu nome')
       return
     }
     
     // Verificar se há pelo menos uma tag
-    if (tags.length === 0) {
+    if (!tags || tags.length === 0) {
       alert('Por favor, adicione pelo menos uma tag que descreva seu serviço (ex: pintor, eletricista, designer)')
       return
     }
@@ -391,6 +410,8 @@ function App() {
         localizacao: location,
         status
       }
+
+      console.log('Salvando usuário:', novoUsuario)
 
       // Adicionar à lista local (simulando salvamento no banco)
       setUsuarios(prev => [novoUsuario, ...prev])
@@ -626,6 +647,11 @@ function App() {
                   {tags.length >= 3 && (
                     <p className="text-sm text-yellow-400">
                       Máximo de 3 tags atingido. Remova uma tag para adicionar outra.
+                    </p>
+                  )}
+                  {tags.length > 0 && (
+                    <p className="text-sm text-green-400">
+                      ✓ {tags.length} tag(s) adicionada(s)
                     </p>
                   )}
                 </div>
