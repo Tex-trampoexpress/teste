@@ -209,6 +209,38 @@ input:focus, textarea:focus {
   transform: translateY(0);
 }
 
+/* Location Status */
+.location-status {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.location-enable-btn {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  color: var(--cyan);
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin: 0 auto;
+}
+
+.location-enable-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.location-enable-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* WhatsApp Login Button */
 .whatsapp-login-btn {
   margin-top: 2rem;
@@ -575,10 +607,126 @@ input:focus, textarea:focus {
   color: var(--white);
 }
 
+/* Proximity Filters */
+.proximity-filters {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.proximity-toggle {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  color: var(--cyan);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.proximity-toggle:hover {
+  background: rgba(0, 255, 255, 0.2);
+}
+
+.proximity-toggle.active {
+  background: rgba(0, 255, 255, 0.3);
+  border-color: var(--cyan);
+}
+
+.proximity-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.enable-location-btn {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: var(--gold);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.enable-location-btn:hover {
+  background: rgba(255, 215, 0, 0.2);
+}
+
+.enable-location-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.radius-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.radius-selector label {
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+}
+
+.radius-selector select {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: var(--white);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.radius-selector select:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
 .search-results-info {
   text-align: center;
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
+}
+
+/* Distance Badge */
+.profile-name-distance {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.distance-badge {
+  background: rgba(0, 255, 255, 0.2);
+  color: var(--cyan);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
 }
 
 /* No Results */
@@ -687,7 +835,6 @@ input:focus, textarea:focus {
 
 .profile-info h2 {
   font-size: 1.2rem;
-  margin-bottom: 0.5rem;
   background: var(--gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -870,6 +1017,27 @@ footer {
   .no-results-actions {
     flex-direction: column;
   }
+
+  .filter-row {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .proximity-toggle,
+  .enable-location-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-name-distance {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .distance-badge {
+    align-self: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -921,6 +1089,16 @@ footer {
   }
 
   .country-code {
+    width: 100%;
+  }
+
+  .radius-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .radius-selector select {
     width: 100%;
   }
 }

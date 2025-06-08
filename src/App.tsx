@@ -13,6 +13,9 @@ interface Usuario {
   localizacao: string | null
   status: string | null
   criado_em: string | null
+  latitude?: number | null
+  longitude?: number | null
+  distancia?: number
 }
 
 function App() {
@@ -32,10 +35,14 @@ function App() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [previousScreen, setPreviousScreen] = useState('home')
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
+  const [searchRadius, setSearchRadius] = useState(10) // km
+  const [sortByDistance, setSortByDistance] = useState(false)
 
   const dbService = new DatabaseService()
 
-  // Criar usuários de exemplo
+  // Criar usuários de exemplo com coordenadas
   const createExampleUsers = () => {
     const exemplos = [
       {
@@ -45,9 +52,11 @@ function App() {
         descricao: 'Eletricista com 10 anos de experiência. Atendo residencial e comercial com garantia.',
         tags: ['eletricista', 'residencial', 'comercial'],
         foto_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP',
+        localizacao: 'São Paulo, SP - Vila Madalena',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5505,
+        longitude: -46.6333
       },
       {
         id: 'exemplo2',
@@ -56,9 +65,11 @@ function App() {
         descricao: 'Designer gráfica freelancer. Criação de logos, cartões e materiais publicitários.',
         tags: ['design', 'logo', 'publicidade'],
         foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Rio de Janeiro, RJ',
+        localizacao: 'São Paulo, SP - Pinheiros',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5629,
+        longitude: -46.7006
       },
       {
         id: 'exemplo3',
@@ -67,9 +78,11 @@ function App() {
         descricao: 'Encanador especializado em vazamentos e instalações. Atendimento 24h emergencial.',
         tags: ['encanador', 'vazamento', '24h'],
         foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Belo Horizonte, MG',
+        localizacao: 'São Paulo, SP - Itaim Bibi',
         status: 'busy',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5751,
+        longitude: -46.6755
       },
       {
         id: 'exemplo4',
@@ -78,9 +91,11 @@ function App() {
         descricao: 'Professora particular de matemática e física. Ensino fundamental e médio.',
         tags: ['professora', 'matemática', 'física'],
         foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Curitiba, PR',
+        localizacao: 'São Paulo, SP - Moema',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.6014,
+        longitude: -46.6658
       },
       {
         id: 'exemplo5',
@@ -89,9 +104,11 @@ function App() {
         descricao: 'Desenvolvedor web especializado em React e Node.js. Criação de sites e sistemas.',
         tags: ['programador', 'website', 'sistema'],
         foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP',
+        localizacao: 'São Paulo, SP - Vila Olímpia',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5955,
+        longitude: -46.6890
       },
       {
         id: 'exemplo6',
@@ -100,9 +117,11 @@ function App() {
         descricao: 'Cabeleireira e manicure. Atendimento domiciliar e no salão. Especialista em cortes modernos.',
         tags: ['cabeleireira', 'manicure', 'domiciliar'],
         foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Salvador, BA',
+        localizacao: 'São Paulo, SP - Jardins',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5613,
+        longitude: -46.6565
       },
       {
         id: 'exemplo7',
@@ -111,9 +130,11 @@ function App() {
         descricao: 'Mecânico automotivo com 15 anos de experiência. Especialista em carros nacionais e importados.',
         tags: ['mecânico', 'automotivo', 'carros'],
         foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Porto Alegre, RS',
+        localizacao: 'São Paulo, SP - Santana',
         status: 'busy',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5077,
+        longitude: -46.6252
       },
       {
         id: 'exemplo8',
@@ -122,9 +143,11 @@ function App() {
         descricao: 'Personal trainer e nutricionista. Treinos personalizados e acompanhamento nutricional.',
         tags: ['personal', 'nutrição', 'fitness'],
         foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Brasília, DF',
+        localizacao: 'São Paulo, SP - Brooklin',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.6365,
+        longitude: -46.6918
       },
       {
         id: 'exemplo9',
@@ -133,9 +156,11 @@ function App() {
         descricao: 'Pintor residencial e comercial. Trabalho com texturas, grafiato e pintura decorativa.',
         tags: ['pintor', 'textura', 'decoração'],
         foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Recife, PE',
+        localizacao: 'São Paulo, SP - Liberdade',
         status: 'available',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5587,
+        longitude: -46.6347
       },
       {
         id: 'exemplo10',
@@ -144,123 +169,86 @@ function App() {
         descricao: 'Fotógrafa profissional. Casamentos, eventos, ensaios e fotos corporativas.',
         tags: ['fotógrafa', 'casamento', 'eventos'],
         foto_url: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Florianópolis, SC',
+        localizacao: 'São Paulo, SP - Perdizes',
         status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo11',
-        nome: 'André Barbosa',
-        whatsapp: '11899887766',
-        descricao: 'Chef de cozinha. Buffets para eventos, aulas de culinária e consultoria gastronômica.',
-        tags: ['chef', 'buffet', 'culinária'],
-        foto_url: 'https://images.pexels.com/photos/1367269/pexels-photo-1367269.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP',
-        status: 'busy',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo12',
-        nome: 'Camila Alves',
-        whatsapp: '11888776655',
-        descricao: 'Psicóloga clínica. Atendimento presencial e online. Especialista em ansiedade e depressão.',
-        tags: ['psicóloga', 'online', 'terapia'],
-        foto_url: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Rio de Janeiro, RJ',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo13',
-        nome: 'Diego Santos',
-        whatsapp: '11877665544',
-        descricao: 'Jardineiro e paisagista. Manutenção de jardins, poda de árvores e projetos paisagísticos.',
-        tags: ['jardineiro', 'paisagismo', 'poda'],
-        foto_url: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Campinas, SP',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo14',
-        nome: 'Beatriz Cardoso',
-        whatsapp: '11866554433',
-        descricao: 'Advogada especialista em direito trabalhista e previdenciário. Consultoria jurídica.',
-        tags: ['advogada', 'trabalhista', 'consultoria'],
-        foto_url: 'https://images.pexels.com/photos/1181562/pexels-photo-1181562.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Belo Horizonte, MG',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo15',
-        nome: 'Rafael Mendes',
-        whatsapp: '11855443322',
-        descricao: 'Técnico em informática. Manutenção de computadores, instalação de redes e suporte técnico.',
-        tags: ['informática', 'computador', 'suporte'],
-        foto_url: 'https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Fortaleza, CE',
-        status: 'busy',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo16',
-        nome: 'Patrícia Gomes',
-        whatsapp: '11844332211',
-        descricao: 'Veterinária. Consultas, vacinas e cirurgias. Atendimento domiciliar para pets.',
-        tags: ['veterinária', 'pets', 'domiciliar'],
-        foto_url: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Curitiba, PR',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo17',
-        nome: 'Thiago Costa',
-        whatsapp: '11833221100',
-        descricao: 'Personal organizer. Organização de ambientes residenciais e comerciais.',
-        tags: ['organização', 'ambientes', 'consultoria'],
-        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo18',
-        nome: 'Vanessa Silva',
-        whatsapp: '11822110099',
-        descricao: 'Esteticista e micropigmentadora. Limpeza de pele, massagens e procedimentos estéticos.',
-        tags: ['estética', 'micropigmentação', 'massagem'],
-        foto_url: 'https://images.pexels.com/photos/1239288/pexels-photo-1239288.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Goiânia, GO',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo19',
-        nome: 'Lucas Ferreira',
-        whatsapp: '11811009988',
-        descricao: 'Professor de música. Aulas de violão, piano e canto. Presencial e online.',
-        tags: ['música', 'violão', 'piano'],
-        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Natal, RN',
-        status: 'available',
-        criado_em: new Date().toISOString()
-      },
-      {
-        id: 'exemplo20',
-        nome: 'Gabriela Martins',
-        whatsapp: '11800998877',
-        descricao: 'Arquiteta e urbanista. Projetos residenciais, comerciais e acompanhamento de obras.',
-        tags: ['arquiteta', 'projetos', 'obras'],
-        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Vitória, ES',
-        status: 'busy',
-        criado_em: new Date().toISOString()
+        criado_em: new Date().toISOString(),
+        latitude: -23.5365,
+        longitude: -46.6890
       }
     ]
     
     return exemplos
+  }
+
+  // Função para calcular distância entre dois pontos (Haversine formula)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371 // Raio da Terra em km
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
+  }
+
+  // Função para obter localização do usuário
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      console.log('Geolocalização não suportada')
+      return
+    }
+
+    setLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setUserLocation({ lat: latitude, lng: longitude })
+        setLocationPermission('granted')
+        setLoading(false)
+        console.log('Localização obtida:', { latitude, longitude })
+      },
+      (error) => {
+        console.error('Erro ao obter localização:', error)
+        setLocationPermission('denied')
+        setLoading(false)
+        
+        // Usar localização padrão (centro de São Paulo) para demonstração
+        setUserLocation({ lat: -23.5505, lng: -46.6333 })
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutos
+      }
+    )
+  }
+
+  // Filtrar usuários por proximidade
+  const filterByProximity = (users: Usuario[]) => {
+    if (!userLocation || !sortByDistance) return users
+
+    const usersWithDistance = users.map(user => {
+      if (user.latitude && user.longitude) {
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          user.latitude,
+          user.longitude
+        )
+        return { ...user, distancia: distance }
+      }
+      return { ...user, distancia: 999 } // Usuários sem localização ficam por último
+    })
+
+    // Filtrar por raio se especificado
+    const filtered = usersWithDistance.filter(user => 
+      user.distancia === undefined || user.distancia <= searchRadius
+    )
+
+    // Ordenar por distância
+    return filtered.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
   }
 
   useEffect(() => {
@@ -271,22 +259,30 @@ function App() {
     
     // Tentar carregar usuários do banco também
     loadUsuarios()
+
+    // Tentar obter localização automaticamente
+    getUserLocation()
   }, [])
 
   useEffect(() => {
-    // Filtrar usuários baseado no termo de busca
-    if (searchTerm.trim() === '') {
-      setUsuariosFiltrados(usuarios)
-    } else {
-      const filtered = usuarios.filter(usuario => 
+    // Filtrar usuários baseado no termo de busca e proximidade
+    let filtered = usuarios
+
+    // Filtro por texto
+    if (searchTerm.trim() !== '') {
+      filtered = usuarios.filter(usuario => 
         usuario.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         usuario.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         usuario.localizacao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         usuario.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       )
-      setUsuariosFiltrados(filtered)
     }
-  }, [searchTerm, usuarios])
+
+    // Filtro por proximidade
+    filtered = filterByProximity(filtered)
+
+    setUsuariosFiltrados(filtered)
+  }, [searchTerm, usuarios, userLocation, sortByDistance, searchRadius])
 
   const loadUsuarios = async () => {
     try {
@@ -408,7 +404,9 @@ function App() {
         tags,
         foto_url: fotoUrl,
         localizacao: location,
-        status
+        status,
+        latitude: userLocation?.lat || null,
+        longitude: userLocation?.lng || null
       }
 
       console.log('Salvando usuário:', novoUsuario)
@@ -438,6 +436,14 @@ function App() {
       return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
     }
     return phone
+  }
+
+  const formatDistance = (distance?: number) => {
+    if (!distance) return ''
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)}m`
+    }
+    return `${distance.toFixed(1)}km`
   }
 
   const handleSearch = (term: string) => {
@@ -472,8 +478,19 @@ function App() {
         >
           TEX
         </div>
-        <div className="text-yellow-400 text-xl cursor-pointer hover:scale-110 transition-transform">
-          <i className="fas fa-search"></i>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={getUserLocation}
+            className={`text-xl cursor-pointer hover:scale-110 transition-transform ${
+              locationPermission === 'granted' ? 'text-green-400' : 'text-yellow-400'
+            }`}
+            title={locationPermission === 'granted' ? 'Localização ativa' : 'Ativar localização'}
+          >
+            <i className="fas fa-map-marker-alt"></i>
+          </button>
+          <div className="text-yellow-400 text-xl cursor-pointer hover:scale-110 transition-transform">
+            <i className="fas fa-search"></i>
+          </div>
         </div>
       </header>
 
@@ -503,6 +520,26 @@ function App() {
                 {searchTerm.trim() ? 'Buscar' : 'Explorar Agora'}
               </button>
             </div>
+            
+            {/* Location Status */}
+            <div className="location-status">
+              {locationPermission === 'granted' && userLocation ? (
+                <p className="text-green-400 text-sm">
+                  <i className="fas fa-map-marker-alt"></i>
+                  Localização ativa - encontre profissionais próximos
+                </p>
+              ) : (
+                <button 
+                  onClick={getUserLocation}
+                  className="location-enable-btn"
+                  disabled={loading}
+                >
+                  <i className="fas fa-map-marker-alt"></i>
+                  {loading ? 'Obtendo localização...' : 'Ativar localização para busca próxima'}
+                </button>
+              )}
+            </div>
+
             <button 
               className="whatsapp-login-btn"
               onClick={() => navigateToScreen('verify')}
@@ -617,6 +654,12 @@ function App() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
+                {userLocation && (
+                  <p className="text-sm text-green-400 mt-1">
+                    <i className="fas fa-map-marker-alt"></i>
+                    Coordenadas GPS serão salvas automaticamente
+                  </p>
+                )}
               </div>
 
               <div className="form-group">
@@ -711,6 +754,7 @@ function App() {
                   Início
                 </button>
               </div>
+              
               <div className="search-bar">
                 <i className="fas fa-search"></i>
                 <input 
@@ -728,26 +772,83 @@ function App() {
                   </button>
                 )}
               </div>
+
+              {/* Filtros de Proximidade */}
+              <div className="proximity-filters">
+                <div className="filter-row">
+                  <button
+                    className={`proximity-toggle ${sortByDistance ? 'active' : ''}`}
+                    onClick={() => setSortByDistance(!sortByDistance)}
+                    disabled={!userLocation}
+                  >
+                    <i className="fas fa-map-marker-alt"></i>
+                    {sortByDistance ? 'Ordenado por distância' : 'Ordenar por proximidade'}
+                  </button>
+                  
+                  {!userLocation && (
+                    <button 
+                      onClick={getUserLocation}
+                      className="enable-location-btn"
+                      disabled={loading}
+                    >
+                      <i className="fas fa-location-arrow"></i>
+                      {loading ? 'Obtendo...' : 'Ativar GPS'}
+                    </button>
+                  )}
+                </div>
+
+                {sortByDistance && userLocation && (
+                  <div className="radius-selector">
+                    <label>Raio de busca:</label>
+                    <select 
+                      value={searchRadius} 
+                      onChange={(e) => setSearchRadius(Number(e.target.value))}
+                    >
+                      <option value={1}>1 km</option>
+                      <option value={2}>2 km</option>
+                      <option value={5}>5 km</option>
+                      <option value={10}>10 km</option>
+                      <option value={20}>20 km</option>
+                      <option value={50}>50 km</option>
+                      <option value={999}>Sem limite</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
               {searchTerm && (
                 <div className="search-results-info">
                   <p>{usuariosFiltrados.length} resultado(s) para "{searchTerm}"</p>
+                  {sortByDistance && userLocation && (
+                    <p className="text-sm text-cyan-400">
+                      Ordenado por proximidade • Raio: {searchRadius === 999 ? 'Ilimitado' : `${searchRadius}km`}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
 
             <h2 className="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
-              {searchTerm ? 'Resultados da Busca' : 'Profissionais Disponíveis'}
+              {searchTerm ? 'Resultados da Busca' : sortByDistance ? 'Profissionais Próximos' : 'Profissionais Disponíveis'}
             </h2>
             
             {usuariosFiltrados.length === 0 ? (
               <div className="no-results">
                 <i className="fas fa-search"></i>
                 <h3>Nenhum resultado encontrado</h3>
-                <p>Tente buscar por outros termos ou explore todos os profissionais</p>
+                <p>
+                  {sortByDistance && userLocation 
+                    ? `Nenhum profissional encontrado num raio de ${searchRadius}km`
+                    : 'Tente buscar por outros termos ou explore todos os profissionais'
+                  }
+                </p>
                 <div className="no-results-actions">
                   <button 
                     className="explore-all-btn"
-                    onClick={() => setSearchTerm('')}
+                    onClick={() => {
+                      setSearchTerm('')
+                      setSortByDistance(false)
+                    }}
                   >
                     Ver Todos os Profissionais
                   </button>
@@ -774,7 +875,15 @@ function App() {
                       )}
                     </div>
                     <div className="profile-info">
-                      <h2>{usuario.nome}</h2>
+                      <div className="profile-name-distance">
+                        <h2>{usuario.nome}</h2>
+                        {usuario.distancia !== undefined && sortByDistance && (
+                          <span className="distance-badge">
+                            <i className="fas fa-map-marker-alt"></i>
+                            {formatDistance(usuario.distancia)}
+                          </span>
+                        )}
+                      </div>
                       {usuario.descricao && (
                         <p className="description">{usuario.descricao}</p>
                       )}
