@@ -35,28 +35,8 @@ function App() {
 
   const dbService = new DatabaseService()
 
-  useEffect(() => {
-    loadUsuarios()
-    // Adicionar usuários de exemplo para teste
-    addExampleUsers()
-  }, [])
-
-  useEffect(() => {
-    // Filtrar usuários baseado no termo de busca
-    if (searchTerm.trim() === '') {
-      setUsuariosFiltrados(usuarios)
-    } else {
-      const filtered = usuarios.filter(usuario => 
-        usuario.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        usuario.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        usuario.localizacao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        usuario.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-      setUsuariosFiltrados(filtered)
-    }
-  }, [searchTerm, usuarios])
-
-  const addExampleUsers = () => {
+  // Criar usuários de exemplo
+  const createExampleUsers = () => {
     const exemplos = [
       {
         id: 'exemplo1',
@@ -280,20 +260,46 @@ function App() {
       }
     ]
     
-    setUsuarios(prev => {
-      // Evitar duplicatas
-      const existingIds = prev.map(u => u.id)
-      const newUsers = exemplos.filter(ex => !existingIds.includes(ex.id))
-      return [...prev, ...newUsers]
-    })
+    return exemplos
   }
+
+  useEffect(() => {
+    // Carregar usuários de exemplo imediatamente
+    const exampleUsers = createExampleUsers()
+    setUsuarios(exampleUsers)
+    setUsuariosFiltrados(exampleUsers)
+    
+    // Tentar carregar usuários do banco também
+    loadUsuarios()
+  }, [])
+
+  useEffect(() => {
+    // Filtrar usuários baseado no termo de busca
+    if (searchTerm.trim() === '') {
+      setUsuariosFiltrados(usuarios)
+    } else {
+      const filtered = usuarios.filter(usuario => 
+        usuario.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        usuario.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        usuario.localizacao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        usuario.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      setUsuariosFiltrados(filtered)
+    }
+  }, [searchTerm, usuarios])
 
   const loadUsuarios = async () => {
     try {
       const data = await DatabaseService.getUsuarios()
-      setUsuarios(data)
+      // Mesclar com usuários de exemplo, evitando duplicatas
+      setUsuarios(prev => {
+        const existingIds = prev.map(u => u.id)
+        const newUsers = data.filter(user => !existingIds.includes(user.id))
+        return [...prev, ...newUsers]
+      })
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
+      // Se der erro, manter apenas os usuários de exemplo
     }
   }
 
