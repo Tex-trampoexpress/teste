@@ -339,8 +339,9 @@ function App() {
   }
 
   const addTag = () => {
-    if (tagInput.trim() && tags.length < 3 && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()])
+    if (tagInput.trim() && tags.length < 3 && !tags.includes(tagInput.trim().toLowerCase())) {
+      const newTag = tagInput.trim().toLowerCase()
+      setTags([...tags, newTag])
       setTagInput('')
     }
   }
@@ -362,8 +363,9 @@ function App() {
       return
     }
     
+    // Verificar se há pelo menos uma tag
     if (tags.length === 0) {
-      alert('Por favor, adicione pelo menos uma tag de serviço')
+      alert('Por favor, adicione pelo menos uma tag que descreva seu serviço (ex: pintor, eletricista, designer)')
       return
     }
 
@@ -597,14 +599,18 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label>Tags de Serviço (até 3)</label>
+                <label>Como você se identifica? (até 3 tags)</label>
+                <p className="text-sm text-gray-400 mb-2">
+                  Ex: pintor, eletricista, designer, professor, mecânico...
+                </p>
                 <div className="tags-input">
                   <input 
                     type="text" 
-                    placeholder="Digite uma tag e pressione Enter"
+                    placeholder="Digite uma palavra e pressione Enter"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyPress={handleTagKeyPress}
+                    disabled={tags.length >= 3}
                   />
                   <div className="tags-container">
                     {tags.map(tag => (
@@ -617,6 +623,11 @@ function App() {
                       </div>
                     ))}
                   </div>
+                  {tags.length >= 3 && (
+                    <p className="text-sm text-yellow-400">
+                      Máximo de 3 tags atingido. Remova uma tag para adicionar outra.
+                    </p>
+                  )}
                 </div>
               </div>
 
