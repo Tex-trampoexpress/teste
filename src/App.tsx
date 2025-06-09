@@ -1043,12 +1043,136 @@ function App() {
         </main>
       )}
 
+      {/* About Screen */}
+      {currentScreen === 'about' && (
+        <main className="screen active">
+          <div className="content-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={goBack}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+            
+            <h1 className="page-title">
+              <i className="fas fa-info-circle"></i>
+              Sobre o TEX
+            </h1>
+            
+            <div className="about-content">
+              <div className="content-section">
+                <p className="intro-text">
+                  O TEX (TrampoExpress) nasceu com a missão de revolucionar a forma como as pessoas encontram e oferecem serviços. Conectamos profissionais talentosos a clientes que precisam de seus serviços, criando oportunidades e facilitando conexões significativas.
+                </p>
+
+                <div className="features-grid">
+                  <div className="feature-card">
+                    <i className="fas fa-handshake"></i>
+                    <h3>Conexões Diretas</h3>
+                    <p>Conectamos prestadores de serviços e clientes de forma rápida e eficiente via WhatsApp</p>
+                  </div>
+                  
+                  <div className="feature-card">
+                    <i className="fas fa-shield-alt"></i>
+                    <h3>Transparência</h3>
+                    <p>Garantimos transparência em todas as interações e informações dos profissionais</p>
+                  </div>
+                  
+                  <div className="feature-card">
+                    <i className="fas fa-map-marker-alt"></i>
+                    <h3>Busca por Proximidade</h3>
+                    <p>Encontre profissionais próximos a você usando nossa tecnologia de geolocalização</p>
+                  </div>
+                  
+                  <div className="feature-card">
+                    <i className="fas fa-star"></i>
+                    <h3>Qualidade</h3>
+                    <p>Promovemos serviços de qualidade e facilitamos a comunicação entre as partes</p>
+                  </div>
+                </div>
+
+                <div className="warning-box">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <p>
+                    <strong>Importante:</strong> O TEX é uma plataforma de conexão. Não nos responsabilizamos pela qualidade dos serviços prestados ou por disputas entre usuários. Sempre verifique referências e negocie termos diretamente com o profissional.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* Terms Screen */}
+      {currentScreen === 'terms' && (
+        <main className="screen active">
+          <div className="content-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={goBack}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+            
+            <h1 className="page-title">
+              <i className="fas fa-file-contract"></i>
+              Termos de Uso
+            </h1>
+            
+            <div className="terms-content">
+              <div className="terms-section">
+                <h2><i className="fas fa-check-circle"></i>Aceitação dos Termos</h2>
+                <p>Ao acessar e usar o TEX, você concorda com estes termos de uso. Se você não concordar com qualquer parte destes termos, não use nosso serviço.</p>
+              </div>
+
+              <div className="terms-section">
+                <h2><i className="fas fa-user-check"></i>Uso do Serviço</h2>
+                <p>O TEX é uma plataforma que conecta prestadores de serviços e clientes. Você concorda em:</p>
+                <ul>
+                  <li>Fornecer informações verdadeiras e precisas</li>
+                  <li>Manter suas informações atualizadas</li>
+                  <li>Não usar o serviço para fins ilegais ou não autorizados</li>
+                  <li>Respeitar outros usuários da plataforma</li>
+                </ul>
+              </div>
+
+              <div className="terms-section">
+                <h2><i className="fas fa-exclamation-triangle"></i>Responsabilidades</h2>
+                <p>O TEX <span className="highlight">não se responsabiliza</span> por:</p>
+                <ul>
+                  <li>Qualidade dos serviços prestados pelos profissionais</li>
+                  <li>Disputas entre usuários da plataforma</li>
+                  <li>Perdas ou danos resultantes do uso da plataforma</li>
+                  <li>Veracidade das informações fornecidas pelos usuários</li>
+                </ul>
+              </div>
+
+              <div className="terms-section">
+                <h2><i className="fas fa-lock"></i>Privacidade</h2>
+                <p>Protegemos seus dados de acordo com nossa política de privacidade. Ao usar o TEX, você concorda com nossa coleta e uso de informações conforme descrito em nossa política.</p>
+              </div>
+
+              <div className="terms-section coming-soon">
+                <h2><i className="fas fa-edit"></i>Modificações<span className="badge">Em Breve</span></h2>
+                <p>Reservamos o direito de modificar estes termos a qualquer momento. Alterações significativas serão notificadas aos usuários através da plataforma.</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
       <footer className="bg-black/80 backdrop-filter blur-md p-6 text-center">
         <nav className="footer-nav">
           <button onClick={handleBackToHome}>Home</button>
           <button onClick={() => navigateToScreen('feed')}>Feed</button>
-          <a href="src/pages/about.html">Sobre</a>
-          <a href="src/pages/terms.html">Termos</a>
+          <button onClick={() => navigateToScreen('about')}>Sobre</button>
+          <button onClick={() => navigateToScreen('terms')}>Termos</button>
         </nav>
         <div className="copyright">
           © 2025 TrampoExpress. Todos os direitos reservados.
