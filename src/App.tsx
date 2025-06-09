@@ -486,9 +486,9 @@ function App() {
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
-      {/* Logo TEX fixo no canto superior direito */}
+      {/* Logo TEX fixo no canto superior ESQUERDO */}
       <div 
-        className={`fixed top-6 right-6 z-50 cursor-pointer transition-all duration-500 ease-out ${
+        className={`fixed top-6 left-6 z-50 cursor-pointer transition-all duration-500 ease-out ${
           isScrolled 
             ? 'tex-logo-scrolled' 
             : 'tex-logo-normal'
