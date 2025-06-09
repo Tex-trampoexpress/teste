@@ -541,8 +541,16 @@ function App() {
       
       <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
         <div 
-          className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent cursor-pointer"
+          className="text-2xl font-bold cursor-pointer"
           onClick={handleBackToHome}
+          style={{
+            background: 'linear-gradient(45deg, #FFD700, #00FFFF)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            fontWeight: '900',
+            letterSpacing: '1px'
+          }}
         >
           TEX
         </div>
