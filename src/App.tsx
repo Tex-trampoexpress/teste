@@ -41,6 +41,7 @@ function App() {
   const [searchRadius, setSearchRadius] = useState(10) // km
   const [sortByDistance, setSortByDistance] = useState(false)
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
+  const [editingProfile, setEditingProfile] = useState<Usuario | null>(null)
 
   const dbService = new DatabaseService()
 
@@ -437,10 +438,26 @@ function App() {
       // Gerar um ID único baseado no número de telefone
       const userId = `user_${phone.replace(/\D/g, '')}`
       
-      // Simular login - criar um usuário temporário
-      setCurrentUser({ id: userId, phone: phone })
+      // Verificar se já existe um perfil para este usuário
+      const existingUser = usuarios.find(u => u.id === userId)
       
-      navigateToScreen('profile')
+      if (existingUser) {
+        // Se já existe, carregar dados do perfil existente
+        setCurrentUser({ id: userId, phone: phone })
+        setName(existingUser.nome || '')
+        setDescription(existingUser.descricao || '')
+        setLocation(existingUser.localizacao || '')
+        setTags(existingUser.tags || [])
+        setStatus(existingUser.status || 'available')
+        setPhotoPreview(existingUser.foto_url || '')
+        
+        // Ir direto para o perfil do usuário (visualização)
+        navigateToScreen('myProfile')
+      } else {
+        // Se não existe, criar novo perfil
+        setCurrentUser({ id: userId, phone: phone })
+        navigateToScreen('profile')
+      }
     } catch (error) {
       console.error('Erro no login:', error)
       alert('Erro ao fazer login. Tente novamente.')
@@ -515,7 +532,7 @@ function App() {
     try {
       if (!currentUser) throw new Error('Usuário não autenticado')
 
-      let fotoUrl = ''
+      let fotoUrl = photoPreview
       if (photoFile) {
         // Para simplificar, vamos usar uma URL de placeholder
         // Em produção, você faria upload real da imagem
@@ -533,19 +550,134 @@ function App() {
         localizacao: location,
         status,
         latitude: userLocation?.lat || null,
-        longitude: userLocation?.lng || null
+        longitude: userLocation?.lng || null,
+        criado_em: new Date().toISOString()
       }
 
       console.log('Salvando usuário:', novoUsuario)
 
-      // Adicionar à lista local (simulando salvamento no banco)
-      setUsuarios(prev => [novoUsuario, ...prev])
+      // Atualizar ou adicionar à lista local
+      setUsuarios(prev => {
+        const existingIndex = prev.findIndex(u => u.id === currentUser.id)
+        if (existingIndex >= 0) {
+          // Atualizar usuário existente
+          const updated = [...prev]
+          updated[existingIndex] = novoUsuario
+          return updated
+        } else {
+          // Adicionar novo usuário
+          return [novoUsuario, ...prev]
+        }
+      })
 
       alert('Perfil salvo com sucesso!')
-      navigateToScreen('feed')
+      navigateToScreen('myProfile')
     } catch (error) {
       console.error('Erro ao salvar perfil:', error)
       alert('Erro ao salvar perfil. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEditProfile = () => {
+    if (!currentUser) return
+    
+    // Encontrar o perfil atual do usuário
+    const userProfile = usuarios.find(u => u.id === currentUser.id)
+    if (userProfile) {
+      setEditingProfile(userProfile)
+      // Carregar dados nos campos de edição
+      setName(userProfile.nome || '')
+      setDescription(userProfile.descricao || '')
+      setLocation(userProfile.localizacao || '')
+      setTags(userProfile.tags || [])
+      setStatus(userProfile.status || 'available')
+      setPhotoPreview(userProfile.foto_url || '')
+      setPhotoFile(null)
+      
+      navigateToScreen('editProfile')
+    }
+  }
+
+  const handleUpdateProfile = async () => {
+    if (!editingProfile || !currentUser) return
+
+    if (!name.trim()) {
+      alert('Por favor, preencha seu nome')
+      return
+    }
+    
+    if (!tags || tags.length === 0) {
+      alert('Por favor, adicione pelo menos uma tag que descreva seu serviço')
+      return
+    }
+
+    setLoading(true)
+    try {
+      let fotoUrl = photoPreview
+      if (photoFile) {
+        fotoUrl = URL.createObjectURL(photoFile)
+      }
+
+      const updatedUser = {
+        ...editingProfile,
+        nome: name,
+        descricao: description,
+        localizacao: location,
+        tags,
+        status,
+        foto_url: fotoUrl,
+        latitude: userLocation?.lat || editingProfile.latitude,
+        longitude: userLocation?.lng || editingProfile.longitude,
+        atualizado_em: new Date().toISOString()
+      }
+
+      // Atualizar na lista local
+      setUsuarios(prev => 
+        prev.map(u => u.id === currentUser.id ? updatedUser : u)
+      )
+
+      setEditingProfile(null)
+      alert('Perfil atualizado com sucesso!')
+      navigateToScreen('myProfile')
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error)
+      alert('Erro ao atualizar perfil. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteProfile = async () => {
+    if (!currentUser) return
+
+    const confirmDelete = confirm('Tem certeza que deseja excluir seu perfil? Esta ação não pode ser desfeita.')
+    if (!confirmDelete) return
+
+    setLoading(true)
+    try {
+      // Remover da lista local
+      setUsuarios(prev => prev.filter(u => u.id !== currentUser.id))
+      
+      // Limpar dados do usuário
+      setCurrentUser(null)
+      setName('')
+      setDescription('')
+      setLocation('')
+      setTags([])
+      setStatus('available')
+      setPhotoPreview('')
+      setPhotoFile(null)
+      setPhone('')
+
+      alert('Perfil excluído com sucesso!')
+      setCurrentScreen('home')
+      setNavigationHistory(['home'])
+      window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
+    } catch (error) {
+      console.error('Erro ao excluir perfil:', error)
+      alert('Erro ao excluir perfil. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -607,6 +739,15 @@ function App() {
         >
           TEX
         </div>
+        {/* Botão de perfil se usuário logado */}
+        {currentUser && (
+          <button 
+            onClick={() => navigateToScreen('myProfile')}
+            className="profile-header-btn"
+          >
+            <i className="fas fa-user-circle"></i>
+          </button>
+        )}
       </header>
 
       {/* Home Screen */}
@@ -660,7 +801,7 @@ function App() {
               onClick={() => navigateToScreen('verify')}
             >
               <i className="fab fa-whatsapp"></i>
-              Entrar com WhatsApp
+              {currentUser ? 'Acessar Meu Perfil' : 'Entrar com WhatsApp'}
             </button>
           </div>
         </main>
@@ -850,6 +991,246 @@ function App() {
               >
                 {loading ? 'Salvando...' : 'Salvar Perfil'}
               </button>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* My Profile Screen */}
+      {currentScreen === 'myProfile' && currentUser && (
+        <main className="screen active">
+          <div className="content-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={goBack}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+            
+            <h1 className="page-title">
+              <i className="fas fa-user"></i>
+              Meu Perfil
+            </h1>
+            
+            {(() => {
+              const userProfile = usuarios.find(u => u.id === currentUser.id)
+              if (!userProfile) {
+                return (
+                  <div className="no-profile">
+                    <p>Perfil não encontrado. Crie seu perfil primeiro.</p>
+                    <button 
+                      className="create-profile-btn"
+                      onClick={() => navigateToScreen('profile')}
+                    >
+                      Criar Perfil
+                    </button>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="my-profile-content">
+                  <div className="profile-card">
+                    <div className="profile-header">
+                      <div className="profile-pic">
+                        {userProfile.foto_url ? (
+                          <img src={userProfile.foto_url} alt={userProfile.nome || 'Usuário'} />
+                        ) : (
+                          <div className="w-full h-full bg-gray-600 rounded-full flex items-center justify-center">
+                            <i className="fas fa-user text-2xl"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="profile-info">
+                        <h2>{userProfile.nome}</h2>
+                        {userProfile.descricao && (
+                          <p className="description">{userProfile.descricao}</p>
+                        )}
+                        {userProfile.localizacao && (
+                          <p className="text-sm text-gray-400">📍 {userProfile.localizacao}</p>
+                        )}
+                        <span className={`status ${userProfile.status === 'available' ? 'status-available' : 'status-busy'}`}>
+                          {userProfile.status === 'available' ? 'Disponível' : 'Ocupado'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {userProfile.tags && userProfile.tags.length > 0 && (
+                      <div className="hashtags">
+                        {userProfile.tags.map(tag => (
+                          <span key={tag}>#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="profile-stats">
+                      <div className="stat">
+                        <i className="fas fa-calendar-alt"></i>
+                        <span>Criado em {new Date(userProfile.criado_em || '').toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      <div className="stat">
+                        <i className="fab fa-whatsapp"></i>
+                        <span>{formatPhoneDisplay(userProfile.whatsapp || '')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="profile-actions">
+                    <button 
+                      className="edit-profile-btn"
+                      onClick={handleEditProfile}
+                    >
+                      <i className="fas fa-edit"></i>
+                      Editar Perfil
+                    </button>
+                    
+                    <button 
+                      className="delete-profile-btn"
+                      onClick={handleDeleteProfile}
+                    >
+                      <i className="fas fa-trash"></i>
+                      Excluir Perfil
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </main>
+      )}
+
+      {/* Edit Profile Screen */}
+      {currentScreen === 'editProfile' && editingProfile && (
+        <main className="screen active">
+          <div className="form-container">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={goBack}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+            <h2>Editar Perfil</h2>
+            <div className="profile-setup">
+              <div className="photo-upload">
+                <div className="photo-preview">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Profile preview" />
+                  ) : (
+                    <i className="fas fa-camera"></i>
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  id="edit-photo-input" 
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                />
+                <label htmlFor="edit-photo-input">Alterar Foto</label>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="edit-name">Nome</label>
+                <input 
+                  type="text" 
+                  id="edit-name" 
+                  placeholder="Seu nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-description">Descrição</label>
+                <textarea 
+                  id="edit-description" 
+                  placeholder="Descreva seus serviços..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-location">Localização</label>
+                <input 
+                  type="text" 
+                  id="edit-location" 
+                  placeholder="Sua cidade/região"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Tags de Serviços (até 3)</label>
+                <div className="tags-input">
+                  <input 
+                    type="text" 
+                    placeholder="Digite uma palavra e pressione Enter"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={handleTagKeyPress}
+                    disabled={tags.length >= 3}
+                  />
+                  <div className="tags-container">
+                    {tags.map(tag => (
+                      <div key={tag} className="tag">
+                        #{tag}
+                        <i 
+                          className="fas fa-times" 
+                          onClick={() => removeTag(tag)}
+                        ></i>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Status</label>
+                <div className="status-toggle">
+                  <button 
+                    className={`status-btn ${status === 'available' ? 'active' : ''}`}
+                    onClick={() => setStatus('available')}
+                  >
+                    <span className="dot available"></span>
+                    Disponível
+                  </button>
+                  <button 
+                    className={`status-btn ${status === 'busy' ? 'active' : ''}`}
+                    onClick={() => setStatus('busy')}
+                  >
+                    <span className="dot busy"></span>
+                    Ocupado
+                  </button>
+                </div>
+              </div>
+
+              <div className="edit-actions">
+                <button 
+                  className="save-profile-btn"
+                  onClick={handleUpdateProfile}
+                  disabled={loading}
+                >
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+                
+                <button 
+                  className="cancel-edit-btn"
+                  onClick={() => {
+                    setEditingProfile(null)
+                    goBack()
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
         </main>
