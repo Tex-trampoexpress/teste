@@ -40,8 +40,69 @@ function App() {
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [searchRadius, setSearchRadius] = useState(10) // km
   const [sortByDistance, setSortByDistance] = useState(false)
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
 
   const dbService = new DatabaseService()
+
+  // Gerenciar histórico de navegação para botão voltar nativo
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Quando o usuário aperta o botão voltar nativo
+      const state = event.state
+      if (state && state.screen) {
+        setCurrentScreen(state.screen)
+        // Atualizar histórico local removendo a tela atual
+        setNavigationHistory(prev => {
+          const newHistory = [...prev]
+          if (newHistory.length > 1) {
+            newHistory.pop()
+          }
+          return newHistory
+        })
+      } else {
+        // Se não há estado, voltar para home
+        setCurrentScreen('home')
+        setNavigationHistory(['home'])
+      }
+    }
+
+    // Adicionar listener para o botão voltar nativo
+    window.addEventListener('popstate', handlePopState)
+
+    // Configurar estado inicial
+    if (window.history.state === null) {
+      window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  // Função para navegar entre telas com suporte ao botão voltar nativo
+  const navigateToScreen = (screen: string) => {
+    // Atualizar histórico local
+    setNavigationHistory(prev => [...prev, screen])
+    
+    // Adicionar ao histórico do navegador
+    window.history.pushState({ screen }, '', window.location.pathname)
+    
+    // Atualizar tela atual
+    setPreviousScreen(currentScreen)
+    setCurrentScreen(screen)
+  }
+
+  // Função para voltar programaticamente (botões da interface)
+  const goBack = () => {
+    if (navigationHistory.length > 1) {
+      // Usar o histórico nativo do navegador
+      window.history.back()
+    } else {
+      // Fallback para home se não há histórico
+      setCurrentScreen('home')
+      setNavigationHistory(['home'])
+    }
+  }
 
   // Criar usuários de exemplo com coordenadas de Florianópolis
   const createExampleUsers = () => {
@@ -379,7 +440,7 @@ function App() {
       // Simular login - criar um usuário temporário
       setCurrentUser({ id: userId, phone: phone })
       
-      setCurrentScreen('profile')
+      navigateToScreen('profile')
     } catch (error) {
       console.error('Erro no login:', error)
       alert('Erro ao fazer login. Tente novamente.')
@@ -481,7 +542,7 @@ function App() {
       setUsuarios(prev => [novoUsuario, ...prev])
 
       alert('Perfil salvo com sucesso!')
-      setCurrentScreen('feed')
+      navigateToScreen('feed')
     } catch (error) {
       console.error('Erro ao salvar perfil:', error)
       alert('Erro ao salvar perfil. Tente novamente.')
@@ -515,31 +576,23 @@ function App() {
   const handleSearch = (term: string) => {
     setSearchTerm(term)
     if (term.trim() !== '') {
-      setPreviousScreen(currentScreen)
-      setCurrentScreen('feed')
+      navigateToScreen('feed')
     }
   }
 
   const handleBackToHome = () => {
     setSearchTerm('')
+    // Limpar histórico e ir direto para home
+    setNavigationHistory(['home'])
+    window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
     setCurrentScreen('home')
-  }
-
-  const handleBackToPrevious = () => {
-    setSearchTerm('')
-    setCurrentScreen(previousScreen)
-  }
-
-  const navigateToScreen = (screen: string) => {
-    setPreviousScreen(currentScreen)
-    setCurrentScreen(screen)
   }
 
   return (
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
-      <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
+      <header className="fixed top-0 w-full bg-black/80 backdrop-filter blur-md p-6 flex justify-between items-center z-50">
         <div 
           className="text-2xl font-bold cursor-pointer"
           onClick={handleBackToHome}
@@ -620,7 +673,7 @@ function App() {
             <div className="back-button-container">
               <button 
                 className="back-button"
-                onClick={handleBackToPrevious}
+                onClick={goBack}
               >
                 <i className="fas fa-arrow-left"></i>
                 Voltar
@@ -660,7 +713,7 @@ function App() {
             <div className="back-button-container">
               <button 
                 className="back-button"
-                onClick={handleBackToPrevious}
+                onClick={goBack}
               >
                 <i className="fas fa-arrow-left"></i>
                 Voltar
@@ -990,7 +1043,7 @@ function App() {
         </main>
       )}
 
-      <footer className="bg-black/80 backdrop-blur-md p-6 text-center">
+      <footer className="bg-black/80 backdrop-filter blur-md p-6 text-center">
         <nav className="footer-nav">
           <button onClick={handleBackToHome}>Home</button>
           <button onClick={() => navigateToScreen('feed')}>Feed</button>
