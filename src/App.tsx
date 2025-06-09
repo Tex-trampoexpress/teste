@@ -40,157 +40,434 @@ function App() {
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [searchRadius, setSearchRadius] = useState(10) // km
   const [sortByDistance, setSortByDistance] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
 
   const dbService = new DatabaseService()
 
-  // Detectar scroll para efeito do logo
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-      setIsScrolled(scrollTop > 50)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  // Criar usuários de exemplo com coordenadas
-  const createExampleUsers = () => {
-    const exemplos = [
+  // Criar usuários de Florianópolis com coordenadas reais
+  const createFlorianopolisUsers = () => {
+    const profissionais = [
+      // CENTRO DE FLORIANÓPOLIS
       {
-        id: 'exemplo1',
-        nome: 'João Silva',
-        whatsapp: '11999887766',
-        descricao: 'Eletricista com 10 anos de experiência. Atendo residencial e comercial com garantia.',
-        tags: ['eletricista', 'residencial', 'comercial'],
-        foto_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Vila Madalena',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -23.5505,
-        longitude: -46.6333
-      },
-      {
-        id: 'exemplo2',
-        nome: 'Maria Santos',
-        whatsapp: '11988776655',
-        descricao: 'Designer gráfica freelancer. Criação de logos, cartões e materiais publicitários.',
-        tags: ['design', 'logo', 'publicidade'],
-        foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Pinheiros',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -23.5629,
-        longitude: -46.7006
-      },
-      {
-        id: 'exemplo3',
-        nome: 'Carlos Pereira',
-        whatsapp: '11977665544',
-        descricao: 'Encanador especializado em vazamentos e instalações. Atendimento 24h emergencial.',
-        tags: ['encanador', 'vazamento', '24h'],
-        foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Itaim Bibi',
-        status: 'busy',
-        criado_em: new Date().toISOString(),
-        latitude: -23.5751,
-        longitude: -46.6755
-      },
-      {
-        id: 'exemplo4',
-        nome: 'Ana Costa',
-        whatsapp: '11966554433',
-        descricao: 'Professora particular de matemática e física. Ensino fundamental e médio.',
-        tags: ['professora', 'matemática', 'física'],
-        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Moema',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -23.6014,
-        longitude: -46.6658
-      },
-      {
-        id: 'exemplo5',
-        nome: 'Pedro Oliveira',
-        whatsapp: '11955443322',
-        descricao: 'Desenvolvedor web especializado em React e Node.js. Criação de sites e sistemas.',
-        tags: ['programador', 'website', 'sistema'],
-        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Vila Olímpia',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -23.5955,
-        longitude: -46.6890
-      },
-      {
-        id: 'exemplo6',
-        nome: 'Lucia Fernandes',
-        whatsapp: '11944332211',
-        descricao: 'Cabeleireira e manicure. Atendimento domiciliar e no salão. Especialista em cortes modernos.',
-        tags: ['cabeleireira', 'manicure', 'domiciliar'],
-        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Jardins',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -23.5613,
-        longitude: -46.6565
-      },
-      {
-        id: 'exemplo7',
-        nome: 'Roberto Machado',
-        whatsapp: '11933221100',
-        descricao: 'Mecânico automotivo com 15 anos de experiência. Especialista em carros nacionais e importados.',
-        tags: ['mecânico', 'automotivo', 'carros'],
-        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Santana',
-        status: 'busy',
-        criado_em: new Date().toISOString(),
-        latitude: -23.5077,
-        longitude: -46.6252
-      },
-      {
-        id: 'exemplo8',
-        nome: 'Fernanda Lima',
-        whatsapp: '11922110099',
-        descricao: 'Personal trainer e nutricionista. Treinos personalizados e acompanhamento nutricional.',
-        tags: ['personal', 'nutrição', 'fitness'],
-        foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Brooklin',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -23.6365,
-        longitude: -46.6918
-      },
-      {
-        id: 'exemplo9',
-        nome: 'Marcos Souza',
-        whatsapp: '11911009988',
-        descricao: 'Pintor residencial e comercial. Trabalho com texturas, grafiato e pintura decorativa.',
+        id: 'floripa1',
+        nome: 'Carlos Mendes',
+        whatsapp: '48999887766',
+        descricao: 'Pintor residencial e comercial com 15 anos de experiência. Especialista em texturas, grafiato e pintura decorativa. Atendo toda Grande Florianópolis.',
         tags: ['pintor', 'textura', 'decoração'],
         foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Liberdade',
+        localizacao: 'Centro, Florianópolis - SC',
         status: 'available',
         criado_em: new Date().toISOString(),
-        latitude: -23.5587,
-        longitude: -46.6347
+        latitude: -27.5954,
+        longitude: -48.5480
       },
       {
-        id: 'exemplo10',
-        nome: 'Juliana Rocha',
-        whatsapp: '11900998877',
-        descricao: 'Fotógrafa profissional. Casamentos, eventos, ensaios e fotos corporativas.',
-        tags: ['fotógrafa', 'casamento', 'eventos'],
-        foto_url: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São Paulo, SP - Perdizes',
+        id: 'floripa2',
+        nome: 'Marina Silva',
+        whatsapp: '48988776655',
+        descricao: 'Acompanhante executiva discreta e elegante. Atendo eventos sociais, jantares de negócios e viagens. Formada em administração.',
+        tags: ['acompanhante', 'executiva', 'eventos'],
+        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Centro, Florianópolis - SC',
         status: 'available',
         criado_em: new Date().toISOString(),
-        latitude: -23.5365,
-        longitude: -46.6890
+        latitude: -27.5969,
+        longitude: -48.5495
+      },
+      
+      // TRINDADE
+      {
+        id: 'floripa3',
+        nome: 'João Pedreiro',
+        whatsapp: '48977665544',
+        descricao: 'Pedreiro especializado em construção e reforma. Trabalho com alvenaria, reboco, azulejo e pisos. 20 anos de experiência na construção civil.',
+        tags: ['pedreiro', 'construção', 'reforma'],
+        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Trindade, Florianópolis - SC',
+        status: 'busy',
+        criado_em: new Date().toISOString(),
+        latitude: -27.6021,
+        longitude: -48.5194
+      },
+      {
+        id: 'floripa4',
+        nome: 'Ana Professora',
+        whatsapp: '48966554433',
+        descricao: 'Professora particular de matemática, física e química. Atendo ensino fundamental, médio e pré-vestibular. Aulas presenciais e online.',
+        tags: ['professora', 'matemática', 'vestibular'],
+        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Trindade, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.6010,
+        longitude: -48.5180
+      },
+
+      // LAGOA DA CONCEIÇÃO
+      {
+        id: 'floripa5',
+        nome: 'Pedro Desenvolvedor',
+        whatsapp: '48955443322',
+        descricao: 'Desenvolvedor full-stack especializado em React, Node.js e Python. Criação de sites, e-commerce e sistemas web. Trabalho remoto e presencial.',
+        tags: ['programador', 'website', 'ecommerce'],
+        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Lagoa da Conceição, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.6109,
+        longitude: -48.4577
+      },
+      {
+        id: 'floripa6',
+        nome: 'Lucia Cabeleireira',
+        whatsapp: '48944332211',
+        descricao: 'Cabeleireira e designer de sobrancelhas. Especialista em cortes modernos, coloração e tratamentos capilares. Atendimento domiciliar disponível.',
+        tags: ['cabeleireira', 'sobrancelha', 'domiciliar'],
+        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Lagoa da Conceição, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.6095,
+        longitude: -48.4590
+      },
+
+      // CANASVIEIRAS
+      {
+        id: 'floripa7',
+        nome: 'Roberto Eletricista',
+        whatsapp: '48933221100',
+        descricao: 'Eletricista residencial e predial. Instalações elétricas, manutenção, quadros de força e automação residencial. Atendimento 24h para emergências.',
+        tags: ['eletricista', 'instalação', '24h'],
+        foto_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Canasvieiras, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4389,
+        longitude: -48.4644
+      },
+      {
+        id: 'floripa8',
+        nome: 'Fernanda Personal',
+        whatsapp: '48922110099',
+        descricao: 'Personal trainer e nutricionista esportiva. Treinos personalizados, acompanhamento nutricional e consultoria fitness. Atendo em casa ou academia.',
+        tags: ['personal', 'nutrição', 'fitness'],
+        foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Canasvieiras, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4375,
+        longitude: -48.4630
+      },
+
+      // INGLESES
+      {
+        id: 'floripa9',
+        nome: 'Marcos Encanador',
+        whatsapp: '48911009988',
+        descricao: 'Encanador especializado em vazamentos, desentupimentos e instalações hidráulicas. Serviço de emergência 24h. Trabalho com garantia.',
+        tags: ['encanador', 'vazamento', 'emergência'],
+        foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Ingleses, Florianópolis - SC',
+        status: 'busy',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4308,
+        longitude: -48.3917
+      },
+      {
+        id: 'floripa10',
+        nome: 'Juliana Fotógrafa',
+        whatsapp: '48900998877',
+        descricao: 'Fotógrafa profissional especializada em casamentos, ensaios e eventos. Trabalho com fotografia social e corporativa. Portfolio disponível.',
+        tags: ['fotógrafa', 'casamento', 'ensaios'],
+        foto_url: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Ingleses, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4295,
+        longitude: -48.3905
+      },
+
+      // BARRA DA LAGOA
+      {
+        id: 'floripa11',
+        nome: 'Diego Surfista',
+        whatsapp: '48899887766',
+        descricao: 'Instrutor de surf e stand up paddle. Aulas para iniciantes e avançados. Aluguel de pranchas e equipamentos. Conheço os melhores picos da ilha.',
+        tags: ['surf', 'sup', 'instrutor'],
+        foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Barra da Lagoa, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5742,
+        longitude: -48.4217
+      },
+      {
+        id: 'floripa12',
+        nome: 'Camila Massagista',
+        whatsapp: '48888776655',
+        descricao: 'Massoterapeuta especializada em massagem relaxante, terapêutica e drenagem linfática. Atendimento domiciliar e em clínica própria.',
+        tags: ['massagem', 'terapêutica', 'drenagem'],
+        foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Barra da Lagoa, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5730,
+        longitude: -48.4205
+      },
+
+      // JURERÊ
+      {
+        id: 'floripa13',
+        nome: 'Ricardo Chef',
+        whatsapp: '48877665544',
+        descricao: 'Chef de cozinha especializado em culinária brasileira e internacional. Serviços de buffet, jantares especiais e aulas de culinária.',
+        tags: ['chef', 'buffet', 'culinária'],
+        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Jurerê, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4542,
+        longitude: -48.4992
+      },
+      {
+        id: 'floripa14',
+        nome: 'Bianca Arquiteta',
+        whatsapp: '48866554433',
+        descricao: 'Arquiteta e urbanista especializada em projetos residenciais e comerciais. Design de interiores, reformas e acompanhamento de obras.',
+        tags: ['arquiteta', 'design', 'interiores'],
+        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Jurerê, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4555,
+        longitude: -48.5005
+      },
+
+      // SANTO ANTÔNIO DE LISBOA
+      {
+        id: 'floripa15',
+        nome: 'Gustavo Jardineiro',
+        whatsapp: '48855443322',
+        descricao: 'Paisagista e jardineiro especializado em jardins residenciais e comerciais. Manutenção, poda, plantio e projetos paisagísticos.',
+        tags: ['jardineiro', 'paisagismo', 'poda'],
+        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Santo Antônio de Lisboa, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5008,
+        longitude: -48.5447
+      },
+      {
+        id: 'floripa16',
+        nome: 'Patrícia Advogada',
+        whatsapp: '48844332211',
+        descricao: 'Advogada especializada em direito civil, trabalhista e previdenciário. Consultoria jurídica, contratos e acompanhamento processual.',
+        tags: ['advogada', 'civil', 'trabalhista'],
+        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Santo Antônio de Lisboa, Florianópolis - SC',
+        status: 'busy',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4995,
+        longitude: -48.5435
+      },
+
+      // SAMBAQUI
+      {
+        id: 'floripa17',
+        nome: 'André Mecânico',
+        whatsapp: '48833221100',
+        descricao: 'Mecânico automotivo especializado em carros nacionais e importados. Diagnóstico computadorizado, manutenção preventiva e corretiva.',
+        tags: ['mecânico', 'automotivo', 'diagnóstico'],
+        foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Sambaqui, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4889,
+        longitude: -48.5342
+      },
+      {
+        id: 'floripa18',
+        nome: 'Carla Psicóloga',
+        whatsapp: '48822110099',
+        descricao: 'Psicóloga clínica especializada em terapia cognitivo-comportamental. Atendimento presencial e online para adolescentes e adultos.',
+        tags: ['psicóloga', 'terapia', 'online'],
+        foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Sambaqui, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4875,
+        longitude: -48.5330
+      },
+
+      // CÓRREGO GRANDE
+      {
+        id: 'floripa19',
+        nome: 'Felipe Veterinário',
+        whatsapp: '48811009988',
+        descricao: 'Médico veterinário especializado em clínica geral e cirurgia. Atendimento domiciliar disponível. Cuidado com cães, gatos e pets exóticos.',
+        tags: ['veterinário', 'domiciliar', 'cirurgia'],
+        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Córrego Grande, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5889,
+        longitude: -48.5056
+      },
+      {
+        id: 'floripa20',
+        nome: 'Renata Dentista',
+        whatsapp: '48800998877',
+        descricao: 'Cirurgiã-dentista especializada em odontologia estética e implantes. Clareamento, facetas, próteses e tratamentos preventivos.',
+        tags: ['dentista', 'estética', 'implantes'],
+        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Córrego Grande, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5875,
+        longitude: -48.5045
+      },
+
+      // PANTANO DO SUL
+      {
+        id: 'floripa21',
+        nome: 'Thiago Pescador',
+        whatsapp: '48799887766',
+        descricao: 'Pescador artesanal e guia de pesca esportiva. Passeios de barco, pesca oceânica e venda de peixes frescos. Conheço os melhores pesqueiros.',
+        tags: ['pescador', 'pesca', 'passeios'],
+        foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Pantano do Sul, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.7808,
+        longitude: -48.5089
+      },
+      {
+        id: 'floripa22',
+        nome: 'Isabela Nutricionista',
+        whatsapp: '48788776655',
+        descricao: 'Nutricionista especializada em nutrição esportiva e emagrecimento. Consultas presenciais e online, planos alimentares personalizados.',
+        tags: ['nutricionista', 'esportiva', 'emagrecimento'],
+        foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Pantano do Sul, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.7795,
+        longitude: -48.5075
+      },
+
+      // RIBEIRÃO DA ILHA
+      {
+        id: 'floripa23',
+        nome: 'Eduardo Marceneiro',
+        whatsapp: '48777665544',
+        descricao: 'Marceneiro especializado em móveis sob medida e restauração. Trabalho com madeira maciça, MDF e compensado. Projetos residenciais e comerciais.',
+        tags: ['marceneiro', 'móveis', 'restauração'],
+        foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Ribeirão da Ilha, Florianópolis - SC',
+        status: 'busy',
+        criado_em: new Date().toISOString(),
+        latitude: -27.7089,
+        longitude: -48.5647
+      },
+      {
+        id: 'floripa24',
+        nome: 'Vanessa Esteticista',
+        whatsapp: '48766554433',
+        descricao: 'Esteticista facial e corporal. Limpeza de pele, tratamentos anti-idade, massagem modeladora e depilação. Atendimento em clínica própria.',
+        tags: ['esteticista', 'facial', 'corporal'],
+        foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Ribeirão da Ilha, Florianópolis - SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.7075,
+        longitude: -48.5635
+      },
+
+      // REGIÃO CONTINENTAL (SÃO JOSÉ)
+      {
+        id: 'floripa25',
+        nome: 'Bruno Soldador',
+        whatsapp: '48755443322',
+        descricao: 'Soldador especializado em estruturas metálicas, portões, grades e serralheria em geral. Trabalho com solda elétrica, MIG e TIG.',
+        tags: ['soldador', 'serralheria', 'estruturas'],
+        foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'São José, SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5969,
+        longitude: -48.6394
+      },
+      {
+        id: 'floripa26',
+        nome: 'Larissa Designer',
+        whatsapp: '48744332211',
+        descricao: 'Designer gráfica freelancer especializada em identidade visual, marketing digital e criação de conteúdo. Trabalho com pequenas e médias empresas.',
+        tags: ['designer', 'marketing', 'identidade'],
+        foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'São José, SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.5955,
+        longitude: -48.6380
+      },
+
+      // PALHOÇA
+      {
+        id: 'floripa27',
+        nome: 'Rafael Contador',
+        whatsapp: '48733221100',
+        descricao: 'Contador especializado em contabilidade para pequenas empresas e MEI. Abertura de empresa, declaração de IR e consultoria fiscal.',
+        tags: ['contador', 'mei', 'fiscal'],
+        foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Palhoça, SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.6386,
+        longitude: -48.6703
+      },
+      {
+        id: 'floripa28',
+        nome: 'Priscila Manicure',
+        whatsapp: '48722110099',
+        descricao: 'Manicure e pedicure especializada em nail art e alongamento de unhas. Atendimento domiciliar e em salão próprio. Produtos de qualidade.',
+        tags: ['manicure', 'nailart', 'alongamento'],
+        foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Palhoça, SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.6375,
+        longitude: -48.6690
+      },
+
+      // BIGUAÇU
+      {
+        id: 'floripa29',
+        nome: 'Leandro Motorista',
+        whatsapp: '48711009988',
+        descricao: 'Motorista particular e transfer para aeroporto. Veículo próprio, ar condicionado, viagens para outras cidades. Disponível 24h.',
+        tags: ['motorista', 'transfer', 'aeroporto'],
+        foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Biguaçu, SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4947,
+        longitude: -48.6589
+      },
+      {
+        id: 'floripa30',
+        nome: 'Tatiane Pedagoga',
+        whatsapp: '48700998877',
+        descricao: 'Pedagoga especializada em reforço escolar e alfabetização. Aulas particulares para crianças com dificuldades de aprendizagem.',
+        tags: ['pedagoga', 'reforço', 'alfabetização'],
+        foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        localizacao: 'Biguaçu, SC',
+        status: 'available',
+        criado_em: new Date().toISOString(),
+        latitude: -27.4935,
+        longitude: -48.6575
       }
     ]
     
-    return exemplos
+    return profissionais
   }
 
   // Função para calcular distância entre dois pontos (Haversine formula)
@@ -227,13 +504,13 @@ function App() {
         setLocationPermission('denied')
         setLoading(false)
         
-        // Usar localização padrão (centro de São Paulo) para demonstração
-        setUserLocation({ lat: -23.5505, lng: -46.6333 })
+        // Usar localização padrão (centro de Florianópolis) para demonstração
+        setUserLocation({ lat: -27.5954, lng: -48.5480 })
       },
       {
-        enableHighAccuracy: false, // Mudado para false para ser mais rápido
-        timeout: 15000, // Reduzido para 15 segundos
-        maximumAge: 600000 // 10 minutos
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 300000
       }
     )
   }
@@ -252,7 +529,7 @@ function App() {
         )
         return { ...user, distancia: distance }
       }
-      return { ...user, distancia: 999 } // Usuários sem localização ficam por último
+      return { ...user, distancia: 999 }
     })
 
     // Filtrar por raio se especificado
@@ -265,10 +542,10 @@ function App() {
   }
 
   useEffect(() => {
-    // Carregar usuários de exemplo imediatamente
-    const exampleUsers = createExampleUsers()
-    setUsuarios(exampleUsers)
-    setUsuariosFiltrados(exampleUsers)
+    // Carregar usuários de Florianópolis imediatamente
+    const florianopolisUsers = createFlorianopolisUsers()
+    setUsuarios(florianopolisUsers)
+    setUsuariosFiltrados(florianopolisUsers)
     
     // Tentar carregar usuários do banco também
     loadUsuarios()
@@ -300,7 +577,7 @@ function App() {
   const loadUsuarios = async () => {
     try {
       const data = await DatabaseService.getUsuarios()
-      // Mesclar com usuários de exemplo, evitando duplicatas
+      // Mesclar com usuários de Florianópolis, evitando duplicatas
       setUsuarios(prev => {
         const existingIds = prev.map(u => u.id)
         const newUsers = data.filter(user => !existingIds.includes(user.id))
@@ -308,7 +585,7 @@ function App() {
       })
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
-      // Se der erro, manter apenas os usuários de exemplo
+      // Se der erro, manter apenas os usuários de Florianópolis
     }
   }
 
@@ -350,22 +627,10 @@ function App() {
   const addTag = () => {
     const trimmedTag = tagInput.trim().toLowerCase()
     
-    // Debug: vamos ver o que está acontecendo
-    console.log('Tentando adicionar tag:', trimmedTag)
-    console.log('Tags atuais:', tags)
-    console.log('Condições:', {
-      temTexto: !!trimmedTag,
-      menorQue3: tags.length < 3,
-      naoExiste: !tags.includes(trimmedTag)
-    })
-    
     if (trimmedTag && tags.length < 3 && !tags.includes(trimmedTag)) {
       const newTags = [...tags, trimmedTag]
       setTags(newTags)
       setTagInput('')
-      console.log('Tag adicionada! Novas tags:', newTags)
-    } else {
-      console.log('Tag não foi adicionada')
     }
   }
 
@@ -381,19 +646,13 @@ function App() {
   }
 
   const handleSaveProfile = async () => {
-    console.log('Tentando salvar perfil...')
-    console.log('Nome:', name.trim())
-    console.log('Tags:', tags)
-    console.log('Quantidade de tags:', tags.length)
-    
     if (!name.trim()) {
       alert('Por favor, preencha seu nome')
       return
     }
     
-    // Verificar se há pelo menos uma tag
     if (!tags || tags.length === 0) {
-      alert('Por favor, adicione pelo menos uma tag que descreva seu serviço (ex: pintor, eletricista, designer)')
+      alert('Por favor, adicione pelo menos uma tag que descreva seu serviço')
       return
     }
 
@@ -403,16 +662,13 @@ function App() {
 
       let fotoUrl = ''
       if (photoFile) {
-        // Para simplificar, vamos usar uma URL de placeholder
-        // Em produção, você faria upload real da imagem
         fotoUrl = URL.createObjectURL(photoFile)
       }
 
-      // Criar perfil usando o número de WhatsApp como ID e contato
       const novoUsuario = {
         id: currentUser.id,
         nome: name,
-        whatsapp: phone, // O mesmo número usado para login
+        whatsapp: phone,
         descricao: description,
         tags,
         foto_url: fotoUrl,
@@ -422,9 +678,7 @@ function App() {
         longitude: userLocation?.lng || null
       }
 
-      console.log('Salvando usuário:', novoUsuario)
-
-      // Adicionar à lista local (simulando salvamento no banco)
+      // Adicionar à lista local
       setUsuarios(prev => [novoUsuario, ...prev])
 
       alert('Perfil salvo com sucesso!')
@@ -486,18 +740,29 @@ function App() {
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
-      {/* Logo TEX fixo no canto superior ESQUERDO */}
-      <div 
-        className={`fixed top-6 left-6 z-50 cursor-pointer transition-all duration-500 ease-out ${
-          isScrolled 
-            ? 'tex-logo-scrolled' 
-            : 'tex-logo-normal'
-        }`}
-        onClick={handleBackToHome}
-      >
-        <div className="tex-logo-container">
-          <span className="tex-logo-text">TEX</span>
-          <div className="tex-logo-glow"></div>
+      {/* Logo TEX fixo no canto superior esquerdo */}
+      <div className="fixed top-6 left-6 z-50">
+        <div 
+          className="tex-logo-container tex-logo-normal cursor-pointer transition-all duration-300"
+          onClick={handleBackToHome}
+        >
+          <div className="tex-logo-text">TEX</div>
+        </div>
+      </div>
+
+      {/* Ícones do header no canto superior direito */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-4">
+        <button
+          onClick={getUserLocation}
+          className={`text-xl cursor-pointer hover:scale-110 transition-transform ${
+            locationPermission === 'granted' ? 'text-green-400' : 'text-yellow-400'
+          }`}
+          title={locationPermission === 'granted' ? 'Localização ativa' : 'Ativar localização'}
+        >
+          <i className="fas fa-map-marker-alt"></i>
+        </button>
+        <div className="text-yellow-400 text-xl cursor-pointer hover:scale-110 transition-transform">
+          <i className="fas fa-search"></i>
         </div>
       </div>
 
@@ -533,7 +798,7 @@ function App() {
               {locationPermission === 'granted' && userLocation ? (
                 <p className="text-green-400 text-sm">
                   <i className="fas fa-map-marker-alt"></i>
-                  Localização ativa - encontre profissionais próximos
+                  Localização ativa - encontre profissionais próximos em Florianópolis
                 </p>
               ) : (
                 <button 
@@ -577,7 +842,7 @@ function App() {
               <span className="country-code">+55</span>
               <input 
                 type="tel" 
-                placeholder="(11) 99999-9999"
+                placeholder="(48) 99999-9999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={15}
@@ -657,7 +922,7 @@ function App() {
                 <input 
                   type="text" 
                   id="location" 
-                  placeholder="Sua cidade/região"
+                  placeholder="Sua cidade/região em Florianópolis"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
@@ -836,7 +1101,7 @@ function App() {
             </div>
 
             <h2 className="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-yellow-400 to-cyan-400 bg-clip-text text-transparent">
-              {searchTerm ? 'Resultados da Busca' : sortByDistance ? 'Profissionais Próximos' : 'Profissionais Disponíveis'}
+              {searchTerm ? 'Resultados da Busca' : sortByDistance ? 'Profissionais Próximos' : 'Profissionais em Florianópolis'}
             </h2>
             
             {usuariosFiltrados.length === 0 ? (
@@ -949,18 +1214,17 @@ function App() {
               </button>
             </div>
             
+            <h1 className="page-title">
+              <i className="fas fa-info-circle"></i>
+              Sobre a TEX Conecta
+            </h1>
+            
             <div className="about-content">
-              <h1 className="page-title">
-                <i className="fas fa-info-circle"></i>
-                Sobre a TEX Conecta
-              </h1>
-              
               <div className="content-section">
                 <p className="intro-text">
-                  A TEX Conecta é uma plataforma digital feita para conectar clientes a prestadores de serviços autônomos, 
-                  com foco em praticidade, agilidade e liberdade.
+                  A TEX Conecta é uma plataforma digital feita para conectar clientes a prestadores de serviços autônomos, com foco em praticidade, agilidade e liberdade.
                 </p>
-                
+
                 <div className="features-grid">
                   <div className="feature-card">
                     <i className="fas fa-bolt"></i>
@@ -970,7 +1234,7 @@ function App() {
                   <div className="feature-card">
                     <i className="fas fa-handshake"></i>
                     <h3>Sem burocracia</h3>
-                    <p>Contato direto via WhatsApp</p>
+                    <p>Contato direto entre cliente e profissional</p>
                   </div>
                   <div className="feature-card">
                     <i className="fas fa-users"></i>
@@ -978,12 +1242,11 @@ function App() {
                     <p>Negociação livre entre as partes</p>
                   </div>
                 </div>
-                
+
                 <div className="warning-box">
                   <i className="fas fa-exclamation-triangle"></i>
                   <p>
-                    <strong>Atenção:</strong> A TEX Conecta não intermedia e não assume qualquer responsabilidade 
-                    sobre os serviços prestados. Toda responsabilidade pelo serviço é do profissional contratado.
+                    <strong>Atenção:</strong> A TEX Conecta não intermedia e não assume qualquer responsabilidade sobre os serviços prestados. Toda responsabilidade pelo serviço é do profissional contratado.
                   </p>
                 </div>
               </div>
@@ -1006,80 +1269,62 @@ function App() {
               </button>
             </div>
             
+            <h1 className="page-title">
+              <i className="fas fa-gavel"></i>
+              Termos de Uso
+            </h1>
+            
             <div className="terms-content">
-              <h1 className="page-title">
-                <i className="fas fa-gavel"></i>
-                Termos de Uso
-              </h1>
-              
-              <div className="content-section">
-                <div className="terms-section">
-                  <h2>
-                    <i className="fas fa-link"></i>
-                    Conexão entre as partes
-                  </h2>
-                  <p>A TEX Conecta atua apenas como um canal de contato. Não participa das negociações nem das execuções de serviço.</p>
-                </div>
+              <div className="terms-section">
+                <h2><i className="fas fa-link"></i> Conexão entre as partes</h2>
+                <p>A TEX Conecta atua apenas como um canal de contato. Não participa das negociações nem das execuções de serviço.</p>
+              </div>
 
-                <div className="terms-section">
-                  <h2>
-                    <i className="fas fa-tools"></i>
-                    Prestadores de Serviços
-                  </h2>
-                  <ul>
-                    <li>São autônomos e independentes</li>
-                    <li>Não possuem vínculo com a plataforma</li>
-                    <li>Devem manter seus dados e conduta profissional atualizados</li>
-                  </ul>
-                </div>
+              <div className="terms-section">
+                <h2><i className="fas fa-tools"></i> Prestadores de Serviços</h2>
+                <ul>
+                  <li>São autônomos e independentes</li>
+                  <li>Não possuem vínculo com a plataforma</li>
+                  <li>Devem manter seus dados e conduta profissional atualizados</li>
+                </ul>
+              </div>
 
-                <div className="terms-section">
-                  <h2>
-                    <i className="fas fa-user-friends"></i>
-                    Clientes
-                  </h2>
-                  <ul>
-                    <li>Não precisam se cadastrar</li>
-                    <li>Contratam livremente os serviços</li>
-                    <li>São responsáveis por suas escolhas e avaliações</li>
-                  </ul>
-                </div>
+              <div className="terms-section">
+                <h2><i className="fas fa-users"></i> Clientes</h2>
+                <ul>
+                  <li>Não precisam se cadastrar</li>
+                  <li>Contratam livremente os serviços</li>
+                  <li>São responsáveis por suas escolhas e avaliações</li>
+                </ul>
+              </div>
 
-                <div className="terms-section coming-soon">
-                  <h2>
-                    <i className="fas fa-star"></i>
-                    Sistema de Avaliação
-                    <span className="badge">Em breve</span>
-                  </h2>
-                  <p>Após o serviço, os clientes poderão:</p>
-                  <ul>
-                    <li>✅ Avaliar o prestador com 1 a 5 estrelas</li>
-                    <li>✅ Deixar um comentário sobre a experiência</li>
-                  </ul>
-                  <p className="highlight">Essas avaliações ajudarão outros usuários a fazerem boas escolhas!</p>
-                </div>
+              <div className="terms-section coming-soon">
+                <h2>
+                  <i className="fas fa-star"></i> 
+                  Sistema de Avaliação
+                  <span className="badge">Em Breve</span>
+                </h2>
+                <p>Após o serviço, os clientes poderão:</p>
+                <ul>
+                  <li>Avaliar o prestador com 1 a 5 estrelas</li>
+                  <li>Deixar um comentário sobre a experiência</li>
+                </ul>
+                <p>Essas avaliações ajudarão outros usuários a fazerem boas escolhas!</p>
+              </div>
 
-                <div className="terms-section">
-                  <h2>
-                    <i className="fas fa-shield-alt"></i>
-                    Política de Privacidade
-                  </h2>
-                  <p>A TEX Conecta respeita a privacidade dos usuários. Os dados fornecidos são usados exclusivamente para:</p>
-                  <ul>
-                    <li>Exibir perfis</li>
-                    <li>Permitir o contato via WhatsApp</li>
-                  </ul>
-                  <p><strong>Não vendemos, alugamos ou compartilhamos dados com terceiros.</strong></p>
-                </div>
+              <div className="terms-section">
+                <h2><i className="fas fa-shield-alt"></i> Política de Privacidade</h2>
+                <p>A TEX Conecta respeita a privacidade dos usuários. Os dados fornecidos são usados exclusivamente para:</p>
+                <ul>
+                  <li>Exibir perfis</li>
+                  <li>Permitir o contato via WhatsApp</li>
+                </ul>
+                <p><span className="highlight">Não vendemos, alugamos ou compartilhamos dados com terceiros.</span></p>
+              </div>
 
-                <div className="terms-section">
-                  <h2>
-                    <i className="fas fa-undo"></i>
-                    Cancelamentos e Reembolsos
-                  </h2>
-                  <p>A TEX Conecta não se responsabiliza por cancelamentos ou reembolsos. 
-                     Esses acordos devem ser tratados diretamente entre o cliente e o prestador.</p>
-                </div>
+              <div className="terms-section">
+                <h2><i className="fas fa-undo"></i> Cancelamentos e Reembolsos</h2>
+                <p>A TEX Conecta não se responsabiliza por cancelamentos ou reembolsos. Esses acordos devem ser tratados diretamente entre o cliente e o prestador.</p>
               </div>
             </div>
           </div>
