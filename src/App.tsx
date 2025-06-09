@@ -1,23 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import { DatabaseService } from './lib/database'
+import { DatabaseService, Usuario, CreateUsuarioData, UpdateUsuarioData } from './lib/database'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import './index.css'
-
-interface Usuario {
-  id: string
-  nome: string | null
-  whatsapp: string | null
-  descricao: string | null
-  tags: string[]
-  foto_url: string | null
-  localizacao: string | null
-  status: string | null
-  criado_em: string | null
-  latitude?: number | null
-  longitude?: number | null
-  distancia?: number
-}
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('home')
@@ -27,83 +12,20 @@ function App() {
   const [location, setLocation] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
-  const [status, setStatus] = useState('available')
+  const [status, setStatus] = useState<'available' | 'busy'>('available')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string>('')
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [usuariosFiltrados, setUsuariosFiltrados] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUserProfile, setCurrentUserProfile] = useState<Usuario | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [previousScreen, setPreviousScreen] = useState('home')
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [searchRadius, setSearchRadius] = useState(10) // km
   const [sortByDistance, setSortByDistance] = useState(false)
-  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
-  const [editingProfile, setEditingProfile] = useState<Usuario | null>(null)
-
-  const dbService = new DatabaseService()
-
-  // Gerenciar histórico de navegação para botão voltar nativo
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      // Quando o usuário aperta o botão voltar nativo
-      const state = event.state
-      if (state && state.screen) {
-        setCurrentScreen(state.screen)
-        // Atualizar histórico local removendo a tela atual
-        setNavigationHistory(prev => {
-          const newHistory = [...prev]
-          if (newHistory.length > 1) {
-            newHistory.pop()
-          }
-          return newHistory
-        })
-      } else {
-        // Se não há estado, voltar para home
-        setCurrentScreen('home')
-        setNavigationHistory(['home'])
-      }
-    }
-
-    // Adicionar listener para o botão voltar nativo
-    window.addEventListener('popstate', handlePopState)
-
-    // Configurar estado inicial
-    if (window.history.state === null) {
-      window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
-    }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
-  }, [])
-
-  // Função para navegar entre telas com suporte ao botão voltar nativo
-  const navigateToScreen = (screen: string) => {
-    // Atualizar histórico local
-    setNavigationHistory(prev => [...prev, screen])
-    
-    // Adicionar ao histórico do navegador
-    window.history.pushState({ screen }, '', window.location.pathname)
-    
-    // Atualizar tela atual
-    setPreviousScreen(currentScreen)
-    setCurrentScreen(screen)
-  }
-
-  // Função para voltar programaticamente (botões da interface)
-  const goBack = () => {
-    if (navigationHistory.length > 1) {
-      // Usar o histórico nativo do navegador
-      window.history.back()
-    } else {
-      // Fallback para home se não há histórico
-      setCurrentScreen('home')
-      setNavigationHistory(['home'])
-    }
-  }
 
   // Criar usuários de exemplo com coordenadas de Florianópolis
   const createExampleUsers = () => {
@@ -116,8 +38,9 @@ function App() {
         tags: ['eletricista', 'residencial', 'comercial'],
         foto_url: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Florianópolis, SC - Centro',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.5954,
         longitude: -48.5480
       },
@@ -129,8 +52,9 @@ function App() {
         tags: ['design', 'logo', 'publicidade'],
         foto_url: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Florianópolis, SC - Trindade',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.6014,
         longitude: -48.5200
       },
@@ -142,8 +66,9 @@ function App() {
         tags: ['encanador', 'vazamento', '24h'],
         foto_url: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'São José, SC - Kobrasol',
-        status: 'busy',
+        status: 'busy' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.6108,
         longitude: -48.6326
       },
@@ -155,8 +80,9 @@ function App() {
         tags: ['professora', 'matemática', 'física'],
         foto_url: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Florianópolis, SC - Lagoa da Conceição',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.6389,
         longitude: -48.4556
       },
@@ -168,8 +94,9 @@ function App() {
         tags: ['programador', 'website', 'sistema'],
         foto_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Florianópolis, SC - Itacorubi',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.5707,
         longitude: -48.5020
       },
@@ -181,8 +108,9 @@ function App() {
         tags: ['cabeleireira', 'manicure', 'domiciliar'],
         foto_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Palhoça, SC - Cidade Universitária',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.6394,
         longitude: -48.6700
       },
@@ -194,8 +122,9 @@ function App() {
         tags: ['mecânico', 'automotivo', 'carros'],
         foto_url: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Biguaçu, SC - Centro',
-        status: 'busy',
+        status: 'busy' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.4939,
         longitude: -48.6581
       },
@@ -207,8 +136,9 @@ function App() {
         tags: ['personal', 'nutrição', 'fitness'],
         foto_url: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Florianópolis, SC - Canasvieiras',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.4389,
         longitude: -48.4556
       },
@@ -220,8 +150,9 @@ function App() {
         tags: ['pintor', 'textura', 'decoração'],
         foto_url: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Santo Amaro da Imperatriz, SC',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.6889,
         longitude: -48.7778
       },
@@ -233,75 +164,11 @@ function App() {
         tags: ['fotógrafa', 'casamento', 'eventos'],
         foto_url: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
         localizacao: 'Florianópolis, SC - Jurerê Internacional',
-        status: 'available',
+        status: 'available' as const,
         criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
         latitude: -27.4167,
         longitude: -48.4944
-      },
-      {
-        id: 'exemplo11',
-        nome: 'Ricardo Alves',
-        whatsapp: '48899887766',
-        descricao: 'Jardineiro e paisagista. Manutenção de jardins, poda de árvores e criação de paisagens.',
-        tags: ['jardineiro', 'paisagismo', 'poda'],
-        foto_url: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Florianópolis, SC - Córrego Grande',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -27.5833,
-        longitude: -48.5167
-      },
-      {
-        id: 'exemplo12',
-        nome: 'Camila Rodrigues',
-        whatsapp: '48888776655',
-        descricao: 'Acompanhante de turismo em Florianópolis. Conheço todos os pontos turísticos da ilha.',
-        tags: ['acompanhante', 'turismo', 'guia'],
-        foto_url: 'https://images.pexels.com/photos/1858175/pexels-photo-1858175.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Florianópolis, SC - Beira Mar Norte',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -27.5833,
-        longitude: -48.5500
-      },
-      {
-        id: 'exemplo13',
-        nome: 'Bruno Martins',
-        whatsapp: '48877665544',
-        descricao: 'Pedreiro e construção civil. Reformas, construções e acabamentos. Trabalho com qualidade.',
-        tags: ['pedreiro', 'construção', 'reforma'],
-        foto_url: 'https://images.pexels.com/photos/1216589/pexels-photo-1216589.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Florianópolis, SC - Estreito',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -27.5833,
-        longitude: -48.5667
-      },
-      {
-        id: 'exemplo14',
-        nome: 'Patrícia Silva',
-        whatsapp: '48866554433',
-        descricao: 'Diarista e faxineira. Limpeza residencial e comercial. Trabalho com produtos ecológicos.',
-        tags: ['diarista', 'limpeza', 'faxina'],
-        foto_url: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'Florianópolis, SC - Pantanal',
-        status: 'busy',
-        criado_em: new Date().toISOString(),
-        latitude: -27.6167,
-        longitude: -48.5333
-      },
-      {
-        id: 'exemplo15',
-        nome: 'André Santos',
-        whatsapp: '48855443322',
-        descricao: 'Técnico em informática. Manutenção de computadores, notebooks e instalação de redes.',
-        tags: ['técnico', 'informática', 'computador'],
-        foto_url: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-        localizacao: 'São José, SC - Campinas',
-        status: 'available',
-        criado_em: new Date().toISOString(),
-        latitude: -27.5833,
-        longitude: -48.6167
       }
     ]
     
@@ -347,8 +214,8 @@ function App() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 30000, // Aumentado de 10000 para 30000 (30 segundos)
-        maximumAge: 300000 // 5 minutos
+        timeout: 30000,
+        maximumAge: 300000
       }
     )
   }
@@ -367,15 +234,13 @@ function App() {
         )
         return { ...user, distancia: distance }
       }
-      return { ...user, distancia: 999 } // Usuários sem localização ficam por último
+      return { ...user, distancia: 999 }
     })
 
-    // Filtrar por raio se especificado
     const filtered = usersWithDistance.filter(user => 
       user.distancia === undefined || user.distancia <= searchRadius
     )
 
-    // Ordenar por distância
     return filtered.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
   }
 
@@ -423,7 +288,17 @@ function App() {
       })
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
-      // Se der erro, manter apenas os usuários de exemplo
+    }
+  }
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const profile = await DatabaseService.getUsuario(userId)
+      setCurrentUserProfile(profile)
+      return profile
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error)
+      return null
     }
   }
 
@@ -438,25 +313,18 @@ function App() {
       // Gerar um ID único baseado no número de telefone
       const userId = `user_${phone.replace(/\D/g, '')}`
       
-      // Verificar se já existe um perfil para este usuário
-      const existingUser = usuarios.find(u => u.id === userId)
+      // Verificar se já existe um perfil para este WhatsApp
+      const existingProfile = await DatabaseService.getUsuarioByWhatsApp(phone)
       
-      if (existingUser) {
-        // Se já existe, carregar dados do perfil existente
-        setCurrentUser({ id: userId, phone: phone })
-        setName(existingUser.nome || '')
-        setDescription(existingUser.descricao || '')
-        setLocation(existingUser.localizacao || '')
-        setTags(existingUser.tags || [])
-        setStatus(existingUser.status || 'available')
-        setPhotoPreview(existingUser.foto_url || '')
-        
-        // Ir direto para o perfil do usuário (visualização)
-        navigateToScreen('myProfile')
+      if (existingProfile) {
+        // Usuário já tem perfil - fazer login
+        setCurrentUser({ id: existingProfile.id, phone: phone })
+        setCurrentUserProfile(existingProfile)
+        setCurrentScreen('myProfile')
       } else {
-        // Se não existe, criar novo perfil
+        // Novo usuário - ir para criação de perfil
         setCurrentUser({ id: userId, phone: phone })
-        navigateToScreen('profile')
+        setCurrentScreen('profile')
       }
     } catch (error) {
       console.error('Erro no login:', error)
@@ -481,22 +349,10 @@ function App() {
   const addTag = () => {
     const trimmedTag = tagInput.trim().toLowerCase()
     
-    // Debug: vamos ver o que está acontecendo
-    console.log('Tentando adicionar tag:', trimmedTag)
-    console.log('Tags atuais:', tags)
-    console.log('Condições:', {
-      temTexto: !!trimmedTag,
-      menorQue3: tags.length < 3,
-      naoExiste: !tags.includes(trimmedTag)
-    })
-    
     if (trimmedTag && tags.length < 3 && !tags.includes(trimmedTag)) {
       const newTags = [...tags, trimmedTag]
       setTags(newTags)
       setTagInput('')
-      console.log('Tag adicionada! Novas tags:', newTags)
-    } else {
-      console.log('Tag não foi adicionada')
     }
   }
 
@@ -512,97 +368,6 @@ function App() {
   }
 
   const handleSaveProfile = async () => {
-    console.log('Tentando salvar perfil...')
-    console.log('Nome:', name.trim())
-    console.log('Tags:', tags)
-    console.log('Quantidade de tags:', tags.length)
-    
-    if (!name.trim()) {
-      alert('Por favor, preencha seu nome')
-      return
-    }
-    
-    // Verificar se há pelo menos uma tag
-    if (!tags || tags.length === 0) {
-      alert('Por favor, adicione pelo menos uma tag que descreva seu serviço (ex: pintor, eletricista, designer)')
-      return
-    }
-
-    setLoading(true)
-    try {
-      if (!currentUser) throw new Error('Usuário não autenticado')
-
-      let fotoUrl = photoPreview
-      if (photoFile) {
-        // Para simplificar, vamos usar uma URL de placeholder
-        // Em produção, você faria upload real da imagem
-        fotoUrl = URL.createObjectURL(photoFile)
-      }
-
-      // Criar perfil usando o número de WhatsApp como ID e contato
-      const novoUsuario = {
-        id: currentUser.id,
-        nome: name,
-        whatsapp: phone, // O mesmo número usado para login
-        descricao: description,
-        tags,
-        foto_url: fotoUrl,
-        localizacao: location,
-        status,
-        latitude: userLocation?.lat || null,
-        longitude: userLocation?.lng || null,
-        criado_em: new Date().toISOString()
-      }
-
-      console.log('Salvando usuário:', novoUsuario)
-
-      // Atualizar ou adicionar à lista local
-      setUsuarios(prev => {
-        const existingIndex = prev.findIndex(u => u.id === currentUser.id)
-        if (existingIndex >= 0) {
-          // Atualizar usuário existente
-          const updated = [...prev]
-          updated[existingIndex] = novoUsuario
-          return updated
-        } else {
-          // Adicionar novo usuário
-          return [novoUsuario, ...prev]
-        }
-      })
-
-      alert('Perfil salvo com sucesso!')
-      navigateToScreen('myProfile')
-    } catch (error) {
-      console.error('Erro ao salvar perfil:', error)
-      alert('Erro ao salvar perfil. Tente novamente.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleEditProfile = () => {
-    if (!currentUser) return
-    
-    // Encontrar o perfil atual do usuário
-    const userProfile = usuarios.find(u => u.id === currentUser.id)
-    if (userProfile) {
-      setEditingProfile(userProfile)
-      // Carregar dados nos campos de edição
-      setName(userProfile.nome || '')
-      setDescription(userProfile.descricao || '')
-      setLocation(userProfile.localizacao || '')
-      setTags(userProfile.tags || [])
-      setStatus(userProfile.status || 'available')
-      setPhotoPreview(userProfile.foto_url || '')
-      setPhotoFile(null)
-      
-      navigateToScreen('editProfile')
-    }
-  }
-
-  const handleUpdateProfile = async () => {
-    if (!editingProfile || !currentUser) return
-
     if (!name.trim()) {
       alert('Por favor, preencha seu nome')
       return
@@ -615,32 +380,83 @@ function App() {
 
     setLoading(true)
     try {
+      if (!currentUser) throw new Error('Usuário não autenticado')
+
+      let fotoUrl = ''
+      if (photoFile) {
+        fotoUrl = URL.createObjectURL(photoFile)
+      }
+
+      const userData: CreateUsuarioData = {
+        id: currentUser.id,
+        nome: name,
+        whatsapp: phone,
+        descricao: description || undefined,
+        tags,
+        foto_url: fotoUrl || undefined,
+        localizacao: location || undefined,
+        status,
+        latitude: userLocation?.lat,
+        longitude: userLocation?.lng
+      }
+
+      // Salvar no banco de dados
+      const savedUser = await DatabaseService.createUsuario(userData)
+      
+      // Atualizar estado local
+      setCurrentUserProfile(savedUser)
+      setUsuarios(prev => [savedUser, ...prev])
+
+      alert('Perfil salvo com sucesso!')
+      setCurrentScreen('myProfile')
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error)
+      alert('Erro ao salvar perfil. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpdateProfile = async () => {
+    if (!name.trim()) {
+      alert('Por favor, preencha seu nome')
+      return
+    }
+    
+    if (!tags || tags.length === 0) {
+      alert('Por favor, adicione pelo menos uma tag')
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (!currentUser || !currentUserProfile) throw new Error('Usuário não autenticado')
+
       let fotoUrl = photoPreview
       if (photoFile) {
         fotoUrl = URL.createObjectURL(photoFile)
       }
 
-      const updatedUser = {
-        ...editingProfile,
+      const updateData: UpdateUsuarioData = {
         nome: name,
-        descricao: description,
-        localizacao: location,
+        descricao: description || undefined,
         tags,
+        foto_url: fotoUrl || undefined,
+        localizacao: location || undefined,
         status,
-        foto_url: fotoUrl,
-        latitude: userLocation?.lat || editingProfile.latitude,
-        longitude: userLocation?.lng || editingProfile.longitude,
-        atualizado_em: new Date().toISOString()
+        latitude: userLocation?.lat,
+        longitude: userLocation?.lng
       }
 
-      // Atualizar na lista local
-      setUsuarios(prev => 
-        prev.map(u => u.id === currentUser.id ? updatedUser : u)
-      )
+      // Atualizar no banco de dados
+      const updatedUser = await DatabaseService.updateUsuario(currentUserProfile.id, updateData)
+      
+      // Atualizar estado local
+      setCurrentUserProfile(updatedUser)
+      setUsuarios(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u))
 
-      setEditingProfile(null)
       alert('Perfil atualizado com sucesso!')
-      navigateToScreen('myProfile')
+      setCurrentScreen('myProfile')
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error)
       alert('Erro ao atualizar perfil. Tente novamente.')
@@ -650,37 +466,52 @@ function App() {
   }
 
   const handleDeleteProfile = async () => {
-    if (!currentUser) return
+    if (!currentUserProfile) return
 
     const confirmDelete = confirm('Tem certeza que deseja excluir seu perfil? Esta ação não pode ser desfeita.')
     if (!confirmDelete) return
 
     setLoading(true)
     try {
-      // Remover da lista local
-      setUsuarios(prev => prev.filter(u => u.id !== currentUser.id))
+      await DatabaseService.deleteUsuario(currentUserProfile.id)
       
-      // Limpar dados do usuário
+      // Limpar estado local
       setCurrentUser(null)
+      setCurrentUserProfile(null)
+      setUsuarios(prev => prev.filter(u => u.id !== currentUserProfile.id))
+      
+      // Limpar formulário
       setName('')
       setDescription('')
       setLocation('')
       setTags([])
-      setStatus('available')
-      setPhotoPreview('')
       setPhotoFile(null)
+      setPhotoPreview('')
       setPhone('')
 
       alert('Perfil excluído com sucesso!')
       setCurrentScreen('home')
-      setNavigationHistory(['home'])
-      window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
     } catch (error) {
       console.error('Erro ao excluir perfil:', error)
       alert('Erro ao excluir perfil. Tente novamente.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const startEditProfile = () => {
+    if (!currentUserProfile) return
+
+    // Preencher formulário com dados atuais
+    setName(currentUserProfile.nome)
+    setDescription(currentUserProfile.descricao || '')
+    setLocation(currentUserProfile.localizacao || '')
+    setTags(currentUserProfile.tags || [])
+    setStatus(currentUserProfile.status)
+    setPhotoPreview(currentUserProfile.foto_url || '')
+    setPhotoFile(null)
+
+    setCurrentScreen('editProfile')
   }
 
   const formatWhatsAppLink = (whatsapp: string, nome: string) => {
@@ -705,26 +536,42 @@ function App() {
     return `${distance.toFixed(1)}km`
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
+
   const handleSearch = (term: string) => {
     setSearchTerm(term)
     if (term.trim() !== '') {
-      navigateToScreen('feed')
+      setPreviousScreen(currentScreen)
+      setCurrentScreen('feed')
     }
   }
 
   const handleBackToHome = () => {
     setSearchTerm('')
-    // Limpar histórico e ir direto para home
-    setNavigationHistory(['home'])
-    window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
     setCurrentScreen('home')
+  }
+
+  const handleBackToPrevious = () => {
+    setSearchTerm('')
+    setCurrentScreen(previousScreen)
+  }
+
+  const navigateToScreen = (screen: string) => {
+    setPreviousScreen(currentScreen)
+    setCurrentScreen(screen)
   }
 
   return (
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
-      <header className="fixed top-0 w-full bg-black/80 backdrop-filter blur-md p-6 flex justify-between items-center z-50">
+      <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
         <div 
           className="text-2xl font-bold cursor-pointer"
           onClick={handleBackToHome}
@@ -739,13 +586,15 @@ function App() {
         >
           TEX
         </div>
-        {/* Botão de perfil se usuário logado */}
+        
+        {/* Profile button - only show when user is logged in */}
         {currentUser && (
           <button 
-            onClick={() => navigateToScreen('myProfile')}
             className="profile-header-btn"
+            onClick={() => navigateToScreen('myProfile')}
+            title="Meu Perfil"
           >
-            <i className="fas fa-user-circle"></i>
+            <i className="fas fa-user"></i>
           </button>
         )}
       </header>
@@ -801,7 +650,7 @@ function App() {
               onClick={() => navigateToScreen('verify')}
             >
               <i className="fab fa-whatsapp"></i>
-              {currentUser ? 'Acessar Meu Perfil' : 'Entrar com WhatsApp'}
+              Entrar com WhatsApp
             </button>
           </div>
         </main>
@@ -814,7 +663,7 @@ function App() {
             <div className="back-button-container">
               <button 
                 className="back-button"
-                onClick={goBack}
+                onClick={handleBackToPrevious}
               >
                 <i className="fas fa-arrow-left"></i>
                 Voltar
@@ -847,6 +696,115 @@ function App() {
         </main>
       )}
 
+      {/* My Profile Screen */}
+      {currentScreen === 'myProfile' && (
+        <main className="screen active">
+          <div className="my-profile-content">
+            <div className="back-button-container">
+              <button 
+                className="back-button"
+                onClick={handleBackToPrevious}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Voltar
+              </button>
+            </div>
+
+            {currentUserProfile ? (
+              <div className="form-container">
+                <h2>Meu Perfil</h2>
+                
+                {/* Profile Display */}
+                <div className="profile-card">
+                  <div className="profile-header">
+                    <div className="profile-pic">
+                      {currentUserProfile.foto_url ? (
+                        <img src={currentUserProfile.foto_url} alt={currentUserProfile.nome} />
+                      ) : (
+                        <div className="w-full h-full bg-gray-600 rounded-full flex items-center justify-center">
+                          <i className="fas fa-user text-2xl"></i>
+                        </div>
+                      )}
+                    </div>
+                    <div className="profile-info">
+                      <h2>{currentUserProfile.nome}</h2>
+                      {currentUserProfile.descricao && (
+                        <p className="description">{currentUserProfile.descricao}</p>
+                      )}
+                      {currentUserProfile.localizacao && (
+                        <p className="text-sm text-gray-400">📍 {currentUserProfile.localizacao}</p>
+                      )}
+                      <span className={`status ${currentUserProfile.status === 'available' ? 'status-available' : 'status-busy'}`}>
+                        {currentUserProfile.status === 'available' ? 'Disponível' : 'Ocupado'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {currentUserProfile.tags && currentUserProfile.tags.length > 0 && (
+                    <div className="hashtags">
+                      {currentUserProfile.tags.map(tag => (
+                        <span key={tag}>#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Stats */}
+                <div className="profile-stats">
+                  <div className="stat">
+                    <i className="fas fa-calendar-alt"></i>
+                    <span>Perfil criado em {formatDate(currentUserProfile.criado_em)}</span>
+                  </div>
+                  <div className="stat">
+                    <i className="fab fa-whatsapp"></i>
+                    <span>{formatPhoneDisplay(currentUserProfile.whatsapp)}</span>
+                  </div>
+                  {currentUserProfile.latitude && currentUserProfile.longitude && (
+                    <div className="stat">
+                      <i className="fas fa-map-marker-alt"></i>
+                      <span>Localização GPS ativa</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Actions */}
+                <div className="profile-actions">
+                  <button 
+                    className="edit-profile-btn"
+                    onClick={startEditProfile}
+                  >
+                    <i className="fas fa-edit"></i>
+                    Editar Perfil
+                  </button>
+                  
+                  <button 
+                    className="delete-profile-btn"
+                    onClick={handleDeleteProfile}
+                    disabled={loading}
+                  >
+                    <i className="fas fa-trash"></i>
+                    {loading ? 'Excluindo...' : 'Excluir Perfil'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="form-container">
+                <div className="no-profile">
+                  <h2>Nenhum perfil encontrado</h2>
+                  <p>Você ainda não criou seu perfil profissional</p>
+                  <button 
+                    className="create-profile-btn"
+                    onClick={() => navigateToScreen('profile')}
+                  >
+                    Criar Perfil
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      )}
+
       {/* Profile Setup Screen */}
       {currentScreen === 'profile' && (
         <main className="screen active">
@@ -854,7 +812,7 @@ function App() {
             <div className="back-button-container">
               <button 
                 className="back-button"
-                onClick={goBack}
+                onClick={handleBackToPrevious}
               >
                 <i className="fas fa-arrow-left"></i>
                 Voltar
@@ -996,120 +954,14 @@ function App() {
         </main>
       )}
 
-      {/* My Profile Screen */}
-      {currentScreen === 'myProfile' && currentUser && (
-        <main className="screen active">
-          <div className="content-container">
-            <div className="back-button-container">
-              <button 
-                className="back-button"
-                onClick={goBack}
-              >
-                <i className="fas fa-arrow-left"></i>
-                Voltar
-              </button>
-            </div>
-            
-            <h1 className="page-title">
-              <i className="fas fa-user"></i>
-              Meu Perfil
-            </h1>
-            
-            {(() => {
-              const userProfile = usuarios.find(u => u.id === currentUser.id)
-              if (!userProfile) {
-                return (
-                  <div className="no-profile">
-                    <p>Perfil não encontrado. Crie seu perfil primeiro.</p>
-                    <button 
-                      className="create-profile-btn"
-                      onClick={() => navigateToScreen('profile')}
-                    >
-                      Criar Perfil
-                    </button>
-                  </div>
-                )
-              }
-
-              return (
-                <div className="my-profile-content">
-                  <div className="profile-card">
-                    <div className="profile-header">
-                      <div className="profile-pic">
-                        {userProfile.foto_url ? (
-                          <img src={userProfile.foto_url} alt={userProfile.nome || 'Usuário'} />
-                        ) : (
-                          <div className="w-full h-full bg-gray-600 rounded-full flex items-center justify-center">
-                            <i className="fas fa-user text-2xl"></i>
-                          </div>
-                        )}
-                      </div>
-                      <div className="profile-info">
-                        <h2>{userProfile.nome}</h2>
-                        {userProfile.descricao && (
-                          <p className="description">{userProfile.descricao}</p>
-                        )}
-                        {userProfile.localizacao && (
-                          <p className="text-sm text-gray-400">📍 {userProfile.localizacao}</p>
-                        )}
-                        <span className={`status ${userProfile.status === 'available' ? 'status-available' : 'status-busy'}`}>
-                          {userProfile.status === 'available' ? 'Disponível' : 'Ocupado'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {userProfile.tags && userProfile.tags.length > 0 && (
-                      <div className="hashtags">
-                        {userProfile.tags.map(tag => (
-                          <span key={tag}>#{tag}</span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="profile-stats">
-                      <div className="stat">
-                        <i className="fas fa-calendar-alt"></i>
-                        <span>Criado em {new Date(userProfile.criado_em || '').toLocaleDateString('pt-BR')}</span>
-                      </div>
-                      <div className="stat">
-                        <i className="fab fa-whatsapp"></i>
-                        <span>{formatPhoneDisplay(userProfile.whatsapp || '')}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="profile-actions">
-                    <button 
-                      className="edit-profile-btn"
-                      onClick={handleEditProfile}
-                    >
-                      <i className="fas fa-edit"></i>
-                      Editar Perfil
-                    </button>
-                    
-                    <button 
-                      className="delete-profile-btn"
-                      onClick={handleDeleteProfile}
-                    >
-                      <i className="fas fa-trash"></i>
-                      Excluir Perfil
-                    </button>
-                  </div>
-                </div>
-              )
-            })()}
-          </div>
-        </main>
-      )}
-
       {/* Edit Profile Screen */}
-      {currentScreen === 'editProfile' && editingProfile && (
+      {currentScreen === 'editProfile' && (
         <main className="screen active">
           <div className="form-container">
             <div className="back-button-container">
               <button 
                 className="back-button"
-                onClick={goBack}
+                onClick={() => setCurrentScreen('myProfile')}
               >
                 <i className="fas fa-arrow-left"></i>
                 Voltar
@@ -1168,7 +1020,7 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label>Tags de Serviços (até 3)</label>
+                <label>Tags (até 3)</label>
                 <div className="tags-input">
                   <input 
                     type="text" 
@@ -1223,10 +1075,7 @@ function App() {
                 
                 <button 
                   className="cancel-edit-btn"
-                  onClick={() => {
-                    setEditingProfile(null)
-                    goBack()
-                  }}
+                  onClick={() => setCurrentScreen('myProfile')}
                 >
                   Cancelar
                 </button>
@@ -1424,136 +1273,12 @@ function App() {
         </main>
       )}
 
-      {/* About Screen */}
-      {currentScreen === 'about' && (
-        <main className="screen active">
-          <div className="content-container">
-            <div className="back-button-container">
-              <button 
-                className="back-button"
-                onClick={goBack}
-              >
-                <i className="fas fa-arrow-left"></i>
-                Voltar
-              </button>
-            </div>
-            
-            <h1 className="page-title">
-              <i className="fas fa-info-circle"></i>
-              Sobre o TEX
-            </h1>
-            
-            <div className="about-content">
-              <div className="content-section">
-                <p className="intro-text">
-                  O TEX (TrampoExpress) nasceu com a missão de revolucionar a forma como as pessoas encontram e oferecem serviços. Conectamos profissionais talentosos a clientes que precisam de seus serviços, criando oportunidades e facilitando conexões significativas.
-                </p>
-
-                <div className="features-grid">
-                  <div className="feature-card">
-                    <i className="fas fa-handshake"></i>
-                    <h3>Conexões Diretas</h3>
-                    <p>Conectamos prestadores de serviços e clientes de forma rápida e eficiente via WhatsApp</p>
-                  </div>
-                  
-                  <div className="feature-card">
-                    <i className="fas fa-shield-alt"></i>
-                    <h3>Transparência</h3>
-                    <p>Garantimos transparência em todas as interações e informações dos profissionais</p>
-                  </div>
-                  
-                  <div className="feature-card">
-                    <i className="fas fa-map-marker-alt"></i>
-                    <h3>Busca por Proximidade</h3>
-                    <p>Encontre profissionais próximos a você usando nossa tecnologia de geolocalização</p>
-                  </div>
-                  
-                  <div className="feature-card">
-                    <i className="fas fa-star"></i>
-                    <h3>Qualidade</h3>
-                    <p>Promovemos serviços de qualidade e facilitamos a comunicação entre as partes</p>
-                  </div>
-                </div>
-
-                <div className="warning-box">
-                  <i className="fas fa-exclamation-triangle"></i>
-                  <p>
-                    <strong>Importante:</strong> O TEX é uma plataforma de conexão. Não nos responsabilizamos pela qualidade dos serviços prestados ou por disputas entre usuários. Sempre verifique referências e negocie termos diretamente com o profissional.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* Terms Screen */}
-      {currentScreen === 'terms' && (
-        <main className="screen active">
-          <div className="content-container">
-            <div className="back-button-container">
-              <button 
-                className="back-button"
-                onClick={goBack}
-              >
-                <i className="fas fa-arrow-left"></i>
-                Voltar
-              </button>
-            </div>
-            
-            <h1 className="page-title">
-              <i className="fas fa-file-contract"></i>
-              Termos de Uso
-            </h1>
-            
-            <div className="terms-content">
-              <div className="terms-section">
-                <h2><i className="fas fa-check-circle"></i>Aceitação dos Termos</h2>
-                <p>Ao acessar e usar o TEX, você concorda com estes termos de uso. Se você não concordar com qualquer parte destes termos, não use nosso serviço.</p>
-              </div>
-
-              <div className="terms-section">
-                <h2><i className="fas fa-user-check"></i>Uso do Serviço</h2>
-                <p>O TEX é uma plataforma que conecta prestadores de serviços e clientes. Você concorda em:</p>
-                <ul>
-                  <li>Fornecer informações verdadeiras e precisas</li>
-                  <li>Manter suas informações atualizadas</li>
-                  <li>Não usar o serviço para fins ilegais ou não autorizados</li>
-                  <li>Respeitar outros usuários da plataforma</li>
-                </ul>
-              </div>
-
-              <div className="terms-section">
-                <h2><i className="fas fa-exclamation-triangle"></i>Responsabilidades</h2>
-                <p>O TEX <span className="highlight">não se responsabiliza</span> por:</p>
-                <ul>
-                  <li>Qualidade dos serviços prestados pelos profissionais</li>
-                  <li>Disputas entre usuários da plataforma</li>
-                  <li>Perdas ou danos resultantes do uso da plataforma</li>
-                  <li>Veracidade das informações fornecidas pelos usuários</li>
-                </ul>
-              </div>
-
-              <div className="terms-section">
-                <h2><i className="fas fa-lock"></i>Privacidade</h2>
-                <p>Protegemos seus dados de acordo com nossa política de privacidade. Ao usar o TEX, você concorda com nossa coleta e uso de informações conforme descrito em nossa política.</p>
-              </div>
-
-              <div className="terms-section coming-soon">
-                <h2><i className="fas fa-edit"></i>Modificações<span className="badge">Em Breve</span></h2>
-                <p>Reservamos o direito de modificar estes termos a qualquer momento. Alterações significativas serão notificadas aos usuários através da plataforma.</p>
-              </div>
-            </div>
-          </div>
-        </main>
-      )}
-
-      <footer className="bg-black/80 backdrop-filter blur-md p-6 text-center">
+      <footer className="bg-black/80 backdrop-blur-md p-6 text-center">
         <nav className="footer-nav">
           <button onClick={handleBackToHome}>Home</button>
           <button onClick={() => navigateToScreen('feed')}>Feed</button>
-          <button onClick={() => navigateToScreen('about')}>Sobre</button>
-          <button onClick={() => navigateToScreen('terms')}>Termos</button>
+          <a href="src/pages/about.html">Sobre</a>
+          <a href="src/pages/terms.html">Termos</a>
         </nav>
         <div className="copyright">
           © 2025 TrampoExpress. Todos os direitos reservados.
