@@ -554,7 +554,6 @@ function App() {
         >
           TEX
         </div>
-        {/* Ícones removidos conforme solicitado */}
       </header>
 
       {/* Home Screen */}
