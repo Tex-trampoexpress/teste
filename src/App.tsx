@@ -44,6 +44,9 @@ function App() {
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
+  // Histórico de navegação para botão voltar
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
+
   // Verificar se usuário já está logado ao carregar
   useEffect(() => {
     const savedUser = localStorage.getItem('tex-current-user')
@@ -67,12 +70,60 @@ function App() {
     }
   }, [])
 
+  // Suporte ao botão nativo do celular (back button)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault()
+      handleBackNavigation()
+    }
+
+    // Adicionar estado inicial ao histórico do navegador
+    if (window.history.state === null) {
+      window.history.replaceState({ screen: currentScreen }, '', window.location.href)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [currentScreen, navigationHistory])
+
+  // Atualizar histórico do navegador quando a tela mudar
+  useEffect(() => {
+    if (currentScreen !== 'home') {
+      window.history.pushState({ screen: currentScreen }, '', window.location.href)
+    }
+  }, [currentScreen])
+
   // Carregar perfis quando a tela mudar para feed
   useEffect(() => {
     if (currentScreen === 'feed') {
       loadProfiles()
     }
   }, [currentScreen, proximityEnabled, searchRadius])
+
+  // Função para navegar entre telas com histórico
+  const navigateToScreen = (screen: string) => {
+    setNavigationHistory(prev => [...prev, currentScreen])
+    setCurrentScreen(screen)
+  }
+
+  // Função para voltar (botão e nativo)
+  const handleBackNavigation = () => {
+    if (navigationHistory.length > 1) {
+      const newHistory = [...navigationHistory]
+      const previousScreen = newHistory.pop() // Remove a tela atual
+      const targetScreen = newHistory[newHistory.length - 1] // Pega a anterior
+      
+      setNavigationHistory(newHistory)
+      setCurrentScreen(targetScreen)
+    } else {
+      // Se não há histórico, volta para home
+      setCurrentScreen('home')
+      setNavigationHistory(['home'])
+    }
+  }
 
   // Função para obter localização
   const getCurrentLocation = (): Promise<LocationData> => {
@@ -164,10 +215,10 @@ function App() {
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         
         if (existingUser.perfil_completo) {
-          setCurrentScreen('feed')
+          navigateToScreen('feed')
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         } else {
-          setCurrentScreen('profile-setup')
+          navigateToScreen('profile-setup')
           setProfileData({
             nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
@@ -180,7 +231,7 @@ function App() {
         }
       } else {
         // Usuário novo - ir para cadastro
-        setCurrentScreen('profile-setup')
+        navigateToScreen('profile-setup')
         setProfileData(prev => ({ ...prev }))
         toast.success('Vamos criar seu perfil!')
       }
@@ -302,10 +353,10 @@ function App() {
       
       if (isEditingProfile) {
         setIsEditingProfile(false)
-        setCurrentScreen('my-profile')
+        navigateToScreen('my-profile')
         toast.success('Perfil atualizado com sucesso!')
       } else {
-        setCurrentScreen('feed')
+        navigateToScreen('feed')
         toast.success('Perfil criado com sucesso!')
       }
     } catch (error) {
@@ -396,6 +447,7 @@ function App() {
     setCurrentUser(null)
     setIsLoggedIn(false)
     setCurrentScreen('home')
+    setNavigationHistory(['home'])
     setProfileData({
       nome: '',
       descricao: '',
@@ -429,14 +481,14 @@ function App() {
   // Função para editar perfil
   const startEditProfile = () => {
     setIsEditingProfile(true)
-    setCurrentScreen('profile-setup')
+    navigateToScreen('profile-setup')
     setShowProfileMenu(false)
   }
 
   // Função para cancelar edição
   const cancelEdit = () => {
     setIsEditingProfile(false)
-    setCurrentScreen('my-profile')
+    handleBackNavigation()
     // Restaurar dados originais
     if (currentUser) {
       setProfileData({
@@ -470,7 +522,7 @@ function App() {
           {!isLoggedIn && (
             <button
               className="whatsapp-header-login-btn"
-              onClick={() => setCurrentScreen('verify')}
+              onClick={() => navigateToScreen('verify')}
               style={{
                 background: 'var(--whatsapp-green)',
                 border: 'none',
@@ -521,7 +573,7 @@ function App() {
         {/* Logo TEX à esquerda */}
         <div 
           className="tex-logo-container tex-logo-scrolled"
-          onClick={() => setCurrentScreen('feed')}
+          onClick={() => navigateToScreen('feed')}
           style={{ cursor: 'pointer' }}
         >
           <div className="tex-logo-text">TEX</div>
@@ -576,7 +628,7 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          setCurrentScreen('my-profile')
+                          navigateToScreen('my-profile')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -587,7 +639,7 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          setCurrentScreen('feed')
+                          navigateToScreen('feed')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -624,7 +676,7 @@ function App() {
           // Botão de login WhatsApp quando não está logado
           <button
             className="whatsapp-header-login-btn"
-            onClick={() => setCurrentScreen('verify')}
+            onClick={() => navigateToScreen('verify')}
             style={{
               background: 'var(--whatsapp-green)',
               border: 'none',
@@ -648,6 +700,20 @@ function App() {
     )
   }
 
+  // Renderizar botão de volta
+  const renderBackButton = () => {
+    if (currentScreen === 'home') return null
+
+    return (
+      <div className="back-button-container">
+        <button className="back-button" onClick={handleBackNavigation}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
+    )
+  }
+
   // Renderizar tela inicial
   const renderHomeScreen = () => (
     <div className="screen active">
@@ -667,12 +733,12 @@ function App() {
             placeholder="Buscar profissionais, serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && setCurrentScreen('feed')}
+            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && navigateToScreen('feed')}
           />
           
           <button 
             className="explore-btn"
-            onClick={() => setCurrentScreen('feed')}
+            onClick={() => navigateToScreen('feed')}
           >
             <i className="fas fa-search"></i>
             Explorar Profissionais
@@ -694,7 +760,7 @@ function App() {
 
         <button 
           className="whatsapp-login-btn"
-          onClick={() => setCurrentScreen('verify')}
+          onClick={() => navigateToScreen('verify')}
         >
           <i className="fab fa-whatsapp"></i>
           Entrar com WhatsApp
@@ -706,12 +772,7 @@ function App() {
   // Renderizar tela de verificação
   const renderVerifyScreen = () => (
     <div className="screen active">
-      <div className="back-button-container">
-        <button className="back-button" onClick={() => setCurrentScreen('home')}>
-          <i className="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-      </div>
+      {renderBackButton()}
 
       <div className="form-container">
         <h2>Entrar no TEX</h2>
@@ -747,21 +808,7 @@ function App() {
   // Renderizar tela de configuração do perfil
   const renderProfileSetupScreen = () => (
     <div className="screen active">
-      <div className="back-button-container">
-        <button 
-          className="back-button" 
-          onClick={() => {
-            if (isEditingProfile) {
-              cancelEdit()
-            } else {
-              setCurrentScreen('verify')
-            }
-          }}
-        >
-          <i className="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-      </div>
+      {renderBackButton()}
 
       <div className="form-container">
         <h2>{isEditingProfile ? 'Editar Perfil' : 'Criar Perfil'}</h2>
@@ -945,13 +992,14 @@ function App() {
     if (!currentUser) {
       return (
         <div className="screen active">
+          {renderBackButton()}
           <div className="my-profile-content">
             <div className="no-profile">
               <h2>Nenhum perfil encontrado</h2>
               <p>Você precisa criar um perfil primeiro</p>
               <button 
                 className="create-profile-btn"
-                onClick={() => setCurrentScreen('verify')}
+                onClick={() => navigateToScreen('verify')}
               >
                 Criar Perfil
               </button>
@@ -963,6 +1011,7 @@ function App() {
 
     return (
       <div className="screen active">
+        {renderBackButton()}
         <div className="my-profile-content">
           <div className="profile-card">
             <div className="profile-header">
@@ -1049,6 +1098,7 @@ function App() {
   // Renderizar tela de feed
   const renderFeedScreen = () => (
     <div className="screen active">
+      {renderBackButton()}
       <div className="feed">
         <div className="search-header">
           <div className="search-bar">
@@ -1129,7 +1179,7 @@ function App() {
               }}>
                 Ver todos os profissionais
               </button>
-              <button className="back-home-btn" onClick={() => setCurrentScreen('home')}>
+              <button className="back-home-btn" onClick={() => navigateToScreen('home')}>
                 <i className="fas fa-home"></i>
                 Voltar ao início
               </button>
@@ -1210,12 +1260,7 @@ function App() {
   // Renderizar tela sobre
   const renderAboutScreen = () => (
     <div className="screen active">
-      <div className="back-button-container">
-        <button className="back-button" onClick={() => setCurrentScreen('home')}>
-          <i className="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-      </div>
+      {renderBackButton()}
 
       <div className="content-container">
         <h1 className="page-title">
@@ -1274,12 +1319,7 @@ function App() {
   // Renderizar tela de termos
   const renderTermsScreen = () => (
     <div className="screen active">
-      <div className="back-button-container">
-        <button className="back-button" onClick={() => setCurrentScreen('home')}>
-          <i className="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-      </div>
+      {renderBackButton()}
 
       <div className="content-container">
         <h1 className="page-title">
@@ -1358,9 +1398,9 @@ function App() {
   const renderFooter = () => (
     <footer>
       <nav className="footer-nav">
-        <button onClick={() => setCurrentScreen('home')}>Home</button>
-        <button onClick={() => setCurrentScreen('about')}>Sobre</button>
-        <button onClick={() => setCurrentScreen('terms')}>Termos</button>
+        <button onClick={() => navigateToScreen('home')}>Home</button>
+        <button onClick={() => navigateToScreen('about')}>Sobre</button>
+        <button onClick={() => navigateToScreen('terms')}>Termos</button>
         <a href="https://instagram.com/tex.app" target="_blank" rel="noopener noreferrer">
           Instagram
         </a>
