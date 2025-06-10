@@ -452,7 +452,56 @@ function App() {
 
   // Renderizar header com logo e menu do perfil
   const renderHeader = () => {
-    if (currentScreen === 'home') return null
+    if (currentScreen === 'home') {
+      // Na tela inicial, mostrar apenas o botão de login no canto superior direito
+      return (
+        <header style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          background: 'transparent',
+          padding: '1rem 2rem',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center'
+        }}>
+          {!isLoggedIn && (
+            <button
+              className="whatsapp-header-login-btn"
+              onClick={() => setCurrentScreen('verify')}
+              style={{
+                background: 'var(--whatsapp-green)',
+                border: 'none',
+                color: 'white',
+                padding: '0.8rem 1.2rem',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 211, 102, 0.4)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 211, 102, 0.3)'
+              }}
+            >
+              <i className="fab fa-whatsapp"></i>
+              Entrar
+            </button>
+          )}
+        </header>
+      )
+    }
 
     return (
       <header style={{
