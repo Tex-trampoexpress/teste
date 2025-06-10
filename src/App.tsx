@@ -479,7 +479,7 @@ function App() {
         </div>
 
         {/* Menu do perfil à direita */}
-        {isLoggedIn && currentUser && (
+        {isLoggedIn && currentUser ? (
           <div style={{ position: 'relative' }}>
             <button
               className="profile-header-btn"
@@ -571,6 +571,29 @@ function App() {
               </>
             )}
           </div>
+        ) : (
+          // Botão de login WhatsApp quando não está logado
+          <button
+            className="whatsapp-header-login-btn"
+            onClick={() => setCurrentScreen('verify')}
+            style={{
+              background: 'var(--whatsapp-green)',
+              border: 'none',
+              color: 'white',
+              padding: '0.8rem 1.2rem',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.9rem',
+              fontWeight: '600'
+            }}
+          >
+            <i className="fab fa-whatsapp"></i>
+            Entrar
+          </button>
         )}
       </header>
     )
