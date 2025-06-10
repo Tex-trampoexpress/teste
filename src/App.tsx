@@ -4,22 +4,24 @@ import { DatabaseService, Usuario } from './lib/database'
 import toast, { Toaster } from 'react-hot-toast'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 
-interface UserLocation {
+interface LocationData {
   latitude: number
   longitude: number
+  address?: string
 }
 
-const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<string>('home')
+function App() {
+  // Estados principais
+  const [currentScreen, setCurrentScreen] = useState('home')
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
 
-  // Estados para formulários
+  // Estados do formulário de verificação
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
+
+  // Estados do perfil
   const [profileData, setProfileData] = useState({
     nome: '',
     descricao: '',
@@ -28,357 +30,372 @@ const App: React.FC = () => {
     localizacao: '',
     status: 'available' as 'available' | 'busy'
   })
-  const [newTag, setNewTag] = useState('')
+  const [currentTag, setCurrentTag] = useState('')
+  const [userLocation, setUserLocation] = useState<LocationData | null>(null)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+
+  // Estados da busca e feed
   const [searchTerm, setSearchTerm] = useState('')
-  const [users, setUsers] = useState<Usuario[]>([])
+  const [profiles, setProfiles] = useState<Usuario[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [searchRadius, setSearchRadius] = useState(10)
 
-  // Gerenciar histórico de navegação para botão voltar nativo
-  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
+  // Estados do menu do perfil
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-  // Detectar scroll para logo dinâmico
+  // Verificar se usuário já está logado ao carregar
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  // Função para navegar entre telas
-  const navigateToScreen = (screen: string) => {
-    setNavigationHistory(prev => [...prev, screen])
-    setCurrentScreen(screen)
-    setShowProfileMenu(false)
-    window.scrollTo(0, 0)
-  }
-
-  // Função para voltar (compatível com botão nativo)
-  const goBack = () => {
-    if (navigationHistory.length > 1) {
-      const newHistory = navigationHistory.slice(0, -1)
-      setNavigationHistory(newHistory)
-      setCurrentScreen(newHistory[newHistory.length - 1])
-    } else {
-      setCurrentScreen('home')
-      setNavigationHistory(['home'])
-    }
-  }
-
-  // Interceptar botão voltar nativo do celular
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault()
-      goBack()
-    }
-
-    // Adicionar estado inicial ao histórico do navegador
-    window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
-
-    // Escutar mudanças no histórico
-    window.addEventListener('popstate', handlePopState)
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
-  }, [navigationHistory])
-
-  // Atualizar histórico do navegador quando mudar de tela
-  useEffect(() => {
-    if (currentScreen !== 'home') {
-      window.history.pushState({ screen: currentScreen }, '', window.location.pathname)
-    }
-  }, [currentScreen])
-
-  // Verificar usuário logado ao carregar
-  useEffect(() => {
-    checkLoggedUser()
-    checkLocationPermission()
-  }, [])
-
-  const checkLoggedUser = async () => {
-    const savedPhone = localStorage.getItem('tex_user_phone')
-    if (savedPhone) {
+    const savedUser = localStorage.getItem('tex-current-user')
+    if (savedUser) {
       try {
-        const user = await DatabaseService.getUsuarioByWhatsApp(savedPhone)
-        if (user) {
-          setCurrentUser(user)
-          setProfileData({
-            nome: user.nome,
-            descricao: user.descricao || '',
-            tags: user.tags || [],
-            foto_url: user.foto_url || '',
-            localizacao: user.localizacao || '',
-            status: user.status
-          })
-        }
+        const user = JSON.parse(savedUser)
+        setCurrentUser(user)
+        setIsLoggedIn(true)
+        setProfileData({
+          nome: user.nome || '',
+          descricao: user.descricao || '',
+          tags: user.tags || [],
+          foto_url: user.foto_url || '',
+          localizacao: user.localizacao || '',
+          status: user.status || 'available'
+        })
       } catch (error) {
-        console.error('Erro ao verificar usuário:', error)
+        console.error('Erro ao carregar usuário salvo:', error)
+        localStorage.removeItem('tex-current-user')
       }
     }
-  }
+  }, [])
 
-  const checkLocationPermission = async () => {
-    if ('geolocation' in navigator) {
-      try {
-        const permission = await navigator.permissions.query({ name: 'geolocation' })
-        setLocationPermission(permission.state)
-        
-        if (permission.state === 'granted') {
-          getCurrentLocation()
-        }
-      } catch (error) {
-        console.log('Permissão de localização não disponível')
-      }
+  // Carregar perfis quando a tela mudar para feed
+  useEffect(() => {
+    if (currentScreen === 'feed') {
+      loadProfiles()
     }
-  }
+  }, [currentScreen, proximityEnabled, searchRadius])
 
-  const getCurrentLocation = () => {
-    if ('geolocation' in navigator) {
+  // Função para obter localização
+  const getCurrentLocation = (): Promise<LocationData> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalização não suportada'))
+        return
+      }
+
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          })
-          setLocationPermission('granted')
-          // Ativar busca por proximidade automaticamente quando localização for obtida
-          setProximityEnabled(true)
+        async (position) => {
+          const { latitude, longitude } = position.coords
+          
+          try {
+            // Tentar obter endereço usando reverse geocoding
+            const response = await fetch(
+              `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`
+            )
+            
+            let address = ''
+            if (response.ok) {
+              const data = await response.json()
+              if (data.results && data.results[0]) {
+                address = data.results[0].formatted
+              }
+            }
+            
+            resolve({ latitude, longitude, address })
+          } catch (error) {
+            // Se falhar ao obter endereço, retorna só as coordenadas
+            resolve({ latitude, longitude })
+          }
         },
         (error) => {
-          console.error('Erro ao obter localização:', error)
-          setLocationPermission('denied')
+          reject(new Error('Erro ao obter localização: ' + error.message))
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutos
         }
       )
+    })
+  }
+
+  // Função para habilitar localização
+  const enableLocation = async () => {
+    try {
+      setIsLoading(true)
+      const location = await getCurrentLocation()
+      setUserLocation(location)
+      
+      if (location.address) {
+        setProfileData(prev => ({ ...prev, localizacao: location.address || '' }))
+      }
+      
+      toast.success('Localização obtida com sucesso!')
+    } catch (error) {
+      console.error('Erro ao obter localização:', error)
+      toast.error('Não foi possível obter sua localização')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleWhatsAppLogin = () => {
+  // Função para verificar WhatsApp e fazer login
+  const handleWhatsAppLogin = async () => {
     if (!phoneNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
       return
     }
 
-    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+55${phoneNumber.replace(/\D/g, '')}`
-    
-    if (formattedPhone.length < 13) {
-      toast.error('Número do WhatsApp inválido')
-      return
+    // Formatar número
+    let formattedPhone = phoneNumber.trim()
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+55' + formattedPhone.replace(/\D/g, '')
     }
 
-    setIsLoading(true)
-    
-    // Simular verificação (em produção, seria via API)
-    setTimeout(async () => {
-      try {
-        const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedPhone)
+    try {
+      setIsVerifying(true)
+      
+      // Verificar se usuário já existe
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedPhone)
+      
+      if (existingUser) {
+        // Usuário existe - fazer login
+        setCurrentUser(existingUser)
+        setIsLoggedIn(true)
+        localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         
-        if (existingUser) {
-          setCurrentUser(existingUser)
+        if (existingUser.perfil_completo) {
+          setCurrentScreen('feed')
+          toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+        } else {
+          setCurrentScreen('profile-setup')
           setProfileData({
-            nome: existingUser.nome,
+            nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
             tags: existingUser.tags || [],
             foto_url: existingUser.foto_url || '',
             localizacao: existingUser.localizacao || '',
-            status: existingUser.status
+            status: existingUser.status || 'available'
           })
-          localStorage.setItem('tex_user_phone', formattedPhone)
-          toast.success('Login realizado com sucesso!')
-          navigateToScreen('profile')
-        } else {
-          localStorage.setItem('tex_user_phone', formattedPhone)
-          setPhoneNumber(formattedPhone)
-          navigateToScreen('setup')
+          toast.success('Complete seu perfil para continuar')
         }
-      } catch (error) {
-        toast.error('Erro ao fazer login')
-        console.error(error)
-      } finally {
-        setIsLoading(false)
-      }
-    }, 1500)
-  }
-
-  const handleSaveProfile = async () => {
-    if (!profileData.nome.trim() || !profileData.descricao.trim() || profileData.tags.length === 0) {
-      toast.error('Preencha todos os campos obrigatórios')
-      return
-    }
-
-    setIsLoading(true)
-    
-    try {
-      const userData = {
-        nome: profileData.nome.trim(),
-        descricao: profileData.descricao.trim(),
-        tags: profileData.tags,
-        foto_url: profileData.foto_url || null,
-        localizacao: profileData.localizacao.trim() || null,
-        status: profileData.status,
-        latitude: userLocation?.latitude || null,
-        longitude: userLocation?.longitude || null
-      }
-
-      let savedUser: Usuario
-
-      if (currentUser) {
-        // Atualizar usuário existente
-        savedUser = await DatabaseService.updateUsuario(currentUser.id, userData)
       } else {
-        // Criar novo usuário
-        const newUserData = {
-          id: crypto.randomUUID(),
-          whatsapp: phoneNumber,
-          ...userData
-        }
-        savedUser = await DatabaseService.createUsuario(newUserData)
+        // Usuário novo - ir para cadastro
+        setCurrentScreen('profile-setup')
+        setProfileData(prev => ({ ...prev }))
+        toast.success('Vamos criar seu perfil!')
       }
-
-      setCurrentUser(savedUser)
-      toast.success('Perfil salvo com sucesso!')
-      
-      // Redirecionar para o perfil após salvar
-      navigateToScreen('profile')
     } catch (error) {
-      toast.error('Erro ao salvar perfil. Tente novamente.')
-      console.error('Erro detalhado:', error)
+      console.error('Erro no login:', error)
+      toast.error('Erro ao verificar WhatsApp. Tente novamente.')
     } finally {
-      setIsLoading(false)
+      setIsVerifying(false)
     }
   }
 
-  // Função para atualizar apenas o status do usuário
-  const handleStatusUpdate = async (newStatus: 'available' | 'busy') => {
-    if (!currentUser) return
-
-    setIsLoading(true)
-    try {
-      const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
-      setCurrentUser(updatedUser)
-      setProfileData(prev => ({ ...prev, status: newStatus }))
-      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
-    } catch (error) {
-      toast.error('Erro ao atualizar status')
-      console.error(error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleAddTag = () => {
-    if (newTag.trim() && !profileData.tags.includes(newTag.trim().toLowerCase())) {
+  // Função para adicionar tag
+  const addTag = () => {
+    if (currentTag.trim() && !profileData.tags.includes(currentTag.trim().toLowerCase())) {
       setProfileData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim().toLowerCase()]
+        tags: [...prev.tags, currentTag.trim().toLowerCase()]
       }))
-      setNewTag('')
+      setCurrentTag('')
     }
   }
 
-  const handleRemoveTag = (tagToRemove: string) => {
+  // Função para remover tag
+  const removeTag = (tagToRemove: string) => {
     setProfileData(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }))
   }
 
-  const handleSearch = async () => {
-    setIsLoading(true)
+  // Função para upload de foto
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Verificar tamanho do arquivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 5MB.')
+        return
+      }
+
+      // Verificar tipo do arquivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Apenas imagens são permitidas.')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        setProfileData(prev => ({ ...prev, foto_url: result }))
+        toast.success('Foto carregada com sucesso!')
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Função para salvar perfil
+  const saveProfile = async () => {
+    // Validações
+    if (!profileData.nome.trim()) {
+      toast.error('Nome é obrigatório')
+      return
+    }
+    if (!profileData.descricao.trim()) {
+      toast.error('Descrição é obrigatória')
+      return
+    }
+    if (profileData.tags.length === 0) {
+      toast.error('Adicione pelo menos uma especialidade')
+      return
+    }
+
     try {
-      let results: Usuario[] = []
-      
-      if (proximityEnabled && userLocation) {
-        results = await DatabaseService.getUsersByProximity(
-          userLocation.latitude,
-          userLocation.longitude,
-          searchRadius
-        )
-        
-        // Se tem termo de busca, filtrar os resultados por proximidade
-        if (searchTerm.trim()) {
-          results = results.filter(user => 
-            user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            user.localizacao?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        }
+      setIsLoading(true)
+
+      let user: Usuario
+
+      if (currentUser) {
+        // Atualizar usuário existente
+        user = await DatabaseService.updateUsuario(currentUser.id, {
+          nome: profileData.nome,
+          descricao: profileData.descricao,
+          tags: profileData.tags,
+          foto_url: profileData.foto_url || null,
+          localizacao: profileData.localizacao || null,
+          status: profileData.status,
+          latitude: userLocation?.latitude || null,
+          longitude: userLocation?.longitude || null
+        })
       } else {
-        results = await DatabaseService.getUsuarios({
-          search: searchTerm,
-          status: 'available',
-          limit: 50
+        // Criar novo usuário
+        if (!phoneNumber.trim()) {
+          toast.error('Número do WhatsApp é obrigatório')
+          return
+        }
+
+        let formattedPhone = phoneNumber.trim()
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = '+55' + formattedPhone.replace(/\D/g, '')
+        }
+
+        user = await DatabaseService.createUsuario({
+          id: crypto.randomUUID(),
+          nome: profileData.nome,
+          whatsapp: formattedPhone,
+          descricao: profileData.descricao,
+          tags: profileData.tags,
+          foto_url: profileData.foto_url || undefined,
+          localizacao: profileData.localizacao || undefined,
+          status: profileData.status,
+          latitude: userLocation?.latitude || undefined,
+          longitude: userLocation?.longitude || undefined
         })
       }
+
+      setCurrentUser(user)
+      setIsLoggedIn(true)
+      localStorage.setItem('tex-current-user', JSON.stringify(user))
       
-      setUsers(results)
+      if (isEditingProfile) {
+        setIsEditingProfile(false)
+        setCurrentScreen('my-profile')
+        toast.success('Perfil atualizado com sucesso!')
+      } else {
+        setCurrentScreen('feed')
+        toast.success('Perfil criado com sucesso!')
+      }
     } catch (error) {
-      toast.error('Erro na busca')
-      console.error(error)
+      console.error('Erro ao salvar perfil:', error)
+      toast.error('Erro ao salvar perfil. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Função para buscar da tela inicial - AGORA SEM EXIGIR LOGIN
-  const handleHomeSearch = async () => {
-    setIsLoading(true)
-    
+  // Função para carregar perfis
+  const loadProfiles = async () => {
     try {
-      let results: Usuario[] = []
-      
+      setIsSearching(true)
+      let profiles: Usuario[]
+
       if (proximityEnabled && userLocation) {
-        results = await DatabaseService.getUsersByProximity(
+        profiles = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
           searchRadius
         )
-        
-        // Se tem termo de busca, filtrar os resultados por proximidade
-        if (searchTerm.trim()) {
-          results = results.filter(user => 
-            user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            user.localizacao?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        }
       } else {
-        results = await DatabaseService.getUsuarios({
+        profiles = await DatabaseService.getUsuarios({
           search: searchTerm,
           status: 'available',
           limit: 50
         })
       }
-      
-      setUsers(results)
-      navigateToScreen('feed')
+
+      setProfiles(profiles)
     } catch (error) {
-      toast.error('Erro na busca')
-      console.error(error)
+      console.error('Erro ao carregar perfis:', error)
+      toast.error('Erro ao carregar perfis')
     } finally {
-      setIsLoading(false)
+      setIsSearching(false)
     }
   }
 
-  const handleTagClick = async (tag: string) => {
+  // Função para buscar perfis
+  const searchProfiles = async () => {
+    await loadProfiles()
+  }
+
+  // Função para limpar busca
+  const clearSearch = () => {
+    setSearchTerm('')
+    setProximityEnabled(false)
+    loadProfiles()
+  }
+
+  // Função para alternar proximidade
+  const toggleProximity = async () => {
+    if (!proximityEnabled && !userLocation) {
+      try {
+        await enableLocation()
+      } catch (error) {
+        return
+      }
+    }
+    setProximityEnabled(!proximityEnabled)
+  }
+
+  // Função para buscar por tag
+  const searchByTag = (tag: string) => {
     setSearchTerm(tag)
+    searchProfiles()
+  }
+
+  // Função para atualizar status
+  const updateStatus = async (newStatus: 'available' | 'busy') => {
+    if (!currentUser) return
+
     try {
-      const results = await DatabaseService.searchByTags([tag])
-      setUsers(results)
+      const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
+      setCurrentUser(updatedUser)
+      setProfileData(prev => ({ ...prev, status: newStatus }))
+      localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
+      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
     } catch (error) {
-      toast.error('Erro na busca por tag')
-      console.error(error)
+      console.error('Erro ao atualizar status:', error)
+      toast.error('Erro ao atualizar status')
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('tex_user_phone')
+  // Função para logout
+  const logout = () => {
     setCurrentUser(null)
-    setPhoneNumber('')
+    setIsLoggedIn(false)
+    setCurrentScreen('home')
     setProfileData({
       nome: '',
       descricao: '',
@@ -387,37 +404,56 @@ const App: React.FC = () => {
       localizacao: '',
       status: 'available'
     })
+    setPhoneNumber('')
+    localStorage.removeItem('tex-current-user')
     setShowProfileMenu(false)
-    setCurrentScreen('home')
-    setNavigationHistory(['home'])
-    toast.success('Logout realizado com sucesso!')
+    toast.success('Logout realizado com sucesso')
   }
 
-  const handleDeleteProfile = async () => {
+  // Função para deletar perfil
+  const deleteProfile = async () => {
     if (!currentUser) return
-    
-    if (confirm('Tem certeza que deseja excluir seu perfil? Esta ação não pode ser desfeita.')) {
+
+    if (window.confirm('Tem certeza que deseja excluir seu perfil? Esta ação não pode ser desfeita.')) {
       try {
         await DatabaseService.deleteUsuario(currentUser.id)
-        handleLogout()
-        toast.success('Perfil excluído com sucesso!')
+        logout()
+        toast.success('Perfil excluído com sucesso')
       } catch (error) {
+        console.error('Erro ao excluir perfil:', error)
         toast.error('Erro ao excluir perfil')
-        console.error(error)
       }
     }
   }
 
-  // Carregar usuários ao entrar no feed
-  useEffect(() => {
-    if (currentScreen === 'feed') {
-      handleSearch()
-    }
-  }, [currentScreen, proximityEnabled, userLocation])
+  // Função para editar perfil
+  const startEditProfile = () => {
+    setIsEditingProfile(true)
+    setCurrentScreen('profile-setup')
+    setShowProfileMenu(false)
+  }
 
+  // Função para cancelar edição
+  const cancelEdit = () => {
+    setIsEditingProfile(false)
+    setCurrentScreen('my-profile')
+    // Restaurar dados originais
+    if (currentUser) {
+      setProfileData({
+        nome: currentUser.nome || '',
+        descricao: currentUser.descricao || '',
+        tags: currentUser.tags || [],
+        foto_url: currentUser.foto_url || '',
+        localizacao: currentUser.localizacao || '',
+        status: currentUser.status || 'available'
+      })
+    }
+  }
+
+  // Renderizar header com logo e menu do perfil
   const renderHeader = () => {
-    const shouldShowScrolled = isScrolled && currentScreen === 'home'
-    
+    if (currentScreen === 'home') return null
+
     return (
       <header style={{
         position: 'fixed',
@@ -425,278 +461,242 @@ const App: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 100,
-        background: shouldShowScrolled ? 'rgba(0, 0, 0, 0.9)' : 'transparent',
-        backdropFilter: shouldShowScrolled ? 'blur(15px)' : 'none',
-        border: shouldShowScrolled ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+        background: 'rgba(0, 0, 0, 0.9)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         padding: '1rem 2rem',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        transition: 'all 0.3s ease'
+        alignItems: 'center'
       }}>
+        {/* Logo TEX à esquerda */}
         <div 
-          className={`tex-logo-container ${shouldShowScrolled ? 'tex-logo-scrolled' : 'tex-logo-normal'}`}
-          onClick={() => {
-            setCurrentScreen('home')
-            setNavigationHistory(['home'])
-          }}
+          className="tex-logo-container tex-logo-scrolled"
+          onClick={() => setCurrentScreen('feed')}
           style={{ cursor: 'pointer' }}
         >
           <div className="tex-logo-text">TEX</div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {/* Botão de Login/Entrar sempre visível quando não logado */}
-          {!currentUser && (
-            <button 
-              onClick={() => navigateToScreen('login')}
-              style={{
-                background: 'var(--gradient)',
-                color: 'var(--black)',
-                border: 'none',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
+        {/* Menu do perfil à direita */}
+        {isLoggedIn && currentUser && (
+          <div style={{ position: 'relative' }}>
+            <button
+              className="profile-header-btn"
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
             >
-              <i className="fab fa-whatsapp"></i>
-              Entrar
+              {currentUser.foto_url ? (
+                <img 
+                  src={currentUser.foto_url} 
+                  alt="Perfil"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : (
+                <i className="fas fa-user"></i>
+              )}
             </button>
-          )}
 
-          {/* Menu do perfil quando logado */}
-          {currentUser && (
-            <div style={{ position: 'relative' }}>
-              <button 
-                className="profile-header-btn"
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-              >
-                {currentUser.foto_url ? (
-                  <img 
-                    src={currentUser.foto_url} 
-                    alt="Perfil" 
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '50%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <i className="fas fa-user"></i>
-                )}
-              </button>
-
-              {showProfileMenu && (
-                <>
-                  <div 
-                    className="profile-menu-overlay"
-                    onClick={() => setShowProfileMenu(false)}
-                  />
-                  <div className="profile-menu">
-                    <div className="profile-menu-content">
-                      <div className="profile-menu-header">
-                        <div className="profile-menu-avatar">
-                          {currentUser.foto_url ? (
-                            <img src={currentUser.foto_url} alt="Perfil" />
-                          ) : (
-                            <i className="fas fa-user"></i>
-                          )}
-                        </div>
-                        <div className="profile-menu-info">
-                          <h4>{currentUser.nome}</h4>
-                          <p>{currentUser.whatsapp}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="profile-menu-actions">
-                        <button 
-                          className="profile-menu-item"
-                          onClick={() => navigateToScreen('profile')}
-                        >
+            {showProfileMenu && (
+              <>
+                <div 
+                  className="profile-menu-overlay"
+                  onClick={() => setShowProfileMenu(false)}
+                />
+                <div className="profile-menu">
+                  <div className="profile-menu-content">
+                    <div className="profile-menu-header">
+                      <div className="profile-menu-avatar">
+                        {currentUser.foto_url ? (
+                          <img src={currentUser.foto_url} alt="Perfil" />
+                        ) : (
                           <i className="fas fa-user"></i>
-                          Meu Perfil
-                        </button>
-                        
-                        <button 
-                          className="profile-menu-item"
-                          onClick={() => navigateToScreen('edit')}
-                        >
-                          <i className="fas fa-edit"></i>
-                          Editar Perfil
-                        </button>
-                        
-                        <div className="profile-menu-divider"></div>
-                        
-                        <button 
-                          className="profile-menu-item"
-                          onClick={() => navigateToScreen('about')}
-                        >
-                          <i className="fas fa-info-circle"></i>
-                          Sobre o TEX
-                        </button>
-                        
-                        <button 
-                          className="profile-menu-item"
-                          onClick={() => navigateToScreen('terms')}
-                        >
-                          <i className="fas fa-file-contract"></i>
-                          Termos de Uso
-                        </button>
-                        
-                        <div className="profile-menu-divider"></div>
-                        
-                        <button 
-                          className="profile-menu-item logout"
-                          onClick={handleLogout}
-                        >
-                          <i className="fas fa-sign-out-alt"></i>
-                          Sair
-                        </button>
+                        )}
+                      </div>
+                      <div className="profile-menu-info">
+                        <h4>{currentUser.nome}</h4>
+                        <p>{currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}</p>
                       </div>
                     </div>
+                    
+                    <div className="profile-menu-actions">
+                      <button 
+                        className="profile-menu-item"
+                        onClick={() => {
+                          setCurrentScreen('my-profile')
+                          setShowProfileMenu(false)
+                        }}
+                      >
+                        <i className="fas fa-user"></i>
+                        Meu Perfil
+                      </button>
+                      
+                      <button 
+                        className="profile-menu-item"
+                        onClick={() => {
+                          setCurrentScreen('feed')
+                          setShowProfileMenu(false)
+                        }}
+                      >
+                        <i className="fas fa-search"></i>
+                        Buscar Profissionais
+                      </button>
+                      
+                      <div className="profile-menu-divider"></div>
+                      
+                      <button 
+                        className="profile-menu-item"
+                        onClick={() => updateStatus(currentUser.status === 'available' ? 'busy' : 'available')}
+                      >
+                        <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
+                        {currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
+                      </button>
+                      
+                      <div className="profile-menu-divider"></div>
+                      
+                      <button 
+                        className="profile-menu-item logout"
+                        onClick={logout}
+                      >
+                        <i className="fas fa-sign-out-alt"></i>
+                        Sair
+                      </button>
+                    </div>
                   </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </header>
     )
   }
 
-  const renderBackButton = () => {
-    if (currentScreen === 'home') return null
-    
-    return (
-      <div className="back-button-container">
-        <button className="back-button" onClick={goBack}>
-          <i className="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-      </div>
-    )
-  }
-
+  // Renderizar tela inicial
   const renderHomeScreen = () => (
     <div className="screen active">
       <div className="hero-container">
+        <div className="tex-logo-container tex-logo-normal">
+          <div className="tex-logo-text">TEX</div>
+        </div>
+        
         <h1>
           Do trampo ao encontro
-          <span>tá no TEX</span>
+          <span>TrampoExpress</span>
         </h1>
         
         <div className="search-box">
           <input
             type="text"
-            placeholder="O que você está procurando?"
+            placeholder="Buscar profissionais, serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleHomeSearch()
-              }
-            }}
+            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && setCurrentScreen('feed')}
           />
           
           <button 
             className="explore-btn"
-            onClick={handleHomeSearch}
-            disabled={isLoading}
+            onClick={() => setCurrentScreen('feed')}
           >
-            {isLoading ? (
-              <>
-                <i className="fas fa-spinner fa-spin"></i>
-                Buscando...
-              </>
-            ) : (
-              <>
-                <i className="fas fa-search"></i>
-                Buscar Profissionais
-              </>
-            )}
+            <i className="fas fa-search"></i>
+            Explorar Profissionais
           </button>
         </div>
 
-        {locationPermission === 'prompt' && (
-          <div className="location-status">
-            <button 
-              className="location-enable-btn"
-              onClick={getCurrentLocation}
-            >
+        <div className="location-status">
+          {userLocation ? (
+            <p style={{ color: 'var(--cyan)', fontSize: '0.9rem' }}>
+              <i className="fas fa-map-marker-alt"></i> Localização ativada
+            </p>
+          ) : (
+            <button className="location-enable-btn" onClick={enableLocation} disabled={isLoading}>
               <i className="fas fa-map-marker-alt"></i>
-              Ativar Localização para Busca Próxima
+              {isLoading ? 'Obtendo localização...' : 'Ativar localização'}
             </button>
-          </div>
-        )}
-
-        {locationPermission === 'granted' && userLocation && (
-          <div className="location-status">
-            <div style={{ 
-              color: 'var(--cyan)', 
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              justifyContent: 'center'
-            }}>
-              <i className="fas fa-map-marker-alt"></i>
-              Localização ativada - Busca por proximidade disponível
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-
-  const renderLoginScreen = () => (
-    <div className="screen active">
-      {renderBackButton()}
-      <div className="form-container">
-        <h2>Entrar no TEX</h2>
-        <p>Digite seu número do WhatsApp para continuar</p>
-        
-        <div className="info-box">
-          <i className="fab fa-whatsapp"></i>
-          <p>Usamos o WhatsApp para facilitar o contato direto entre profissionais e clientes. Seu número será usado apenas para isso.</p>
+          )}
         </div>
-        
-        <div className="phone-input">
-          <div className="country-code">+55</div>
-          <input
-            type="tel"
-            placeholder="11999887766"
-            value={phoneNumber.replace('+55', '')}
-            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-            maxLength={11}
-          />
-        </div>
-        
+
         <button 
-          className="verify-btn"
-          onClick={handleWhatsAppLogin}
-          disabled={isLoading || phoneNumber.length < 10}
+          className="whatsapp-login-btn"
+          onClick={() => setCurrentScreen('verify')}
         >
-          {isLoading ? 'Verificando...' : 'Continuar'}
+          <i className="fab fa-whatsapp"></i>
+          Entrar com WhatsApp
         </button>
       </div>
     </div>
   )
 
-  const renderSetupScreen = () => (
+  // Renderizar tela de verificação
+  const renderVerifyScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
+
       <div className="form-container">
-        <h2>Criar Perfil</h2>
-        <p>Complete seu perfil para começar a usar o TEX</p>
+        <h2>Entrar no TEX</h2>
+        <p>Digite seu número do WhatsApp para entrar ou criar sua conta</p>
         
+        <div className="info-box">
+          <i className="fab fa-whatsapp"></i>
+          <p>Se você já tem uma conta, será redirecionado para seu perfil. Se é novo por aqui, vamos criar seu perfil profissional!</p>
+        </div>
+
+        <div className="phone-input">
+          <div className="country-code">+55</div>
+          <input
+            type="tel"
+            placeholder="11999887766"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+            maxLength={11}
+          />
+        </div>
+
+        <button 
+          className="verify-btn"
+          onClick={handleWhatsAppLogin}
+          disabled={isVerifying || !phoneNumber.trim()}
+        >
+          {isVerifying ? 'Verificando...' : 'Continuar'}
+        </button>
+      </div>
+    </div>
+  )
+
+  // Renderizar tela de configuração do perfil
+  const renderProfileSetupScreen = () => (
+    <div className="screen active">
+      <div className="back-button-container">
+        <button 
+          className="back-button" 
+          onClick={() => {
+            if (isEditingProfile) {
+              cancelEdit()
+            } else {
+              setCurrentScreen('verify')
+            }
+          }}
+        >
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
+
+      <div className="form-container">
+        <h2>{isEditingProfile ? 'Editar Perfil' : 'Criar Perfil'}</h2>
+        <p>{isEditingProfile ? 'Atualize suas informações' : 'Complete seu perfil profissional'}</p>
+
         <div className="profile-setup">
+          {/* Upload de foto */}
           <div className="photo-upload">
             <div className="photo-preview">
               {profileData.foto_url ? (
@@ -705,66 +705,62 @@ const App: React.FC = () => {
                 <i className="fas fa-camera"></i>
               )}
             </div>
+            <label htmlFor={isEditingProfile ? "edit-photo-input" : "photo-input"}>
+              <i className="fas fa-upload"></i>
+              {profileData.foto_url ? 'Alterar Foto' : 'Adicionar Foto'}
+            </label>
             <input
-              id="photo-input"
-              type="url"
-              placeholder="URL da foto (opcional)"
-              value={profileData.foto_url}
-              onChange={(e) => setProfileData(prev => ({ ...prev, foto_url: e.target.value }))}
+              id={isEditingProfile ? "edit-photo-input" : "photo-input"}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
             />
           </div>
-          
+
+          {/* Nome */}
           <div className="form-group">
             <label>Nome Completo *</label>
             <input
               type="text"
+              placeholder="Seu nome completo"
               value={profileData.nome}
               onChange={(e) => setProfileData(prev => ({ ...prev, nome: e.target.value }))}
-              placeholder="Seu nome completo"
             />
           </div>
-          
+
+          {/* Descrição */}
           <div className="form-group">
-            <label>Descrição do Serviço *</label>
+            <label>Descrição Profissional *</label>
             <textarea
+              placeholder="Descreva seus serviços, experiência e diferenciais..."
               value={profileData.descricao}
               onChange={(e) => setProfileData(prev => ({ ...prev, descricao: e.target.value }))}
-              placeholder="Descreva seus serviços e experiência"
-              rows={3}
+              rows={4}
             />
           </div>
-          
+
+          {/* Tags/Especialidades */}
           <div className="form-group">
-            <label>Localização</label>
-            <input
-              type="text"
-              value={profileData.localizacao}
-              onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
-              placeholder="Cidade, Estado"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Tags de Serviço *</label>
+            <label>Especialidades *</label>
             <div className="tags-input">
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
                   type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Ex: eletricista, design, programação"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  placeholder="Ex: eletricista, pintor, designer..."
+                  value={currentTag}
+                  onChange={(e) => setCurrentTag(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 />
                 <button 
                   type="button"
-                  onClick={handleAddTag}
+                  onClick={addTag}
                   style={{
+                    padding: '0.8rem 1rem',
                     background: 'var(--gradient)',
                     color: 'var(--black)',
                     border: 'none',
-                    padding: '0.8rem 1rem',
                     borderRadius: '8px',
-                    cursor: 'pointer'
+                    fontWeight: '600'
                   }}
                 >
                   Adicionar
@@ -775,15 +771,39 @@ const App: React.FC = () => {
                   <div key={index} className="tag">
                     {tag}
                     <i 
-                      className="fas fa-times"
-                      onClick={() => handleRemoveTag(tag)}
+                      className="fas fa-times" 
+                      onClick={() => removeTag(tag)}
                     ></i>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          
+
+          {/* Localização */}
+          <div className="form-group">
+            <label>Localização</label>
+            <input
+              type="text"
+              placeholder="Cidade, bairro..."
+              value={profileData.localizacao}
+              onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
+            />
+            {!userLocation && (
+              <button 
+                type="button"
+                className="location-enable-btn"
+                onClick={enableLocation}
+                disabled={isLoading}
+                style={{ marginTop: '0.5rem', width: '100%' }}
+              >
+                <i className="fas fa-map-marker-alt"></i>
+                {isLoading ? 'Obtendo localização...' : 'Usar minha localização atual'}
+              </button>
+            )}
+          </div>
+
+          {/* Status */}
           <div className="form-group">
             <label>Status</label>
             <div className="status-toggle">
@@ -805,249 +825,72 @@ const App: React.FC = () => {
               </button>
             </div>
           </div>
-          
-          <div className="whatsapp-preview">
-            <h4>Como aparecerá no WhatsApp:</h4>
-            <div className="contact-preview">
-              <i className="fab fa-whatsapp"></i>
-              {phoneNumber}
-            </div>
-          </div>
-          
-          <button 
-            className="save-profile-btn"
-            onClick={handleSaveProfile}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Salvando...' : 'Salvar Perfil'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 
-  const renderFeedScreen = () => (
-    <div className="screen active">
-      {renderBackButton()}
-      <div className="feed">
-        <div className="search-header">
-          <div className="search-bar">
-            <i className="fas fa-search"></i>
-            <input
-              type="text"
-              placeholder="Buscar profissionais..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            {searchTerm && (
+          {/* Preview do WhatsApp */}
+          {phoneNumber && (
+            <div className="whatsapp-preview">
+              <h4>Como aparecerá no WhatsApp:</h4>
+              <div className="contact-preview">
+                <i className="fab fa-whatsapp"></i>
+                +55{phoneNumber}
+              </div>
+            </div>
+          )}
+
+          {/* Botões de ação */}
+          {isEditingProfile ? (
+            <div className="edit-actions">
               <button 
-                className="clear-search"
-                onClick={() => {
-                  setSearchTerm('')
-                  handleSearch()
-                }}
+                className="save-profile-btn"
+                onClick={saveProfile}
+                disabled={isLoading}
               >
-                <i className="fas fa-times"></i>
+                {isLoading ? 'Salvando...' : 'Salvar Alterações'}
               </button>
-            )}
+              <button 
+                className="cancel-edit-btn"
+                onClick={cancelEdit}
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
             <button 
-              className="search-btn"
-              onClick={handleSearch}
+              className="save-profile-btn"
+              onClick={saveProfile}
               disabled={isLoading}
-              style={{
-                background: 'var(--gradient)',
-                color: 'var(--black)',
-                border: 'none',
-                padding: '0.8rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                marginLeft: '0.5rem',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.3s ease'
-              }}
             >
-              {isLoading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i>
-                  Buscando...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-search"></i>
-                  Buscar
-                </>
-              )}
+              {isLoading ? 'Criando perfil...' : 'Criar Perfil'}
             </button>
-          </div>
-          
-          <div className="proximity-filters">
-            <div className="filter-row">
-              <button
-                className={`proximity-toggle ${proximityEnabled ? 'active' : ''}`}
-                onClick={() => {
-                  if (userLocation) {
-                    setProximityEnabled(!proximityEnabled)
-                  } else {
-                    getCurrentLocation()
-                  }
-                }}
-                disabled={!userLocation && locationPermission === 'denied'}
-              >
-                <i className="fas fa-map-marker-alt"></i>
-                {proximityEnabled ? 'Busca por Proximidade (Ativa)' : 'Ativar Busca por Proximidade'}
-              </button>
-              
-              {!userLocation && locationPermission !== 'denied' && (
-                <button
-                  className="enable-location-btn"
-                  onClick={getCurrentLocation}
-                >
-                  <i className="fas fa-location-arrow"></i>
-                  Ativar Localização
-                </button>
-              )}
-            </div>
-            
-            {proximityEnabled && userLocation && (
-              <div className="radius-selector">
-                <label>Raio de busca:</label>
-                <select 
-                  value={searchRadius} 
-                  onChange={(e) => setSearchRadius(Number(e.target.value))}
-                >
-                  <option value={5}>5 km</option>
-                  <option value={10}>10 km</option>
-                  <option value={25}>25 km</option>
-                  <option value={50}>50 km</option>
-                  <option value={100}>100 km</option>
-                </select>
-              </div>
-            )}
-          </div>
+          )}
         </div>
-
-        {users.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div className="search-results-info">
-              {proximityEnabled ? 
-                `${users.length} profissionais encontrados próximos a você` :
-                `${users.length} profissionais encontrados`
-              }
-            </div>
-            
-            {users.map((user) => (
-              <div key={user.id} className="profile-card">
-                <div className="profile-header">
-                  <div className="profile-pic">
-                    {user.foto_url ? (
-                      <img src={user.foto_url} alt={user.nome} />
-                    ) : (
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.5rem',
-                        color: 'rgba(255, 255, 255, 0.5)'
-                      }}>
-                        <i className="fas fa-user"></i>
-                      </div>
-                    )}
-                  </div>
-                  <div className="profile-info">
-                    <div className="profile-name-distance">
-                      <h2>{user.nome}</h2>
-                      {user.distancia && (
-                        <div className="distance-badge">
-                          <i className="fas fa-map-marker-alt"></i>
-                          {user.distancia}km
-                        </div>
-                      )}
-                    </div>
-                    <div className="description">{user.descricao}</div>
-                    <span className={`status status-${user.status}`}>
-                      {user.status === 'available' ? 'Disponível' : 'Ocupado'}
-                    </span>
-                    {user.localizacao && (
-                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
-                        <i className="fas fa-map-marker-alt"></i> {user.localizacao}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {user.tags && user.tags.length > 0 && (
-                  <div className="hashtags">
-                    {user.tags.map((tag, index) => (
-                      <span 
-                        key={index} 
-                        className="tag-clickable"
-                        onClick={() => handleTagClick(tag)}
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                
-                <a
-                  href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="whatsapp-btn"
-                >
-                  <i className="fab fa-whatsapp"></i>
-                  Conversar no WhatsApp
-                </a>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-results">
-            <i className="fas fa-search"></i>
-            <h3>Nenhum profissional encontrado</h3>
-            <p>Tente ajustar sua busca ou explorar outras categorias</p>
-            <div className="no-results-actions">
-              <button 
-                className="explore-all-btn"
-                onClick={() => {
-                  setSearchTerm('')
-                  setProximityEnabled(false)
-                  handleSearch()
-                }}
-              >
-                Ver Todos os Profissionais
-              </button>
-              <button 
-                className="back-home-btn"
-                onClick={() => {
-                  setCurrentScreen('home')
-                  setNavigationHistory(['home'])
-                }}
-              >
-                <i className="fas fa-home"></i>
-                Voltar ao Início
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
 
-  const renderProfileScreen = () => {
-    if (!currentUser) return null
+  // Renderizar tela do meu perfil
+  const renderMyProfileScreen = () => {
+    if (!currentUser) {
+      return (
+        <div className="screen active">
+          <div className="my-profile-content">
+            <div className="no-profile">
+              <h2>Nenhum perfil encontrado</h2>
+              <p>Você precisa criar um perfil primeiro</p>
+              <button 
+                className="create-profile-btn"
+                onClick={() => setCurrentScreen('verify')}
+              >
+                Criar Perfil
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="screen active">
-        {renderBackButton()}
         <div className="my-profile-content">
           <div className="profile-card">
             <div className="profile-header">
@@ -1072,18 +915,13 @@ const App: React.FC = () => {
               </div>
               <div className="profile-info">
                 <h2>{currentUser.nome}</h2>
-                <div className="description">{currentUser.descricao}</div>
+                <p className="description">{currentUser.descricao}</p>
                 <span className={`status status-${currentUser.status}`}>
                   {currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}
                 </span>
-                {currentUser.localizacao && (
-                  <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
-                    <i className="fas fa-map-marker-alt"></i> {currentUser.localizacao}
-                  </div>
-                )}
               </div>
             </div>
-            
+
             {currentUser.tags && currentUser.tags.length > 0 && (
               <div className="hashtags">
                 {currentUser.tags.map((tag, index) => (
@@ -1092,218 +930,42 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Controle de Status Rápido */}
-            <div className="status-control" style={{ 
-              margin: '1.5rem 0',
-              padding: '1rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
-            }}>
-              <h4 style={{ marginBottom: '1rem', color: 'var(--white)', fontSize: '1rem' }}>
-                <i className="fas fa-toggle-on" style={{ marginRight: '0.5rem', color: 'var(--cyan)' }}></i>
-                Alterar Status
-              </h4>
-              <div className="status-toggle">
-                <button
-                  type="button"
-                  className={`status-btn ${currentUser.status === 'available' ? 'active' : ''}`}
-                  onClick={() => handleStatusUpdate('available')}
-                  disabled={isLoading}
-                >
-                  <div className="dot available"></div>
-                  Disponível
-                </button>
-                <button
-                  type="button"
-                  className={`status-btn ${currentUser.status === 'busy' ? 'active' : ''}`}
-                  onClick={() => handleStatusUpdate('busy')}
-                  disabled={isLoading}
-                >
-                  <div className="dot busy"></div>
-                  Ocupado
-                </button>
-              </div>
-            </div>
-            
             <div className="profile-stats">
               <div className="stat">
-                <i className="fas fa-calendar-alt"></i>
-                Perfil criado em {new Date(currentUser.criado_em).toLocaleDateString('pt-BR')}
+                <i className="fas fa-calendar"></i>
+                <span>Membro desde {new Date(currentUser.criado_em).toLocaleDateString('pt-BR')}</span>
               </div>
               <div className="stat">
                 <i className="fas fa-clock"></i>
-                Último acesso em {new Date(currentUser.ultimo_acesso).toLocaleDateString('pt-BR')}
+                <span>Último acesso: {new Date(currentUser.ultimo_acesso).toLocaleDateString('pt-BR')}</span>
               </div>
               <div className="stat">
                 <i className="fas fa-check-circle"></i>
-                Perfil {currentUser.perfil_completo ? 'completo' : 'incompleto'}
+                <span>Perfil {currentUser.perfil_completo ? 'completo' : 'incompleto'}</span>
               </div>
-              {currentUser.verificado && (
+              {currentUser.localizacao && (
                 <div className="stat">
-                  <i className="fas fa-verified"></i>
-                  Perfil verificado
+                  <i className="fas fa-map-marker-alt"></i>
+                  <span>{currentUser.localizacao}</span>
                 </div>
               )}
             </div>
-          </div>
-          
-          <div className="profile-actions">
-            <button 
-              className="edit-profile-btn"
-              onClick={() => navigateToScreen('edit')}
-            >
-              <i className="fas fa-edit"></i>
-              Editar Perfil
-            </button>
-            
-            <button 
-              className="delete-profile-btn"
-              onClick={handleDeleteProfile}
-            >
-              <i className="fas fa-trash"></i>
-              Excluir Perfil
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
-  const renderEditScreen = () => {
-    if (!currentUser) return null
-
-    return (
-      <div className="screen active">
-        {renderBackButton()}
-        <div className="form-container">
-          <h2>Editar Perfil</h2>
-          <p>Atualize suas informações</p>
-          
-          <div className="profile-setup">
-            <div className="photo-upload">
-              <div className="photo-preview">
-                {profileData.foto_url ? (
-                  <img src={profileData.foto_url} alt="Preview" />
-                ) : (
-                  <i className="fas fa-camera"></i>
-                )}
-              </div>
-              <input
-                id="edit-photo-input"
-                type="url"
-                placeholder="URL da foto (opcional)"
-                value={profileData.foto_url}
-                onChange={(e) => setProfileData(prev => ({ ...prev, foto_url: e.target.value }))}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Nome Completo *</label>
-              <input
-                type="text"
-                value={profileData.nome}
-                onChange={(e) => setProfileData(prev => ({ ...prev, nome: e.target.value }))}
-                placeholder="Seu nome completo"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Descrição do Serviço *</label>
-              <textarea
-                value={profileData.descricao}
-                onChange={(e) => setProfileData(prev => ({ ...prev, descricao: e.target.value }))}
-                placeholder="Descreva seus serviços e experiência"
-                rows={3}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Localização</label>
-              <input
-                type="text"
-                value={profileData.localizacao}
-                onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
-                placeholder="Cidade, Estado"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Tags de Serviço *</label>
-              <div className="tags-input">
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Ex: eletricista, design, programação"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                  />
-                  <button 
-                    type="button"
-                    onClick={handleAddTag}
-                    style={{
-                      background: 'var(--gradient)',
-                      color: 'var(--black)',
-                      border: 'none',
-                      padding: '0.8rem 1rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Adicionar
-                  </button>
-                </div>
-                <div className="tags-container">
-                  {profileData.tags.map((tag, index) => (
-                    <div key={index} className="tag">
-                      {tag}
-                      <i 
-                        className="fas fa-times"
-                        onClick={() => handleRemoveTag(tag)}
-                      ></i>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label>Status</label>
-              <div className="status-toggle">
-                <button
-                  type="button"
-                  className={`status-btn ${profileData.status === 'available' ? 'active' : ''}`}
-                  onClick={() => setProfileData(prev => ({ ...prev, status: 'available' }))}
-                >
-                  <div className="dot available"></div>
-                  Disponível
-                </button>
-                <button
-                  type="button"
-                  className={`status-btn ${profileData.status === 'busy' ? 'active' : ''}`}
-                  onClick={() => setProfileData(prev => ({ ...prev, status: 'busy' }))}
-                >
-                  <div className="dot busy"></div>
-                  Ocupado
-                </button>
-              </div>
-            </div>
-            
-            <div className="edit-actions">
+            <div className="profile-actions">
               <button 
-                className="save-profile-btn"
-                onClick={handleSaveProfile}
-                disabled={isLoading}
+                className="edit-profile-btn"
+                onClick={startEditProfile}
               >
-                {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                <i className="fas fa-edit"></i>
+                Editar Perfil
               </button>
               
               <button 
-                className="cancel-edit-btn"
-                onClick={goBack}
+                className="delete-profile-btn"
+                onClick={deleteProfile}
               >
-                Cancelar
+                <i className="fas fa-trash"></i>
+                Excluir Perfil
               </button>
             </div>
           </div>
@@ -1312,9 +974,177 @@ const App: React.FC = () => {
     )
   }
 
+  // Renderizar tela de feed
+  const renderFeedScreen = () => (
+    <div className="screen active">
+      <div className="feed">
+        <div className="search-header">
+          <div className="search-bar">
+            <i className="fas fa-search"></i>
+            <input
+              type="text"
+              placeholder="Buscar profissionais, serviços..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchProfiles()}
+            />
+            {searchTerm && (
+              <button className="clear-search" onClick={clearSearch}>
+                <i className="fas fa-times"></i>
+              </button>
+            )}
+          </div>
+
+          <div className="proximity-filters">
+            <div className="filter-row">
+              <button
+                className={`proximity-toggle ${proximityEnabled ? 'active' : ''}`}
+                onClick={toggleProximity}
+                disabled={isLoading}
+              >
+                <i className="fas fa-map-marker-alt"></i>
+                {proximityEnabled ? 'Busca por proximidade ativa' : 'Buscar por proximidade'}
+              </button>
+              
+              {!userLocation && !proximityEnabled && (
+                <button
+                  className="enable-location-btn"
+                  onClick={enableLocation}
+                  disabled={isLoading}
+                >
+                  <i className="fas fa-location-arrow"></i>
+                  {isLoading ? 'Obtendo...' : 'Ativar localização'}
+                </button>
+              )}
+            </div>
+
+            {proximityEnabled && (
+              <div className="radius-selector">
+                <label>Raio:</label>
+                <select
+                  value={searchRadius}
+                  onChange={(e) => setSearchRadius(Number(e.target.value))}
+                >
+                  <option value={5}>5 km</option>
+                  <option value={10}>10 km</option>
+                  <option value={25}>25 km</option>
+                  <option value={50}>50 km</option>
+                  <option value={100}>100 km</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="search-results-info">
+            {isSearching ? (
+              <p>Buscando profissionais...</p>
+            ) : (
+              <p>{profiles.length} profissionais encontrados</p>
+            )}
+          </div>
+        </div>
+
+        {profiles.length === 0 && !isSearching ? (
+          <div className="no-results">
+            <i className="fas fa-search"></i>
+            <h3>Nenhum profissional encontrado</h3>
+            <p>Tente ajustar sua busca ou expandir o raio de proximidade</p>
+            <div className="no-results-actions">
+              <button className="explore-all-btn" onClick={() => {
+                setSearchTerm('')
+                setProximityEnabled(false)
+                loadProfiles()
+              }}>
+                Ver todos os profissionais
+              </button>
+              <button className="back-home-btn" onClick={() => setCurrentScreen('home')}>
+                <i className="fas fa-home"></i>
+                Voltar ao início
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {profiles.map((profile) => (
+              <div key={profile.id} className="profile-card">
+                <div className="profile-header">
+                  <div className="profile-pic">
+                    {profile.foto_url ? (
+                      <img src={profile.foto_url} alt={profile.nome} />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.5rem',
+                        color: 'rgba(255, 255, 255, 0.5)'
+                      }}>
+                        <i className="fas fa-user"></i>
+                      </div>
+                    )}
+                  </div>
+                  <div className="profile-info">
+                    <div className="profile-name-distance">
+                      <h2>{profile.nome}</h2>
+                      {profile.distancia && (
+                        <div className="distance-badge">
+                          <i className="fas fa-map-marker-alt"></i>
+                          {profile.distancia.toFixed(1)} km
+                        </div>
+                      )}
+                    </div>
+                    <p className="description">{profile.descricao}</p>
+                    <span className={`status status-${profile.status}`}>
+                      {profile.status === 'available' ? 'Disponível' : 'Ocupado'}
+                    </span>
+                  </div>
+                </div>
+
+                {profile.tags && profile.tags.length > 0 && (
+                  <div className="hashtags">
+                    {profile.tags.map((tag, index) => (
+                      <span 
+                        key={index} 
+                        className="tag-clickable"
+                        onClick={() => searchByTag(tag)}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <a
+                  href={`https://wa.me/${profile.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="whatsapp-btn"
+                >
+                  <i className="fab fa-whatsapp"></i>
+                  Entrar em contato
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // Renderizar tela sobre
   const renderAboutScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
+
       <div className="content-container">
         <h1 className="page-title">
           <i className="fas fa-info-circle"></i>
@@ -1324,43 +1154,43 @@ const App: React.FC = () => {
         <div className="about-content">
           <div className="content-section">
             <p className="intro-text">
-              O TEX (TrampoExpress) é a plataforma que conecta profissionais talentosos 
-              a clientes que precisam de seus serviços, criando oportunidades e 
-              facilitando conexões significativas.
+              O TEX (TrampoExpress) é a plataforma que conecta profissionais qualificados 
+              a pessoas que precisam de serviços de qualidade. Nossa missão é facilitar 
+              essas conexões de forma rápida, segura e eficiente.
             </p>
-            
+
             <div className="features-grid">
               <div className="feature-card">
-                <i className="fas fa-handshake"></i>
-                <h3>Conexões Diretas</h3>
-                <p>Conecte-se diretamente com profissionais através do WhatsApp</p>
+                <i className="fas fa-search"></i>
+                <h3>Busca Inteligente</h3>
+                <p>Encontre profissionais por localização, especialidade ou avaliação</p>
               </div>
               
               <div className="feature-card">
                 <i className="fas fa-map-marker-alt"></i>
-                <h3>Busca por Proximidade</h3>
-                <p>Encontre profissionais próximos à sua localização</p>
+                <h3>Proximidade</h3>
+                <p>Veja profissionais próximos a você com cálculo de distância em tempo real</p>
+              </div>
+              
+              <div className="feature-card">
+                <i className="fab fa-whatsapp"></i>
+                <h3>Contato Direto</h3>
+                <p>Converse diretamente pelo WhatsApp sem intermediários</p>
               </div>
               
               <div className="feature-card">
                 <i className="fas fa-shield-alt"></i>
                 <h3>Segurança</h3>
-                <p>Plataforma segura com verificação de perfis</p>
-              </div>
-              
-              <div className="feature-card">
-                <i className="fas fa-star"></i>
-                <h3>Qualidade</h3>
-                <p>Profissionais qualificados e serviços de excelência</p>
+                <p>Perfis verificados e sistema seguro de comunicação</p>
               </div>
             </div>
-            
+
             <div className="warning-box">
               <i className="fas fa-exclamation-triangle"></i>
               <p>
                 <strong>Importante:</strong> O TEX é uma plataforma de conexão. 
-                Sempre verifique as credenciais dos profissionais e negocie 
-                diretamente os termos do serviço.
+                Sempre verifique credenciais, peça orçamentos detalhados e 
+                mantenha a comunicação transparente com os profissionais.
               </p>
             </div>
           </div>
@@ -1369,9 +1199,16 @@ const App: React.FC = () => {
     </div>
   )
 
+  // Renderizar tela de termos
   const renderTermsScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
+
       <div className="content-container">
         <h1 className="page-title">
           <i className="fas fa-file-contract"></i>
@@ -1380,77 +1217,64 @@ const App: React.FC = () => {
         
         <div className="terms-content">
           <div className="terms-section">
-            <h2>
-              <i className="fas fa-check-circle"></i>
-              1. Aceitação dos Termos
-            </h2>
+            <h2><i className="fas fa-handshake"></i>Aceitação dos Termos</h2>
             <p>
-              Ao acessar e usar o TEX, você concorda com estes termos de uso. 
-              Se você não concordar com qualquer parte destes termos, não use nosso serviço.
+              Ao utilizar o TEX, você concorda com estes termos de uso. 
+              Se não concordar com qualquer parte, não utilize nossos serviços.
             </p>
           </div>
 
           <div className="terms-section">
-            <h2>
-              <i className="fas fa-user-shield"></i>
-              2. Uso do Serviço
-            </h2>
-            <p>O TEX é uma plataforma que conecta prestadores de serviços e clientes. Você concorda em:</p>
+            <h2><i className="fas fa-users"></i>Uso da Plataforma</h2>
+            <p>O TEX é uma plataforma de conexão entre profissionais e clientes. Você se compromete a:</p>
             <ul>
-              <li>Fornecer informações verdadeiras e precisas</li>
-              <li>Manter suas informações atualizadas</li>
-              <li>Não usar o serviço para fins ilegais ou não autorizados</li>
-              <li>Respeitar outros usuários da plataforma</li>
+              <li>Fornecer informações verdadeiras e atualizadas</li>
+              <li>Manter um comportamento respeitoso</li>
+              <li>Não usar a plataforma para fins ilegais</li>
+              <li>Respeitar os direitos de outros usuários</li>
             </ul>
           </div>
 
           <div className="terms-section">
-            <h2>
-              <i className="fas fa-exclamation-triangle"></i>
-              3. Responsabilidades
-            </h2>
-            <p>O TEX não se responsabiliza por:</p>
+            <h2><i className="fas fa-shield-alt"></i>Responsabilidades</h2>
+            <p>O TEX atua apenas como intermediário. Não nos responsabilizamos por:</p>
             <ul>
               <li>Qualidade dos serviços prestados</li>
               <li>Disputas entre usuários</li>
-              <li>Perdas ou danos resultantes do uso da plataforma</li>
-              <li>Conteúdo gerado pelos usuários</li>
+              <li>Danos ou prejuízos decorrentes das contratações</li>
+              <li>Veracidade das informações fornecidas pelos usuários</li>
             </ul>
           </div>
 
           <div className="terms-section">
-            <h2>
-              <i className="fas fa-lock"></i>
-              4. Privacidade
-            </h2>
+            <h2><i className="fas fa-user-shield"></i>Privacidade</h2>
             <p>
-              Protegemos seus dados de acordo com nossa política de privacidade. 
-              Ao usar o TEX, você concorda com nossa coleta e uso de informações 
-              conforme descrito em nossa política.
-            </p>
-          </div>
-
-          <div className="terms-section">
-            <h2>
-              <i className="fas fa-edit"></i>
-              5. Modificações
-            </h2>
-            <p>
-              Reservamos o direito de modificar estes termos a qualquer momento. 
-              Alterações significativas serão notificadas aos usuários através 
-              da plataforma.
+              Protegemos seus dados pessoais conforme nossa política de privacidade. 
+              Coletamos apenas informações necessárias para o funcionamento da plataforma.
             </p>
           </div>
 
           <div className="terms-section coming-soon">
             <h2>
-              <i className="fas fa-gavel"></i>
-              6. Resolução de Disputas
+              <i className="fas fa-star"></i>
+              Sistema de Avaliações
               <span className="badge">Em Breve</span>
             </h2>
             <p>
-              Estamos desenvolvendo um sistema de <span className="highlight">mediação</span> 
-              para ajudar na resolução de conflitos entre usuários.
+              Em breve implementaremos um sistema de <span className="highlight">avaliações e comentários</span> 
+              para aumentar a confiança entre usuários e melhorar a qualidade dos serviços.
+            </p>
+          </div>
+
+          <div className="terms-section coming-soon">
+            <h2>
+              <i className="fas fa-credit-card"></i>
+              Pagamentos Integrados
+              <span className="badge">Futuro</span>
+            </h2>
+            <p>
+              Planejamos integrar um sistema de <span className="highlight">pagamentos seguros</span> 
+              diretamente na plataforma para maior comodidade e segurança nas transações.
             </p>
           </div>
         </div>
@@ -1458,63 +1282,58 @@ const App: React.FC = () => {
     </div>
   )
 
-  const renderCurrentScreen = () => {
-    switch (currentScreen) {
-      case 'home':
-        return renderHomeScreen()
-      case 'login':
-        return renderLoginScreen()
-      case 'setup':
-        return renderSetupScreen()
-      case 'feed':
-        return renderFeedScreen()
-      case 'profile':
-        return renderProfileScreen()
-      case 'edit':
-        return renderEditScreen()
-      case 'about':
-        return renderAboutScreen()
-      case 'terms':
-        return renderTermsScreen()
-      default:
-        return renderHomeScreen()
-    }
-  }
+  // Renderizar footer
+  const renderFooter = () => (
+    <footer>
+      <nav className="footer-nav">
+        <button onClick={() => setCurrentScreen('home')}>Home</button>
+        <button onClick={() => setCurrentScreen('about')}>Sobre</button>
+        <button onClick={() => setCurrentScreen('terms')}>Termos</button>
+        <a href="https://instagram.com/tex.app" target="_blank" rel="noopener noreferrer">
+          Instagram
+        </a>
+      </nav>
+      <div className="copyright">
+        © 2025 TrampoExpress. Todos os direitos reservados.
+      </div>
+    </footer>
+  )
 
   return (
     <div style={{ 
       minHeight: '100vh', 
-      paddingTop: currentScreen === 'home' ? '0' : '80px',
-      paddingBottom: '80px'
+      display: 'flex', 
+      flexDirection: 'column',
+      paddingTop: currentScreen !== 'home' ? '80px' : '0'
     }}>
-      {renderHeader()}
-      {renderCurrentScreen()}
-      
-      <footer>
-        <nav className="footer-nav">
-          <button onClick={() => {
-            setCurrentScreen('home')
-            setNavigationHistory(['home'])
-          }}>
-            Home
-          </button>
-          <button onClick={() => navigateToScreen('about')}>
-            Sobre
-          </button>
-          <button onClick={() => navigateToScreen('terms')}>
-            Termos
-          </button>
-          <a href="#" onClick={(e) => e.preventDefault()}>
-            Redes Sociais
-          </a>
-        </nav>
-        <div className="copyright">
-          © 2025 TrampoExpress. Todos os direitos reservados.
-        </div>
-      </footer>
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: 'rgba(0, 0, 0, 0.9)',
+            color: 'white',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px'
+          }
+        }}
+      />
       
       <PWAInstallPrompt />
-      <Toaster position="top-center" />
+      
+      {renderHeader()}
+      
+      <main style={{ flex: 1 }}>
+        {currentScreen === 'home' && renderHomeScreen()}
+        {currentScreen === 'verify' && renderVerifyScreen()}
+        {currentScreen === 'profile-setup' && renderProfileSetupScreen()}
+        {currentScreen === 'my-profile' && renderMyProfileScreen()}
+        {currentScreen === 'feed' && renderFeedScreen()}
+        {currentScreen === 'about' && renderAboutScreen()}
+        {currentScreen === 'terms' && renderTermsScreen()}
+      </main>
+      
+      {renderFooter()}
     </div>
   )
 }
