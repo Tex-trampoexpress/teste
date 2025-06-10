@@ -537,7 +537,7 @@ const App: React.FC = () => {
       <div className="hero-container">
         <h1>
           Do trampo ao encontro
-          <span>TEX</span>
+          <span>tá no TEX</span>
         </h1>
         
         <div className="search-box">
