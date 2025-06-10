@@ -26,6 +26,7 @@ function App() {
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [searchRadius, setSearchRadius] = useState(10) // km
   const [sortByDistance, setSortByDistance] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   // Criar usuários de exemplo com coordenadas de Florianópolis
   const createExampleUsers = () => {
@@ -514,6 +515,20 @@ function App() {
     setCurrentScreen('editProfile')
   }
 
+  const handleLogout = () => {
+    setCurrentUser(null)
+    setCurrentUserProfile(null)
+    setName('')
+    setDescription('')
+    setLocation('')
+    setTags([])
+    setPhotoFile(null)
+    setPhotoPreview('')
+    setPhone('')
+    setShowProfileMenu(false)
+    setCurrentScreen('home')
+  }
+
   const formatWhatsAppLink = (whatsapp: string, nome: string) => {
     const cleanPhone = whatsapp.replace(/\D/g, '')
     const message = `Olá ${nome}! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
@@ -567,37 +582,110 @@ function App() {
     setCurrentScreen(screen)
   }
 
+  const toggleProfileMenu = () => {
+    setShowProfileMenu(!showProfileMenu)
+  }
+
+  const handleProfileMenuAction = (action: string) => {
+    setShowProfileMenu(false)
+    
+    switch (action) {
+      case 'view':
+        navigateToScreen('myProfile')
+        break
+      case 'edit':
+        startEditProfile()
+        break
+      case 'logout':
+        handleLogout()
+        break
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       <PWAInstallPrompt />
       
       <header className="fixed top-0 w-full bg-black/80 backdrop-blur-md p-6 flex justify-between items-center z-50">
         <div 
-          className="text-2xl font-bold cursor-pointer"
+          className="tex-logo-container tex-logo-normal cursor-pointer"
           onClick={handleBackToHome}
-          style={{
-            background: 'linear-gradient(45deg, #FFD700, #00FFFF)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            fontWeight: '900',
-            letterSpacing: '1px'
-          }}
         >
-          TEX
+          <div className="tex-logo-text">TEX</div>
         </div>
         
-        {/* Profile button - only show when user is logged in */}
+        {/* Profile Menu - only show when user is logged in */}
         {currentUser && (
-          <button 
-            className="profile-header-btn"
-            onClick={() => navigateToScreen('myProfile')}
-            title="Meu Perfil"
-          >
-            <i className="fas fa-user"></i>
-          </button>
+          <div className="relative">
+            <button 
+              className="profile-header-btn"
+              onClick={toggleProfileMenu}
+              title="Menu do Perfil"
+            >
+              <i className="fas fa-user"></i>
+            </button>
+            
+            {/* Profile Dropdown Menu */}
+            {showProfileMenu && (
+              <div className="profile-menu">
+                <div className="profile-menu-content">
+                  {currentUserProfile && (
+                    <div className="profile-menu-header">
+                      <div className="profile-menu-avatar">
+                        {currentUserProfile.foto_url ? (
+                          <img src={currentUserProfile.foto_url} alt={currentUserProfile.nome} />
+                        ) : (
+                          <i className="fas fa-user"></i>
+                        )}
+                      </div>
+                      <div className="profile-menu-info">
+                        <h4>{currentUserProfile.nome}</h4>
+                        <p>{formatPhoneDisplay(currentUserProfile.whatsapp)}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="profile-menu-actions">
+                    <button 
+                      className="profile-menu-item"
+                      onClick={() => handleProfileMenuAction('view')}
+                    >
+                      <i className="fas fa-eye"></i>
+                      Ver Perfil
+                    </button>
+                    
+                    <button 
+                      className="profile-menu-item"
+                      onClick={() => handleProfileMenuAction('edit')}
+                    >
+                      <i className="fas fa-edit"></i>
+                      Editar Perfil
+                    </button>
+                    
+                    <div className="profile-menu-divider"></div>
+                    
+                    <button 
+                      className="profile-menu-item logout"
+                      onClick={() => handleProfileMenuAction('logout')}
+                    >
+                      <i className="fas fa-sign-out-alt"></i>
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </header>
+
+      {/* Overlay para fechar menu */}
+      {showProfileMenu && (
+        <div 
+          className="profile-menu-overlay"
+          onClick={() => setShowProfileMenu(false)}
+        ></div>
+      )}
 
       {/* Home Screen */}
       {currentScreen === 'home' && (
