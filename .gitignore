@@ -1,39 +1,11 @@
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Production builds
-dist/
-build/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
 # Logs
 logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Runtime data
 pids
@@ -42,20 +14,30 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage/
+coverage
 *.lcov
 
 # nyc test coverage
 .nyc_output
 
 # Dependency directories
+node_modules/
 jspm_packages/
+
+# Snowpack dependency directory (https://snowpack.dev/)
+web_modules/
+
+# TypeScript cache
+*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Optional stylelint cache
+.stylelintcache
 
 # Microbundle cache
 .rpt2_cache/
@@ -72,21 +54,43 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
 
-# next.js build output
+# Next.js build output
 .next
+out
 
-# nuxt.js build output
+# Nuxt.js build / generate output
 .nuxt
+dist
+
+# Gatsby files
+.cache/
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# https://nextjs.org/blog/next-9-1#public-directory-support
+# public
 
 # vuepress build output
 .vuepress/dist
 
+# vuepress v2.x temp and cache directory
+.temp
+.cache
+
+# Docusaurus cache and generated files
+.docusaurus
+
 # Serverless directories
-.serverless
+.serverless/
 
 # FuseBox cache
 .fusebox/
@@ -97,5 +101,93 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Vite
+dist/
+dist-ssr/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # Supabase
 .supabase/
+
+# Build outputs
+build/
+out/
+
+# Temporary files
+tmp/
+temp/
+
+# Private and sensitive files
+*.key
+*.pem
+*.p12
+*.p8
+*.mobileprovision
+secrets.json
+credentials.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+
+# Project specific
+/public/screenshots/
+/public/icons/icon-72x72.png
+/public/icons/icon-96x96.png
+/public/icons/icon-128x128.png
+/public/icons/icon-144x144.png
+/public/icons/icon-152x152.png
+/public/icons/icon-384x384.png
+/public/icons/search-shortcut.png
+/public/icons/profile-shortcut.png
+
+# Netlify
+.netlify/
+
+# Analytics and monitoring
+.vercel/
+.firebase/
+
+# Testing
+coverage/
+.nyc_output/
+junit.xml
+
+# Documentation builds
+docs/build/
+docs/.docusaurus/
+
+# Private documentation
+PRIVATE.md
+CONFIDENTIAL.md
+INTERNAL.md
