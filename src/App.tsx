@@ -1237,7 +1237,7 @@ function App() {
 
           <div className="terms-section">
             <h2><i className="fas fa-shield-alt"></i>Responsabilidades</h2>
-            <p>O TEX atua apenas como intermediário. Não nos responsabilizamos por:</p>
+            <p>O TEX atua apenas como plataforma de conexão. Não nos responsabilizamos por:</p>
             <ul>
               <li>Qualidade dos serviços prestados</li>
               <li>Disputas entre usuários</li>
