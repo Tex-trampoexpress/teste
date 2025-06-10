@@ -116,13 +116,9 @@ export class DatabaseService {
       .from('usuarios')
       .select('*')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned
-        return null
-      }
       console.error('Error getting user:', error)
       throw error
     }
@@ -141,13 +137,9 @@ export class DatabaseService {
       .from('usuarios')
       .select('*')
       .eq('whatsapp', whatsapp)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned
-        return null
-      }
       console.error('Error getting user by WhatsApp:', error)
       throw error
     }
@@ -252,13 +244,9 @@ export class DatabaseService {
       .from('usuarios')
       .select('id')
       .eq('whatsapp', whatsapp)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned - WhatsApp not registered
-        return false
-      }
       console.error('Error checking WhatsApp registration:', error)
       throw error
     }
