@@ -13,6 +13,9 @@ export interface Usuario {
   longitude?: number | null
   criado_em: string
   atualizado_em: string
+  ultimo_acesso: string
+  perfil_completo: boolean
+  verificado: boolean
   distancia?: number
 }
 
@@ -95,6 +98,18 @@ export class DatabaseService {
     return data
   }
 
+  // Update last access timestamp
+  static async updateLastAccess(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('usuarios')
+      .update({ ultimo_acesso: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error updating last access:', error)
+    }
+  }
+
   // Get user profile by ID
   static async getUsuario(id: string): Promise<Usuario | null> {
     const { data, error } = await supabase
@@ -111,6 +126,12 @@ export class DatabaseService {
       console.error('Error getting user:', error)
       throw error
     }
+
+    // Update last access when profile is viewed
+    if (data) {
+      this.updateLastAccess(id)
+    }
+
     return data
   }
 
@@ -130,6 +151,12 @@ export class DatabaseService {
       console.error('Error getting user by WhatsApp:', error)
       throw error
     }
+
+    // Update last access when user logs in
+    if (data) {
+      this.updateLastAccess(data.id)
+    }
+
     return data
   }
 
@@ -146,45 +173,34 @@ export class DatabaseService {
     }
   }
 
-  // Get all users with optional filters
+  // Get all users with optional filters (using optimized search function)
   static async getUsuarios(filters?: {
     status?: 'available' | 'busy'
     tags?: string[]
     search?: string
     limit?: number
   }): Promise<Usuario[]> {
-    let query = supabase
-      .from('usuarios')
-      .select('*')
-      .order('criado_em', { ascending: false })
+    const searchTerm = filters?.search || ''
+    const filterTags = filters?.tags || []
+    const filterStatus = filters?.status || 'available'
+    const limitResults = filters?.limit || 50
 
-    if (filters?.status) {
-      query = query.eq('status', filters.status)
-    }
-
-    if (filters?.tags && filters.tags.length > 0) {
-      query = query.overlaps('tags', filters.tags)
-    }
-
-    if (filters?.search) {
-      const searchTerm = `%${filters.search}%`
-      query = query.or(`nome.ilike.${searchTerm},descricao.ilike.${searchTerm},localizacao.ilike.${searchTerm}`)
-    }
-
-    if (filters?.limit) {
-      query = query.limit(filters.limit)
-    }
-
-    const { data, error } = await query
+    const { data, error } = await supabase
+      .rpc('search_usuarios', {
+        search_term: searchTerm,
+        filter_tags: filterTags,
+        filter_status: filterStatus,
+        limit_results: limitResults
+      })
 
     if (error) {
-      console.error('Error getting users:', error)
+      console.error('Error searching users:', error)
       throw error
     }
     return data || []
   }
 
-  // Get users by proximity using the database function
+  // Get users by proximity using the optimized database function
   static async getUsersByProximity(
     latitude: number, 
     longitude: number, 
@@ -224,18 +240,10 @@ export class DatabaseService {
 
   // Get users by location text search
   static async getUsersByLocation(location: string): Promise<Usuario[]> {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .ilike('localizacao', `%${location}%`)
-      .eq('status', 'available')
-      .order('criado_em', { ascending: false })
-
-    if (error) {
-      console.error('Error getting users by location:', error)
-      throw error
-    }
-    return data || []
+    return this.getUsuarios({
+      search: location,
+      status: 'available'
+    })
   }
 
   // Check if WhatsApp number is already registered
@@ -260,6 +268,9 @@ export class DatabaseService {
   // Get user statistics
   static async getUserStats(id: string): Promise<{
     profileCreated: string
+    lastAccess: string
+    profileComplete: boolean
+    verified: boolean
     totalViews?: number
     responseRate?: number
   }> {
@@ -270,9 +281,52 @@ export class DatabaseService {
 
     return {
       profileCreated: user.criado_em,
+      lastAccess: user.ultimo_acesso,
+      profileComplete: user.perfil_completo,
+      verified: user.verificado,
       // These could be implemented later with additional tables
       totalViews: 0,
       responseRate: 0
     }
+  }
+
+  // Get recent users (most active)
+  static async getRecentUsers(limit: number = 20): Promise<Usuario[]> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('status', 'available')
+      .eq('perfil_completo', true)
+      .order('ultimo_acesso', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error getting recent users:', error)
+      throw error
+    }
+    return data || []
+  }
+
+  // Get featured users (verified or complete profiles)
+  static async getFeaturedUsers(limit: number = 10): Promise<Usuario[]> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('status', 'available')
+      .eq('perfil_completo', true)
+      .order('verificado', { ascending: false })
+      .order('criado_em', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error getting featured users:', error)
+      throw error
+    }
+    return data || []
+  }
+
+  // Verify user profile
+  static async verifyUser(id: string): Promise<Usuario> {
+    return this.updateUsuario(id, { verificado: true })
   }
 }
