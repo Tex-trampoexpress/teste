@@ -144,6 +144,8 @@ const App: React.FC = () => {
             longitude: position.coords.longitude
           })
           setLocationPermission('granted')
+          // Ativar busca por proximidade automaticamente quando localização for obtida
+          setProximityEnabled(true)
         },
         (error) => {
           console.error('Erro ao obter localização:', error)
@@ -269,6 +271,16 @@ const App: React.FC = () => {
           userLocation.longitude,
           searchRadius
         )
+        
+        // Se tem termo de busca, filtrar os resultados por proximidade
+        if (searchTerm.trim()) {
+          results = results.filter(user => 
+            user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            user.localizacao?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        }
       } else {
         results = await DatabaseService.getUsuarios({
           search: searchTerm,
@@ -335,10 +347,10 @@ const App: React.FC = () => {
     if (currentScreen === 'feed') {
       handleSearch()
     }
-  }, [currentScreen])
+  }, [currentScreen, proximityEnabled, userLocation])
 
   const renderHeader = () => {
-    const shouldShowScrolled = isScrolled || currentScreen !== 'home'
+    const shouldShowScrolled = isScrolled && currentScreen === 'home'
     
     return (
       <header style={{
@@ -488,44 +500,17 @@ const App: React.FC = () => {
         </h1>
         
         <div className="search-box">
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input
-              type="text"
-              placeholder="O que você está procurando?"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && currentUser) {
-                  navigateToScreen('feed')
-                }
-              }}
-              style={{ flex: 1 }}
-            />
-            {currentUser && (
-              <button 
-                className="search-btn"
-                onClick={() => navigateToScreen('feed')}
-                disabled={isLoading}
-                style={{
-                  background: 'var(--gradient)',
-                  color: 'var(--black)',
-                  border: 'none',
-                  padding: '1.2rem 1.5rem',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <i className="fas fa-search"></i>
-                {isLoading ? 'Buscando...' : 'Buscar'}
-              </button>
-            )}
-          </div>
+          <input
+            type="text"
+            placeholder="O que você está procurando?"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && currentUser) {
+                navigateToScreen('feed')
+              }
+            }}
+          />
           
           {currentUser ? (
             <button 
@@ -553,8 +538,24 @@ const App: React.FC = () => {
               onClick={getCurrentLocation}
             >
               <i className="fas fa-map-marker-alt"></i>
-              Ativar Localização
+              Ativar Localização para Busca Próxima
             </button>
+          </div>
+        )}
+
+        {locationPermission === 'granted' && userLocation && (
+          <div className="location-status">
+            <div style={{ 
+              color: 'var(--cyan)', 
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              justifyContent: 'center'
+            }}>
+              <i className="fas fa-map-marker-alt"></i>
+              Localização ativada - Busca por proximidade disponível
+            </div>
           </div>
         )}
       </div>
@@ -757,29 +758,6 @@ const App: React.FC = () => {
                 <i className="fas fa-times"></i>
               </button>
             )}
-            <button 
-              className="search-button"
-              onClick={handleSearch}
-              disabled={isLoading}
-              style={{
-                background: 'var(--gradient)',
-                color: 'var(--black)',
-                border: 'none',
-                padding: '0.8rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                marginLeft: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem'
-              }}
-            >
-              <i className="fas fa-search"></i>
-              {isLoading ? 'Buscando...' : 'Buscar'}
-            </button>
           </div>
           
           <div className="proximity-filters">
@@ -796,7 +774,7 @@ const App: React.FC = () => {
                 disabled={!userLocation && locationPermission === 'denied'}
               >
                 <i className="fas fa-map-marker-alt"></i>
-                Busca por Proximidade
+                {proximityEnabled ? 'Busca por Proximidade (Ativa)' : 'Ativar Busca por Proximidade'}
               </button>
               
               {!userLocation && locationPermission !== 'denied' && (
@@ -812,7 +790,7 @@ const App: React.FC = () => {
             
             {proximityEnabled && userLocation && (
               <div className="radius-selector">
-                <label>Raio:</label>
+                <label>Raio de busca:</label>
                 <select 
                   value={searchRadius} 
                   onChange={(e) => setSearchRadius(Number(e.target.value))}
