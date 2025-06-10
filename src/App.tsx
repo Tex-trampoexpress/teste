@@ -758,6 +758,37 @@ const App: React.FC = () => {
                 <i className="fas fa-times"></i>
               </button>
             )}
+            <button 
+              className="search-btn"
+              onClick={handleSearch}
+              disabled={isLoading}
+              style={{
+                background: 'var(--gradient)',
+                color: 'var(--black)',
+                border: 'none',
+                padding: '0.8rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                marginLeft: '0.5rem',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {isLoading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i>
+                  Buscando...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-search"></i>
+                  Buscar
+                </>
+              )}
+            </button>
           </div>
           
           <div className="proximity-filters">
