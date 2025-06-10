@@ -204,6 +204,52 @@ body::before {
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Status Toggle Container - NOVO */
+.status-toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.status-toggle-switch {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+
+.status-toggle-switch:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.status-toggle-switch.updating {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.status-toggle-handle {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-toggle-text {
+  transition: all 0.3s ease;
+}
+
 .profile-menu-actions {
   display: flex;
   flex-direction: column;
@@ -1705,6 +1751,28 @@ footer {
     right: -10px;
     min-width: 260px;
   }
+
+  /* Status Toggle Mobile */
+  .status-toggle-container {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .status-toggle-switch {
+    width: 80px !important;
+    height: 40px !important;
+  }
+
+  .status-toggle-handle {
+    width: 32px !important;
+    height: 32px !important;
+    left: 4px !important;
+  }
+
+  .status-toggle-switch.available .status-toggle-handle {
+    left: 44px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1830,5 +1898,32 @@ footer {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
+  }
+
+  /* Status Toggle Mobile Pequeno */
+  .status-toggle-container {
+    padding: 0.8rem;
+  }
+
+  .status-toggle-label {
+    font-size: 0.8rem;
+  }
+
+  .status-toggle-switch {
+    width: 70px !important;
+    height: 35px !important;
+  }
+
+  .status-toggle-handle {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .status-toggle-switch.available .status-toggle-handle {
+    left: 38px !important;
+  }
+
+  .status-toggle-text {
+    font-size: 7px !important;
   }
 }

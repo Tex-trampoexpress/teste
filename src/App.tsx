@@ -43,6 +43,7 @@ function App() {
 
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   // Histórico de navegação para botão voltar
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
@@ -426,20 +427,40 @@ function App() {
     searchProfiles()
   }
 
-  // Função para atualizar status
+  // Função para atualizar status (CORRIGIDA)
   const updateStatus = async (newStatus: 'available' | 'busy') => {
-    if (!currentUser) return
+    if (!currentUser || isUpdatingStatus) return
 
     try {
+      setIsUpdatingStatus(true)
+      
+      // Atualizar no banco de dados
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
+      
+      // Atualizar estados locais
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
+      
+      // Atualizar localStorage
       localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
-      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
+      
+      // Feedback visual
+      const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
+      toast.success(`Status alterado para ${statusText}`)
+      
     } catch (error) {
       console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
+      toast.error('Erro ao atualizar status. Tente novamente.')
+    } finally {
+      setIsUpdatingStatus(false)
     }
+  }
+
+  // Função para alternar status (toggle)
+  const toggleStatus = async () => {
+    if (!currentUser) return
+    const newStatus = currentUser.status === 'available' ? 'busy' : 'available'
+    await updateStatus(newStatus)
   }
 
   // Função para logout
@@ -624,6 +645,62 @@ function App() {
                       </div>
                     </div>
                     
+                    {/* Toggle de Status - NOVO DESIGN */}
+                    <div className="status-toggle-container">
+                      <div className="status-toggle-label">
+                        <i className="fas fa-circle" style={{ 
+                          color: currentUser.status === 'available' ? 'var(--status-green)' : 'var(--status-red)' 
+                        }}></i>
+                        Status
+                      </div>
+                      <div 
+                        className={`status-toggle-switch ${currentUser.status === 'available' ? 'available' : 'busy'} ${isUpdatingStatus ? 'updating' : ''}`}
+                        onClick={toggleStatus}
+                        style={{
+                          width: '60px',
+                          height: '30px',
+                          borderRadius: '15px',
+                          background: currentUser.status === 'available' ? 'var(--status-green)' : 'var(--status-red)',
+                          position: 'relative',
+                          cursor: isUpdatingStatus ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.3s ease',
+                          opacity: isUpdatingStatus ? 0.6 : 1,
+                          border: '2px solid rgba(255, 255, 255, 0.2)'
+                        }}
+                      >
+                        <div 
+                          className="status-toggle-handle"
+                          style={{
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            background: 'white',
+                            position: 'absolute',
+                            top: '2px',
+                            left: currentUser.status === 'available' ? '32px' : '2px',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                          }}
+                        />
+                        <div 
+                          className="status-toggle-text"
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: currentUser.status === 'available' ? '8px' : '8px',
+                            transform: 'translateY(-50%)',
+                            fontSize: '8px',
+                            fontWeight: '600',
+                            color: 'white',
+                            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                            opacity: 0.9
+                          }}
+                        >
+                          {currentUser.status === 'available' ? 'ON' : 'OFF'}
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div className="profile-menu-actions">
                       <button 
                         className="profile-menu-item"
@@ -645,16 +722,6 @@ function App() {
                       >
                         <i className="fas fa-search"></i>
                         Buscar Profissionais
-                      </button>
-                      
-                      <div className="profile-menu-divider"></div>
-                      
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => updateStatus(currentUser.status === 'available' ? 'busy' : 'available')}
-                      >
-                        <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
-                        {currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
                       </button>
                       
                       <div className="profile-menu-divider"></div>
