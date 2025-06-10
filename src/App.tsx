@@ -298,6 +298,52 @@ const App: React.FC = () => {
     }
   }
 
+  // Função para buscar da tela inicial
+  const handleHomeSearch = async () => {
+    if (!currentUser) {
+      navigateToScreen('login')
+      return
+    }
+
+    setIsLoading(true)
+    
+    try {
+      let results: Usuario[] = []
+      
+      if (proximityEnabled && userLocation) {
+        results = await DatabaseService.getUsersByProximity(
+          userLocation.latitude,
+          userLocation.longitude,
+          searchRadius
+        )
+        
+        // Se tem termo de busca, filtrar os resultados por proximidade
+        if (searchTerm.trim()) {
+          results = results.filter(user => 
+            user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            user.localizacao?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        }
+      } else {
+        results = await DatabaseService.getUsuarios({
+          search: searchTerm,
+          status: 'available',
+          limit: 50
+        })
+      }
+      
+      setUsers(results)
+      navigateToScreen('feed')
+    } catch (error) {
+      toast.error('Erro na busca')
+      console.error(error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleTagClick = async (tag: string) => {
     setSearchTerm(tag)
     try {
@@ -506,30 +552,40 @@ const App: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === 'Enter' && currentUser) {
-                navigateToScreen('feed')
+              if (e.key === 'Enter') {
+                handleHomeSearch()
               }
             }}
           />
           
-          {currentUser ? (
-            <button 
-              className="explore-btn"
-              onClick={() => navigateToScreen('feed')}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Carregando...' : 'Explorar Profissionais'}
-            </button>
-          ) : (
-            <button 
-              className="whatsapp-login-btn"
-              onClick={() => navigateToScreen('login')}
-            >
-              <i className="fab fa-whatsapp"></i>
-              Entrar com WhatsApp
-            </button>
-          )}
+          <button 
+            className="explore-btn"
+            onClick={handleHomeSearch}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <i className="fas fa-spinner fa-spin"></i>
+                Buscando...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-search"></i>
+                {currentUser ? 'Buscar Profissionais' : 'Entrar e Buscar'}
+              </>
+            )}
+          </button>
         </div>
+
+        {!currentUser && (
+          <button 
+            className="whatsapp-login-btn"
+            onClick={() => navigateToScreen('login')}
+          >
+            <i className="fab fa-whatsapp"></i>
+            Entrar com WhatsApp
+          </button>
+        )}
 
         {locationPermission === 'prompt' && (
           <div className="location-status">
