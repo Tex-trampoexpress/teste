@@ -43,10 +43,9 @@ function App() {
 
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  // Histórico de navegação para botão voltar
-  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
+  // Estado para controle do toggle de status
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   // Verificar se usuário já está logado ao carregar
   useEffect(() => {
@@ -71,60 +70,12 @@ function App() {
     }
   }, [])
 
-  // Suporte ao botão nativo do celular (back button)
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault()
-      handleBackNavigation()
-    }
-
-    // Adicionar estado inicial ao histórico do navegador
-    if (window.history.state === null) {
-      window.history.replaceState({ screen: currentScreen }, '', window.location.href)
-    }
-
-    window.addEventListener('popstate', handlePopState)
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
-  }, [currentScreen, navigationHistory])
-
-  // Atualizar histórico do navegador quando a tela mudar
-  useEffect(() => {
-    if (currentScreen !== 'home') {
-      window.history.pushState({ screen: currentScreen }, '', window.location.href)
-    }
-  }, [currentScreen])
-
   // Carregar perfis quando a tela mudar para feed
   useEffect(() => {
     if (currentScreen === 'feed') {
       loadProfiles()
     }
   }, [currentScreen, proximityEnabled, searchRadius])
-
-  // Função para navegar entre telas com histórico
-  const navigateToScreen = (screen: string) => {
-    setNavigationHistory(prev => [...prev, currentScreen])
-    setCurrentScreen(screen)
-  }
-
-  // Função para voltar (botão e nativo)
-  const handleBackNavigation = () => {
-    if (navigationHistory.length > 1) {
-      const newHistory = [...navigationHistory]
-      const previousScreen = newHistory.pop() // Remove a tela atual
-      const targetScreen = newHistory[newHistory.length - 1] // Pega a anterior
-      
-      setNavigationHistory(newHistory)
-      setCurrentScreen(targetScreen)
-    } else {
-      // Se não há histórico, volta para home
-      setCurrentScreen('home')
-      setNavigationHistory(['home'])
-    }
-  }
 
   // Função para obter localização
   const getCurrentLocation = (): Promise<LocationData> => {
@@ -216,10 +167,10 @@ function App() {
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         
         if (existingUser.perfil_completo) {
-          navigateToScreen('feed')
+          setCurrentScreen('feed')
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         } else {
-          navigateToScreen('profile-setup')
+          setCurrentScreen('profile-setup')
           setProfileData({
             nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
@@ -232,7 +183,7 @@ function App() {
         }
       } else {
         // Usuário novo - ir para cadastro
-        navigateToScreen('profile-setup')
+        setCurrentScreen('profile-setup')
         setProfileData(prev => ({ ...prev }))
         toast.success('Vamos criar seu perfil!')
       }
@@ -263,17 +214,11 @@ function App() {
     }))
   }
 
-  // Função para upload de foto
+  // Função para upload de foto (SEM LIMITAÇÃO DE TAMANHO)
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Verificar tamanho do arquivo (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Arquivo muito grande. Máximo 5MB.')
-        return
-      }
-
-      // Verificar tipo do arquivo
+      // Verificar apenas o tipo do arquivo
       if (!file.type.startsWith('image/')) {
         toast.error('Apenas imagens são permitidas.')
         return
@@ -354,10 +299,10 @@ function App() {
       
       if (isEditingProfile) {
         setIsEditingProfile(false)
-        navigateToScreen('my-profile')
+        setCurrentScreen('my-profile')
         toast.success('Perfil atualizado com sucesso!')
       } else {
-        navigateToScreen('feed')
+        setCurrentScreen('feed')
         toast.success('Perfil criado com sucesso!')
       }
     } catch (error) {
@@ -433,34 +378,24 @@ function App() {
 
     try {
       setIsUpdatingStatus(true)
-      
-      // Atualizar no banco de dados
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
-      
-      // Atualizar estados locais
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
-      
-      // Atualizar localStorage
       localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
-      
-      // Feedback visual
-      const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
-      toast.success(`Status alterado para ${statusText}`)
-      
+      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
     } catch (error) {
       console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status. Tente novamente.')
+      toast.error('Erro ao atualizar status')
     } finally {
       setIsUpdatingStatus(false)
     }
   }
 
-  // Função para alternar status (toggle)
-  const toggleStatus = async () => {
-    if (!currentUser) return
+  // Função para alternar status (NOVA)
+  const toggleStatus = () => {
+    if (!currentUser || isUpdatingStatus) return
     const newStatus = currentUser.status === 'available' ? 'busy' : 'available'
-    await updateStatus(newStatus)
+    updateStatus(newStatus)
   }
 
   // Função para logout
@@ -468,7 +403,6 @@ function App() {
     setCurrentUser(null)
     setIsLoggedIn(false)
     setCurrentScreen('home')
-    setNavigationHistory(['home'])
     setProfileData({
       nome: '',
       descricao: '',
@@ -502,14 +436,14 @@ function App() {
   // Função para editar perfil
   const startEditProfile = () => {
     setIsEditingProfile(true)
-    navigateToScreen('profile-setup')
+    setCurrentScreen('profile-setup')
     setShowProfileMenu(false)
   }
 
   // Função para cancelar edição
   const cancelEdit = () => {
     setIsEditingProfile(false)
-    handleBackNavigation()
+    setCurrentScreen('my-profile')
     // Restaurar dados originais
     if (currentUser) {
       setProfileData({
@@ -525,56 +459,7 @@ function App() {
 
   // Renderizar header com logo e menu do perfil
   const renderHeader = () => {
-    if (currentScreen === 'home') {
-      // Na tela inicial, mostrar apenas o botão de login no canto superior direito
-      return (
-        <header style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          background: 'transparent',
-          padding: '1rem 2rem',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center'
-        }}>
-          {!isLoggedIn && (
-            <button
-              className="whatsapp-header-login-btn"
-              onClick={() => navigateToScreen('verify')}
-              style={{
-                background: 'var(--whatsapp-green)',
-                border: 'none',
-                color: 'white',
-                padding: '0.8rem 1.2rem',
-                borderRadius: '25px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 211, 102, 0.4)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 211, 102, 0.3)'
-              }}
-            >
-              <i className="fab fa-whatsapp"></i>
-              Entrar
-            </button>
-          )}
-        </header>
-      )
-    }
+    if (currentScreen === 'home') return null
 
     return (
       <header style={{
@@ -594,14 +479,14 @@ function App() {
         {/* Logo TEX à esquerda */}
         <div 
           className="tex-logo-container tex-logo-scrolled"
-          onClick={() => navigateToScreen('feed')}
+          onClick={() => setCurrentScreen('feed')}
           style={{ cursor: 'pointer' }}
         >
           <div className="tex-logo-text">TEX</div>
         </div>
 
         {/* Menu do perfil à direita */}
-        {isLoggedIn && currentUser ? (
+        {isLoggedIn && currentUser && (
           <div style={{ position: 'relative' }}>
             <button
               className="profile-header-btn"
@@ -645,58 +530,50 @@ function App() {
                       </div>
                     </div>
                     
-                    {/* Toggle de Status - NOVO DESIGN */}
+                    {/* NOVO: Toggle de Status Interativo */}
                     <div className="status-toggle-container">
                       <div className="status-toggle-label">
-                        <i className="fas fa-circle" style={{ 
-                          color: currentUser.status === 'available' ? 'var(--status-green)' : 'var(--status-red)' 
-                        }}></i>
+                        <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
                         Status
                       </div>
                       <div 
-                        className={`status-toggle-switch ${currentUser.status === 'available' ? 'available' : 'busy'} ${isUpdatingStatus ? 'updating' : ''}`}
+                        className={`status-toggle-switch ${currentUser.status} ${isUpdatingStatus ? 'updating' : ''}`}
                         onClick={toggleStatus}
                         style={{
-                          width: '60px',
-                          height: '30px',
-                          borderRadius: '15px',
-                          background: currentUser.status === 'available' ? 'var(--status-green)' : 'var(--status-red)',
+                          width: '70px',
+                          height: '32px',
+                          backgroundColor: currentUser.status === 'available' ? '#4CAF50' : '#f44336',
+                          borderRadius: '16px',
                           position: 'relative',
                           cursor: isUpdatingStatus ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: currentUser.status === 'available' ? 'flex-end' : 'flex-start',
+                          padding: '2px',
                           transition: 'all 0.3s ease',
-                          opacity: isUpdatingStatus ? 0.6 : 1,
-                          border: '2px solid rgba(255, 255, 255, 0.2)'
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
                         }}
                       >
                         <div 
                           className="status-toggle-handle"
                           style={{
-                            width: '22px',
-                            height: '22px',
+                            width: '28px',
+                            height: '28px',
+                            backgroundColor: 'white',
                             borderRadius: '50%',
-                            background: 'white',
-                            position: 'absolute',
-                            top: '2px',
-                            left: currentUser.status === 'available' ? '32px' : '2px',
-                            transition: 'all 0.3s ease',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                          }}
-                        />
-                        <div 
-                          className="status-toggle-text"
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: currentUser.status === 'available' ? '8px' : '8px',
-                            transform: 'translateY(-50%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             fontSize: '8px',
-                            fontWeight: '600',
-                            color: 'white',
-                            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                            opacity: 0.9
+                            fontWeight: 'bold',
+                            color: currentUser.status === 'available' ? '#4CAF50' : '#f44336',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                           }}
                         >
-                          {currentUser.status === 'available' ? 'ON' : 'OFF'}
+                          <span className="status-toggle-text">
+                            {currentUser.status === 'available' ? 'ON' : 'OFF'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -705,7 +582,7 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          navigateToScreen('my-profile')
+                          setCurrentScreen('my-profile')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -716,7 +593,7 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          navigateToScreen('feed')
+                          setCurrentScreen('feed')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -739,45 +616,8 @@ function App() {
               </>
             )}
           </div>
-        ) : (
-          // Botão de login WhatsApp quando não está logado
-          <button
-            className="whatsapp-header-login-btn"
-            onClick={() => navigateToScreen('verify')}
-            style={{
-              background: 'var(--whatsapp-green)',
-              border: 'none',
-              color: 'white',
-              padding: '0.8rem 1.2rem',
-              borderRadius: '25px',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              fontSize: '0.9rem',
-              fontWeight: '600'
-            }}
-          >
-            <i className="fab fa-whatsapp"></i>
-            Entrar
-          </button>
         )}
       </header>
-    )
-  }
-
-  // Renderizar botão de volta
-  const renderBackButton = () => {
-    if (currentScreen === 'home') return null
-
-    return (
-      <div className="back-button-container">
-        <button className="back-button" onClick={handleBackNavigation}>
-          <i className="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-      </div>
     )
   }
 
@@ -800,12 +640,12 @@ function App() {
             placeholder="Buscar profissionais, serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && navigateToScreen('feed')}
+            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && setCurrentScreen('feed')}
           />
           
           <button 
             className="explore-btn"
-            onClick={() => navigateToScreen('feed')}
+            onClick={() => setCurrentScreen('feed')}
           >
             <i className="fas fa-search"></i>
             Explorar Profissionais
@@ -827,7 +667,7 @@ function App() {
 
         <button 
           className="whatsapp-login-btn"
-          onClick={() => navigateToScreen('verify')}
+          onClick={() => setCurrentScreen('verify')}
         >
           <i className="fab fa-whatsapp"></i>
           Entrar com WhatsApp
@@ -839,7 +679,12 @@ function App() {
   // Renderizar tela de verificação
   const renderVerifyScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
 
       <div className="form-container">
         <h2>Entrar no TEX</h2>
@@ -875,7 +720,21 @@ function App() {
   // Renderizar tela de configuração do perfil
   const renderProfileSetupScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button 
+          className="back-button" 
+          onClick={() => {
+            if (isEditingProfile) {
+              cancelEdit()
+            } else {
+              setCurrentScreen('verify')
+            }
+          }}
+        >
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
 
       <div className="form-container">
         <h2>{isEditingProfile ? 'Editar Perfil' : 'Criar Perfil'}</h2>
@@ -1059,14 +918,13 @@ function App() {
     if (!currentUser) {
       return (
         <div className="screen active">
-          {renderBackButton()}
           <div className="my-profile-content">
             <div className="no-profile">
               <h2>Nenhum perfil encontrado</h2>
               <p>Você precisa criar um perfil primeiro</p>
               <button 
                 className="create-profile-btn"
-                onClick={() => navigateToScreen('verify')}
+                onClick={() => setCurrentScreen('verify')}
               >
                 Criar Perfil
               </button>
@@ -1078,7 +936,6 @@ function App() {
 
     return (
       <div className="screen active">
-        {renderBackButton()}
         <div className="my-profile-content">
           <div className="profile-card">
             <div className="profile-header">
@@ -1165,7 +1022,6 @@ function App() {
   // Renderizar tela de feed
   const renderFeedScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
       <div className="feed">
         <div className="search-header">
           <div className="search-bar">
@@ -1246,7 +1102,7 @@ function App() {
               }}>
                 Ver todos os profissionais
               </button>
-              <button className="back-home-btn" onClick={() => navigateToScreen('home')}>
+              <button className="back-home-btn" onClick={() => setCurrentScreen('home')}>
                 <i className="fas fa-home"></i>
                 Voltar ao início
               </button>
@@ -1327,7 +1183,12 @@ function App() {
   // Renderizar tela sobre
   const renderAboutScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
 
       <div className="content-container">
         <h1 className="page-title">
@@ -1386,7 +1247,12 @@ function App() {
   // Renderizar tela de termos
   const renderTermsScreen = () => (
     <div className="screen active">
-      {renderBackButton()}
+      <div className="back-button-container">
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+          <i className="fas fa-arrow-left"></i>
+          Voltar
+        </button>
+      </div>
 
       <div className="content-container">
         <h1 className="page-title">
@@ -1416,7 +1282,7 @@ function App() {
 
           <div className="terms-section">
             <h2><i className="fas fa-shield-alt"></i>Responsabilidades</h2>
-            <p>O TEX atua apenas como plataforma de conexão. Não nos responsabilizamos por:</p>
+            <p>O TEX atua apenas como intermediário. Não nos responsabilizamos por:</p>
             <ul>
               <li>Qualidade dos serviços prestados</li>
               <li>Disputas entre usuários</li>
@@ -1434,20 +1300,11 @@ function App() {
           </div>
 
           <div className="terms-section">
-            <h2><i className="fas fa-dollar-sign"></i>Modelo de Receita</h2>
+            <h2><i className="fas fa-credit-card"></i>Modelo de Receita</h2>
             <p>
-              O TEX opera com um modelo de sustentabilidade baseado em contribuições voluntárias 
-              dos profissionais que utilizam a plataforma para expandir seus negócios.
-            </p>
-            <ul>
-              <li>Taxa de contribuição fixa e transparente</li>
-              <li>Pagamento facilitado via QR Code</li>
-              <li>Recursos adicionais para contribuintes</li>
-              <li>Plataforma gratuita para usuários que buscam serviços</li>
-            </ul>
-            <p>
-              Este modelo permite manter a plataforma funcionando de forma sustentável, 
-              garantindo melhorias contínuas e novos recursos para toda a comunidade.
+              O TEX opera com um modelo de receita baseado em taxa fixa via QR Code. 
+              Profissionais ativos podem contribuir voluntariamente para manter e 
+              melhorar a plataforma através de pagamentos seguros e transparentes.
             </p>
           </div>
 
@@ -1471,9 +1328,9 @@ function App() {
   const renderFooter = () => (
     <footer>
       <nav className="footer-nav">
-        <button onClick={() => navigateToScreen('home')}>Home</button>
-        <button onClick={() => navigateToScreen('about')}>Sobre</button>
-        <button onClick={() => navigateToScreen('terms')}>Termos</button>
+        <button onClick={() => setCurrentScreen('home')}>Home</button>
+        <button onClick={() => setCurrentScreen('about')}>Sobre</button>
+        <button onClick={() => setCurrentScreen('terms')}>Termos</button>
         <a href="https://instagram.com/tex.app" target="_blank" rel="noopener noreferrer">
           Instagram
         </a>
