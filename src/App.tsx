@@ -1366,6 +1366,25 @@ function App() {
             </p>
           </div>
 
+          <div className="terms-section">
+            <h2><i className="fas fa-dollar-sign"></i>Modelo de Receita</h2>
+            <p>
+              O TEX opera com um modelo de sustentabilidade baseado em contribuições voluntárias 
+              dos profissionais que utilizam a plataforma para expandir seus negócios.
+            </p>
+            <ul>
+              <li>Taxa de contribuição fixa e transparente</li>
+              <li>Pagamento facilitado via QR Code</li>
+              <li>Contribuição mensal opcional para profissionais ativos</li>
+              <li>Recursos adicionais para contribuintes</li>
+              <li>Plataforma gratuita para usuários que buscam serviços</li>
+            </ul>
+            <p>
+              Este modelo permite manter a plataforma funcionando de forma sustentável, 
+              garantindo melhorias contínuas e novos recursos para toda a comunidade.
+            </p>
+          </div>
+
           <div className="terms-section coming-soon">
             <h2>
               <i className="fas fa-star"></i>
@@ -1375,18 +1394,6 @@ function App() {
             <p>
               Em breve implementaremos um sistema de <span className="highlight">avaliações e comentários</span> 
               para aumentar a confiança entre usuários e melhorar a qualidade dos serviços.
-            </p>
-          </div>
-
-          <div className="terms-section coming-soon">
-            <h2>
-              <i className="fas fa-credit-card"></i>
-              Pagamentos Integrados
-              <span className="badge">Futuro</span>
-            </h2>
-            <p>
-              Planejamos integrar um sistema de <span className="highlight">pagamentos seguros</span> 
-              diretamente na plataforma para maior comodidade e segurança nas transações.
             </p>
           </div>
         </div>
