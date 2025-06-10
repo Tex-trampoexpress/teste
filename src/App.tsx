@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   // Estados para formulários
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -36,11 +37,22 @@ const App: React.FC = () => {
   // Gerenciar histórico de navegação para botão voltar nativo
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
 
+  // Detectar scroll para logo dinâmico
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // Função para navegar entre telas
   const navigateToScreen = (screen: string) => {
     setNavigationHistory(prev => [...prev, screen])
     setCurrentScreen(screen)
     setShowProfileMenu(false)
+    window.scrollTo(0, 0)
   }
 
   // Função para voltar (compatível com botão nativo)
@@ -326,7 +338,7 @@ const App: React.FC = () => {
   }, [currentScreen])
 
   const renderHeader = () => {
-    const isScrolled = currentScreen !== 'home'
+    const shouldShowScrolled = isScrolled || currentScreen !== 'home'
     
     return (
       <header style={{
@@ -335,9 +347,9 @@ const App: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 100,
-        background: isScrolled ? 'rgba(0, 0, 0, 0.9)' : 'transparent',
-        backdropFilter: isScrolled ? 'blur(15px)' : 'none',
-        border: isScrolled ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+        background: shouldShowScrolled ? 'rgba(0, 0, 0, 0.9)' : 'transparent',
+        backdropFilter: shouldShowScrolled ? 'blur(15px)' : 'none',
+        border: shouldShowScrolled ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
         padding: '1rem 2rem',
         display: 'flex',
         justifyContent: 'space-between',
@@ -345,7 +357,7 @@ const App: React.FC = () => {
         transition: 'all 0.3s ease'
       }}>
         <div 
-          className={`tex-logo-container ${isScrolled ? 'tex-logo-scrolled' : 'tex-logo-normal'}`}
+          className={`tex-logo-container ${shouldShowScrolled ? 'tex-logo-scrolled' : 'tex-logo-normal'}`}
           onClick={() => {
             setCurrentScreen('home')
             setNavigationHistory(['home'])
