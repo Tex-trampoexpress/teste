@@ -187,7 +187,7 @@ const App: React.FC = () => {
           })
           localStorage.setItem('tex_user_phone', formattedPhone)
           toast.success('Login realizado com sucesso!')
-          navigateToScreen('feed')
+          navigateToScreen('profile')
         } else {
           localStorage.setItem('tex_user_phone', formattedPhone)
           setPhoneNumber(formattedPhone)
@@ -212,9 +212,7 @@ const App: React.FC = () => {
     
     try {
       const userData = {
-        id: crypto.randomUUID(),
         nome: profileData.nome.trim(),
-        whatsapp: phoneNumber,
         descricao: profileData.descricao.trim(),
         tags: profileData.tags,
         foto_url: profileData.foto_url || null,
@@ -227,16 +225,43 @@ const App: React.FC = () => {
       let savedUser: Usuario
 
       if (currentUser) {
+        // Atualizar usuário existente
         savedUser = await DatabaseService.updateUsuario(currentUser.id, userData)
       } else {
-        savedUser = await DatabaseService.createUsuario(userData)
+        // Criar novo usuário
+        const newUserData = {
+          id: crypto.randomUUID(),
+          whatsapp: phoneNumber,
+          ...userData
+        }
+        savedUser = await DatabaseService.createUsuario(newUserData)
       }
 
       setCurrentUser(savedUser)
       toast.success('Perfil salvo com sucesso!')
-      navigateToScreen('feed')
+      
+      // Redirecionar para o perfil após salvar
+      navigateToScreen('profile')
     } catch (error) {
-      toast.error('Erro ao salvar perfil')
+      toast.error('Erro ao salvar perfil. Tente novamente.')
+      console.error('Erro detalhado:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Função para atualizar apenas o status do usuário
+  const handleStatusUpdate = async (newStatus: 'available' | 'busy') => {
+    if (!currentUser) return
+
+    setIsLoading(true)
+    try {
+      const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
+      setCurrentUser(updatedUser)
+      setProfileData(prev => ({ ...prev, status: newStatus }))
+      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
+    } catch (error) {
+      toast.error('Erro ao atualizar status')
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -420,101 +445,128 @@ const App: React.FC = () => {
           <div className="tex-logo-text">TEX</div>
         </div>
 
-        {currentUser && (
-          <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Botão de Login/Entrar sempre visível quando não logado */}
+          {!currentUser && (
             <button 
-              className="profile-header-btn"
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              onClick={() => navigateToScreen('login')}
+              style={{
+                background: 'var(--gradient)',
+                color: 'var(--black)',
+                border: 'none',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
             >
-              {currentUser.foto_url ? (
-                <img 
-                  src={currentUser.foto_url} 
-                  alt="Perfil" 
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    objectFit: 'cover'
-                  }}
-                />
-              ) : (
-                <i className="fas fa-user"></i>
-              )}
+              <i className="fab fa-whatsapp"></i>
+              Entrar
             </button>
+          )}
 
-            {showProfileMenu && (
-              <>
-                <div 
-                  className="profile-menu-overlay"
-                  onClick={() => setShowProfileMenu(false)}
-                />
-                <div className="profile-menu">
-                  <div className="profile-menu-content">
-                    <div className="profile-menu-header">
-                      <div className="profile-menu-avatar">
-                        {currentUser.foto_url ? (
-                          <img src={currentUser.foto_url} alt="Perfil" />
-                        ) : (
+          {/* Menu do perfil quando logado */}
+          {currentUser && (
+            <div style={{ position: 'relative' }}>
+              <button 
+                className="profile-header-btn"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                {currentUser.foto_url ? (
+                  <img 
+                    src={currentUser.foto_url} 
+                    alt="Perfil" 
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <i className="fas fa-user"></i>
+                )}
+              </button>
+
+              {showProfileMenu && (
+                <>
+                  <div 
+                    className="profile-menu-overlay"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div className="profile-menu">
+                    <div className="profile-menu-content">
+                      <div className="profile-menu-header">
+                        <div className="profile-menu-avatar">
+                          {currentUser.foto_url ? (
+                            <img src={currentUser.foto_url} alt="Perfil" />
+                          ) : (
+                            <i className="fas fa-user"></i>
+                          )}
+                        </div>
+                        <div className="profile-menu-info">
+                          <h4>{currentUser.nome}</h4>
+                          <p>{currentUser.whatsapp}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="profile-menu-actions">
+                        <button 
+                          className="profile-menu-item"
+                          onClick={() => navigateToScreen('profile')}
+                        >
                           <i className="fas fa-user"></i>
-                        )}
+                          Meu Perfil
+                        </button>
+                        
+                        <button 
+                          className="profile-menu-item"
+                          onClick={() => navigateToScreen('edit')}
+                        >
+                          <i className="fas fa-edit"></i>
+                          Editar Perfil
+                        </button>
+                        
+                        <div className="profile-menu-divider"></div>
+                        
+                        <button 
+                          className="profile-menu-item"
+                          onClick={() => navigateToScreen('about')}
+                        >
+                          <i className="fas fa-info-circle"></i>
+                          Sobre o TEX
+                        </button>
+                        
+                        <button 
+                          className="profile-menu-item"
+                          onClick={() => navigateToScreen('terms')}
+                        >
+                          <i className="fas fa-file-contract"></i>
+                          Termos de Uso
+                        </button>
+                        
+                        <div className="profile-menu-divider"></div>
+                        
+                        <button 
+                          className="profile-menu-item logout"
+                          onClick={handleLogout}
+                        >
+                          <i className="fas fa-sign-out-alt"></i>
+                          Sair
+                        </button>
                       </div>
-                      <div className="profile-menu-info">
-                        <h4>{currentUser.nome}</h4>
-                        <p>{currentUser.whatsapp}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="profile-menu-actions">
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => navigateToScreen('profile')}
-                      >
-                        <i className="fas fa-user"></i>
-                        Meu Perfil
-                      </button>
-                      
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => navigateToScreen('edit')}
-                      >
-                        <i className="fas fa-edit"></i>
-                        Editar Perfil
-                      </button>
-                      
-                      <div className="profile-menu-divider"></div>
-                      
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => navigateToScreen('about')}
-                      >
-                        <i className="fas fa-info-circle"></i>
-                        Sobre o TEX
-                      </button>
-                      
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => navigateToScreen('terms')}
-                      >
-                        <i className="fas fa-file-contract"></i>
-                        Termos de Uso
-                      </button>
-                      
-                      <div className="profile-menu-divider"></div>
-                      
-                      <button 
-                        className="profile-menu-item logout"
-                        onClick={handleLogout}
-                      >
-                        <i className="fas fa-sign-out-alt"></i>
-                        Sair
-                      </button>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </header>
     )
   }
@@ -571,16 +623,6 @@ const App: React.FC = () => {
             )}
           </button>
         </div>
-
-        {!currentUser && (
-          <button 
-            className="whatsapp-login-btn"
-            onClick={() => navigateToScreen('login')}
-          >
-            <i className="fab fa-whatsapp"></i>
-            Entrar com WhatsApp
-          </button>
-        )}
 
         {locationPermission === 'prompt' && (
           <div className="location-status">
@@ -1049,6 +1091,40 @@ const App: React.FC = () => {
                 ))}
               </div>
             )}
+
+            {/* Controle de Status Rápido */}
+            <div className="status-control" style={{ 
+              margin: '1.5rem 0',
+              padding: '1rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <h4 style={{ marginBottom: '1rem', color: 'var(--white)', fontSize: '1rem' }}>
+                <i className="fas fa-toggle-on" style={{ marginRight: '0.5rem', color: 'var(--cyan)' }}></i>
+                Alterar Status
+              </h4>
+              <div className="status-toggle">
+                <button
+                  type="button"
+                  className={`status-btn ${currentUser.status === 'available' ? 'active' : ''}`}
+                  onClick={() => handleStatusUpdate('available')}
+                  disabled={isLoading}
+                >
+                  <div className="dot available"></div>
+                  Disponível
+                </button>
+                <button
+                  type="button"
+                  className={`status-btn ${currentUser.status === 'busy' ? 'active' : ''}`}
+                  onClick={() => handleStatusUpdate('busy')}
+                  disabled={isLoading}
+                >
+                  <div className="dot busy"></div>
+                  Ocupado
+                </button>
+              </div>
+            </div>
             
             <div className="profile-stats">
               <div className="stat">
