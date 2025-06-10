@@ -488,13 +488,44 @@ const App: React.FC = () => {
         </h1>
         
         <div className="search-box">
-          <input
-            type="text"
-            placeholder="O que você está procurando?"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && currentUser && navigateToScreen('feed')}
-          />
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="text"
+              placeholder="O que você está procurando?"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && currentUser) {
+                  navigateToScreen('feed')
+                }
+              }}
+              style={{ flex: 1 }}
+            />
+            {currentUser && (
+              <button 
+                className="search-btn"
+                onClick={() => navigateToScreen('feed')}
+                disabled={isLoading}
+                style={{
+                  background: 'var(--gradient)',
+                  color: 'var(--black)',
+                  border: 'none',
+                  padding: '1.2rem 1.5rem',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <i className="fas fa-search"></i>
+                {isLoading ? 'Buscando...' : 'Buscar'}
+              </button>
+            )}
+          </div>
           
           {currentUser ? (
             <button 
@@ -726,6 +757,29 @@ const App: React.FC = () => {
                 <i className="fas fa-times"></i>
               </button>
             )}
+            <button 
+              className="search-button"
+              onClick={handleSearch}
+              disabled={isLoading}
+              style={{
+                background: 'var(--gradient)',
+                color: 'var(--black)',
+                border: 'none',
+                padding: '0.8rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                marginLeft: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              <i className="fas fa-search"></i>
+              {isLoading ? 'Buscando...' : 'Buscar'}
+            </button>
           </div>
           
           <div className="proximity-filters">
@@ -772,15 +826,6 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
-          
-          <button 
-            className="explore-btn"
-            onClick={handleSearch}
-            disabled={isLoading}
-            style={{ marginTop: '1rem' }}
-          >
-            {isLoading ? 'Buscando...' : 'Buscar'}
-          </button>
         </div>
 
         {users.length > 0 ? (
