@@ -298,13 +298,8 @@ const App: React.FC = () => {
     }
   }
 
-  // Função para buscar da tela inicial
+  // Função para buscar da tela inicial - AGORA SEM EXIGIR LOGIN
   const handleHomeSearch = async () => {
-    if (!currentUser) {
-      navigateToScreen('login')
-      return
-    }
-
     setIsLoading(true)
     
     try {
@@ -571,7 +566,7 @@ const App: React.FC = () => {
             ) : (
               <>
                 <i className="fas fa-search"></i>
-                {currentUser ? 'Buscar Profissionais' : 'Entrar e Buscar'}
+                Buscar Profissionais
               </>
             )}
           </button>
