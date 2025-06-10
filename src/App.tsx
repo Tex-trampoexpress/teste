@@ -1375,7 +1375,6 @@ function App() {
             <ul>
               <li>Taxa de contribuição fixa e transparente</li>
               <li>Pagamento facilitado via QR Code</li>
-              <li>Contribuição mensal opcional para profissionais ativos</li>
               <li>Recursos adicionais para contribuintes</li>
               <li>Plataforma gratuita para usuários que buscam serviços</li>
             </ul>
