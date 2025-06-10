@@ -989,7 +989,7 @@ function App() {
               onKeyPress={(e) => e.key === 'Enter' && searchProfiles()}
             />
             {searchTerm && (
-              <button className="clear-search" onClick={clearSearch}>
+              <button className="clear-search\" onClick={clearSearch}>
                 <i className="fas fa-times"></i>
               </button>
             )}
