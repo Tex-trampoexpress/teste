@@ -234,7 +234,7 @@ function App() {
     }
   }
 
-  // Função para salvar perfil (CORRIGIDA)
+  // Função para salvar perfil (COMPLETAMENTE CORRIGIDA)
   const saveProfile = async () => {
     // Validações
     if (!profileData.nome.trim()) {
@@ -259,7 +259,8 @@ function App() {
       if (currentUser && isEditingProfile) {
         // Atualizar usuário existente
         console.log('📝 Atualizando usuário existente:', currentUser.id)
-        user = await DatabaseService.updateUsuario(currentUser.id, {
+        
+        const updateData = {
           nome: profileData.nome.trim(),
           descricao: profileData.descricao.trim(),
           tags: profileData.tags,
@@ -268,8 +269,11 @@ function App() {
           status: profileData.status,
           latitude: userLocation?.latitude || null,
           longitude: userLocation?.longitude || null
-        })
-        console.log('✅ Usuário atualizado com sucesso')
+        }
+        
+        console.log('📊 Dados para atualização:', updateData)
+        user = await DatabaseService.updateUsuario(currentUser.id, updateData)
+        console.log('✅ Usuário atualizado com sucesso:', user)
       } else {
         // Criar novo usuário
         console.log('🆕 Criando novo usuário')
@@ -285,7 +289,7 @@ function App() {
 
         const userId = currentUser?.id || crypto.randomUUID()
         
-        user = await DatabaseService.createUsuario({
+        const createData = {
           id: userId,
           nome: profileData.nome.trim(),
           whatsapp: formattedPhone,
@@ -296,8 +300,11 @@ function App() {
           status: profileData.status,
           latitude: userLocation?.latitude || undefined,
           longitude: userLocation?.longitude || undefined
-        })
-        console.log('✅ Usuário criado com sucesso')
+        }
+        
+        console.log('📊 Dados para criação:', createData)
+        user = await DatabaseService.createUsuario(createData)
+        console.log('✅ Usuário criado com sucesso:', user)
       }
 
       // Atualizar estado local
@@ -389,8 +396,9 @@ function App() {
 
     try {
       setIsUpdatingStatus(true)
-      console.log('🔄 Atualizando status para:', newStatus)
+      console.log('🔄 Atualizando status de', currentUser.status, 'para', newStatus)
       
+      // Usar a função específica de atualização de status
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
       
       // Atualizar todos os estados relacionados
@@ -400,7 +408,7 @@ function App() {
       
       const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
       toast.success(`Status alterado para ${statusText}`)
-      console.log('✅ Status atualizado com sucesso')
+      console.log('✅ Status atualizado com sucesso para:', newStatus)
     } catch (error) {
       console.error('❌ Erro ao atualizar status:', error)
       toast.error('Erro ao atualizar status. Tente novamente.')
