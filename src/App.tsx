@@ -44,7 +44,7 @@ function App() {
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-  // Estado para controle do toggle de status
+  // Estado para controle do toggle de status (CORRIGIDO)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   // Verificar se usuário já está logado ao carregar
@@ -214,7 +214,7 @@ function App() {
     }))
   }
 
-  // Função para upload de foto (SEM LIMITAÇÃO DE TAMANHO)
+  // Função para upload de foto (SEM LIMITAÇÃO DE TAMANHO - CORRIGIDO)
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -234,7 +234,7 @@ function App() {
     }
   }
 
-  // Função para salvar perfil
+  // Função para salvar perfil (CORRIGIDA)
   const saveProfile = async () => {
     // Validações
     if (!profileData.nome.trim()) {
@@ -252,23 +252,27 @@ function App() {
 
     try {
       setIsLoading(true)
+      console.log('🔄 Iniciando salvamento do perfil...')
 
       let user: Usuario
 
-      if (currentUser) {
+      if (currentUser && isEditingProfile) {
         // Atualizar usuário existente
+        console.log('📝 Atualizando usuário existente:', currentUser.id)
         user = await DatabaseService.updateUsuario(currentUser.id, {
-          nome: profileData.nome,
-          descricao: profileData.descricao,
+          nome: profileData.nome.trim(),
+          descricao: profileData.descricao.trim(),
           tags: profileData.tags,
           foto_url: profileData.foto_url || null,
-          localizacao: profileData.localizacao || null,
+          localizacao: profileData.localizacao?.trim() || null,
           status: profileData.status,
           latitude: userLocation?.latitude || null,
           longitude: userLocation?.longitude || null
         })
+        console.log('✅ Usuário atualizado com sucesso')
       } else {
         // Criar novo usuário
+        console.log('🆕 Criando novo usuário')
         if (!phoneNumber.trim()) {
           toast.error('Número do WhatsApp é obrigatório')
           return
@@ -279,20 +283,24 @@ function App() {
           formattedPhone = '+55' + formattedPhone.replace(/\D/g, '')
         }
 
+        const userId = currentUser?.id || crypto.randomUUID()
+        
         user = await DatabaseService.createUsuario({
-          id: crypto.randomUUID(),
-          nome: profileData.nome,
+          id: userId,
+          nome: profileData.nome.trim(),
           whatsapp: formattedPhone,
-          descricao: profileData.descricao,
+          descricao: profileData.descricao.trim(),
           tags: profileData.tags,
           foto_url: profileData.foto_url || undefined,
-          localizacao: profileData.localizacao || undefined,
+          localizacao: profileData.localizacao?.trim() || undefined,
           status: profileData.status,
           latitude: userLocation?.latitude || undefined,
           longitude: userLocation?.longitude || undefined
         })
+        console.log('✅ Usuário criado com sucesso')
       }
 
+      // Atualizar estado local
       setCurrentUser(user)
       setIsLoggedIn(true)
       localStorage.setItem('tex-current-user', JSON.stringify(user))
@@ -306,7 +314,7 @@ function App() {
         toast.success('Perfil criado com sucesso!')
       }
     } catch (error) {
-      console.error('Erro ao salvar perfil:', error)
+      console.error('❌ Erro ao salvar perfil:', error)
       toast.error('Erro ao salvar perfil. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -372,29 +380,43 @@ function App() {
     searchProfiles()
   }
 
-  // Função para atualizar status (CORRIGIDA)
+  // Função para atualizar status (COMPLETAMENTE CORRIGIDA)
   const updateStatus = async (newStatus: 'available' | 'busy') => {
-    if (!currentUser || isUpdatingStatus) return
+    if (!currentUser || isUpdatingStatus) {
+      console.log('⚠️ Não é possível atualizar status:', { currentUser: !!currentUser, isUpdatingStatus })
+      return
+    }
 
     try {
       setIsUpdatingStatus(true)
+      console.log('🔄 Atualizando status para:', newStatus)
+      
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
+      
+      // Atualizar todos os estados relacionados
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
       localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
-      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
+      
+      const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
+      toast.success(`Status alterado para ${statusText}`)
+      console.log('✅ Status atualizado com sucesso')
     } catch (error) {
-      console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
+      console.error('❌ Erro ao atualizar status:', error)
+      toast.error('Erro ao atualizar status. Tente novamente.')
     } finally {
       setIsUpdatingStatus(false)
     }
   }
 
-  // Função para alternar status (NOVA)
+  // Função para alternar status (NOVA E CORRIGIDA)
   const toggleStatus = () => {
-    if (!currentUser || isUpdatingStatus) return
+    if (!currentUser || isUpdatingStatus) {
+      console.log('⚠️ Toggle status bloqueado:', { currentUser: !!currentUser, isUpdatingStatus })
+      return
+    }
     const newStatus = currentUser.status === 'available' ? 'busy' : 'available'
+    console.log('🔄 Alternando status de', currentUser.status, 'para', newStatus)
     updateStatus(newStatus)
   }
 
@@ -530,7 +552,7 @@ function App() {
                       </div>
                     </div>
                     
-                    {/* NOVO: Toggle de Status Interativo */}
+                    {/* TOGGLE DE STATUS INTERATIVO (CORRIGIDO) */}
                     <div className="status-toggle-container">
                       <div className="status-toggle-label">
                         <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
@@ -551,7 +573,8 @@ function App() {
                           justifyContent: currentUser.status === 'available' ? 'flex-end' : 'flex-start',
                           padding: '2px',
                           transition: 'all 0.3s ease',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                          opacity: isUpdatingStatus ? 0.6 : 1
                         }}
                       >
                         <div 
@@ -572,7 +595,7 @@ function App() {
                           }}
                         >
                           <span className="status-toggle-text">
-                            {currentUser.status === 'available' ? 'ON' : 'OFF'}
+                            {isUpdatingStatus ? '...' : (currentUser.status === 'available' ? 'ON' : 'OFF')}
                           </span>
                         </div>
                       </div>
