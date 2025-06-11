@@ -10,6 +10,14 @@ interface LocationData {
   address?: string
 }
 
+// Interface for minimal user data stored in localStorage
+interface MinimalUserData {
+  id: string
+  nome: string
+  whatsapp: string
+  status: 'available' | 'busy'
+}
+
 function App() {
   // Estados principais
   const [currentScreen, setCurrentScreen] = useState('home')
@@ -44,42 +52,63 @@ function App() {
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
+  // Helper function to save minimal user data to localStorage
+  const saveUserToLocalStorage = (user: Usuario) => {
+    try {
+      const minimalUserData: MinimalUserData = {
+        id: user.id,
+        nome: user.nome,
+        whatsapp: user.whatsapp,
+        status: user.status || 'available'
+      }
+      localStorage.setItem('tex-current-user', JSON.stringify(minimalUserData))
+    } catch (error) {
+      console.warn('Failed to save user to localStorage:', error)
+      // Continue without localStorage if it fails
+    }
+  }
+
+  // Helper function to load user from localStorage and fetch full data
+  const loadUserFromStorage = async (): Promise<Usuario | null> => {
+    try {
+      const savedUserData = localStorage.getItem('tex-current-user')
+      if (!savedUserData) return null
+
+      const minimalUser: MinimalUserData = JSON.parse(savedUserData)
+      
+      // Fetch full user data from database
+      const fullUser = await DatabaseService.getUsuario(minimalUser.id)
+      return fullUser
+    } catch (error) {
+      console.error('Error loading user from storage:', error)
+      // Clear corrupted data
+      localStorage.removeItem('tex-current-user')
+      return null
+    }
+  }
+
   // Verificar se usuário já está logado ao carregar (CORRIGIDO)
   useEffect(() => {
     const loadSavedUser = async () => {
-      const savedUser = localStorage.getItem('tex-current-user')
-      if (savedUser) {
-        try {
-          const user = JSON.parse(savedUser)
-          console.log('🔍 Verificando usuário salvo:', user.id)
-          
-          // Verificar se o usuário ainda existe no banco de dados
-          const existingUser = await DatabaseService.getUsuario(user.id)
-          
-          if (existingUser) {
-            console.log('✅ Usuário verificado e atualizado:', existingUser)
-            setCurrentUser(existingUser)
-            setIsLoggedIn(true)
-            setProfileData({
-              nome: existingUser.nome || '',
-              descricao: existingUser.descricao || '',
-              tags: existingUser.tags || [],
-              foto_url: existingUser.foto_url || '',
-              localizacao: existingUser.localizacao || '',
-              status: existingUser.status || 'available'
-            })
-            // Atualizar localStorage com dados frescos
-            localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
-          } else {
-            console.log('❌ Usuário não encontrado no banco, fazendo logout')
-            // Usuário não existe mais, limpar dados
-            logout()
-          }
-        } catch (error) {
-          console.error('❌ Erro ao verificar usuário salvo:', error)
-          // Em caso de erro, limpar dados para evitar problemas
-          logout()
-        }
+      const user = await loadUserFromStorage()
+      
+      if (user) {
+        console.log('✅ Usuário verificado e atualizado:', user)
+        setCurrentUser(user)
+        setIsLoggedIn(true)
+        setProfileData({
+          nome: user.nome || '',
+          descricao: user.descricao || '',
+          tags: user.tags || [],
+          foto_url: user.foto_url || '',
+          localizacao: user.localizacao || '',
+          status: user.status || 'available'
+        })
+        // Update localStorage with fresh minimal data
+        saveUserToLocalStorage(user)
+      } else {
+        console.log('❌ Usuário não encontrado, fazendo logout')
+        logout()
       }
     }
 
@@ -182,7 +211,7 @@ function App() {
         
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
-        localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
+        saveUserToLocalStorage(existingUser)
         
         // Atualizar dados do perfil no estado
         setProfileData({
@@ -362,7 +391,7 @@ function App() {
       // Atualizar estado local
       setCurrentUser(user)
       setIsLoggedIn(true)
-      localStorage.setItem('tex-current-user', JSON.stringify(user))
+      saveUserToLocalStorage(user)
       
       // Navegar para a tela apropriada
       if (isEditingProfile) {
@@ -479,7 +508,7 @@ function App() {
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
-      localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
+      saveUserToLocalStorage(updatedUser)
       
       const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
       toast.success(`Status alterado para ${statusText}`)
