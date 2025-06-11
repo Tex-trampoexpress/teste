@@ -44,11 +44,11 @@ const App: React.FC = () => {
   const [newTag, setNewTag] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
 
-  // Estados de navegação
+  // Estados de navegação (REATIVADOS)
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
   const [historyIndex, setHistoryIndex] = useState(0)
 
-  // Função para navegar entre telas
+  // Função para navegar entre telas (REATIVADA)
   const navigateTo = (screen: string, addToHistory: boolean = true) => {
     setCurrentScreen(screen)
     
@@ -60,7 +60,7 @@ const App: React.FC = () => {
     }
   }
 
-  // Função para voltar na navegação
+  // Função para voltar na navegação (REATIVADA)
   const goBack = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1
@@ -69,13 +69,13 @@ const App: React.FC = () => {
     }
   }
 
-  // Função para lidar com o botão voltar nativo
+  // Função para lidar com o botão voltar nativo (REATIVADA)
   const handlePopState = (event: PopStateEvent) => {
     event.preventDefault()
     goBack()
   }
 
-  // Configurar navegação com botão nativo
+  // Configurar navegação com botão nativo (REATIVADO)
   useEffect(() => {
     // Adicionar estado inicial ao histórico do navegador
     if (window.history.state === null) {
@@ -90,7 +90,7 @@ const App: React.FC = () => {
     }
   }, [historyIndex, navigationHistory])
 
-  // Atualizar histórico do navegador quando navegar
+  // Atualizar histórico do navegador quando navegar (REATIVADO)
   useEffect(() => {
     if (currentScreen !== 'home') {
       window.history.pushState({ screen: currentScreen }, '', window.location.href)
@@ -187,11 +187,11 @@ const App: React.FC = () => {
     }
   }
 
-  // Função para upload de foto (SEM LIMITE DE TAMANHO)
+  // Função para upload de foto (SEM LIMITE DE TAMANHO - CORRIGIDO)
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Verificar apenas se é uma imagem
+      // Verificar apenas se é uma imagem (SEM LIMITE DE TAMANHO)
       if (!file.type.startsWith('image/')) {
         toast.error('Por favor, selecione apenas arquivos de imagem')
         return
@@ -232,7 +232,7 @@ const App: React.FC = () => {
     }))
   }
 
-  // Salvar perfil (CORRIGIDO)
+  // Salvar perfil (CORRIGIDO PARA FUNCIONAR COM QUALQUER STATUS)
   const saveProfile = async () => {
     if (!profileData.nome.trim()) {
       toast.error('Nome é obrigatório')
@@ -255,7 +255,7 @@ const App: React.FC = () => {
         tags: profileData.tags,
         foto_url: profileData.foto_url || null,
         localizacao: profileData.localizacao || null,
-        status: profileData.status, // Garantir que o status seja passado
+        status: profileData.status, // GARANTIR que o status seja passado corretamente
         latitude: location.latitude,
         longitude: location.longitude
       }
@@ -286,7 +286,7 @@ const App: React.FC = () => {
     }
   }
 
-  // Atualizar status do usuário (CORRIGIDO)
+  // Atualizar status do usuário (CORRIGIDO PARA FUNCIONAR CORRETAMENTE)
   const updateUserStatus = async (newStatus: 'available' | 'busy') => {
     if (!currentUser) return
 
