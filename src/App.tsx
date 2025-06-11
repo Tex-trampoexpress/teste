@@ -47,6 +47,62 @@ function App() {
   // Estado para controle do toggle de status (CORRIGIDO)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
+  // Estado para histórico de navegação (NOVO)
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
+
+  // Função para navegar com histórico (NOVA)
+  const navigateToScreen = (screen: string) => {
+    setNavigationHistory(prev => [...prev, screen])
+    setCurrentScreen(screen)
+  }
+
+  // Função para voltar na navegação (NOVA)
+  const goBack = () => {
+    if (navigationHistory.length > 1) {
+      const newHistory = [...navigationHistory]
+      newHistory.pop() // Remove a tela atual
+      const previousScreen = newHistory[newHistory.length - 1]
+      setNavigationHistory(newHistory)
+      setCurrentScreen(previousScreen)
+      return true
+    }
+    return false
+  }
+
+  // Suporte ao botão voltar nativo do celular (NOVO)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      console.log('🔙 Botão voltar nativo pressionado')
+      event.preventDefault()
+      
+      const canGoBack = goBack()
+      if (!canGoBack) {
+        // Se não pode voltar mais, vai para home
+        setCurrentScreen('home')
+        setNavigationHistory(['home'])
+      }
+    }
+
+    // Adicionar estado inicial ao histórico do navegador
+    if (window.history.state === null) {
+      window.history.replaceState({ screen: currentScreen }, '', window.location.href)
+    }
+
+    // Escutar o evento popstate (botão voltar)
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [navigationHistory, currentScreen])
+
+  // Atualizar histórico do navegador quando a tela mudar (NOVO)
+  useEffect(() => {
+    if (currentScreen !== 'home') {
+      window.history.pushState({ screen: currentScreen }, '', window.location.href)
+    }
+  }, [currentScreen])
+
   // Verificar se usuário já está logado ao carregar
   useEffect(() => {
     const savedUser = localStorage.getItem('tex-current-user')
@@ -167,10 +223,10 @@ function App() {
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         
         if (existingUser.perfil_completo) {
-          setCurrentScreen('feed')
+          navigateToScreen('feed')
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         } else {
-          setCurrentScreen('profile-setup')
+          navigateToScreen('profile-setup')
           setProfileData({
             nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
@@ -183,7 +239,7 @@ function App() {
         }
       } else {
         // Usuário novo - ir para cadastro
-        setCurrentScreen('profile-setup')
+        navigateToScreen('profile-setup')
         setProfileData(prev => ({ ...prev }))
         toast.success('Vamos criar seu perfil!')
       }
@@ -314,10 +370,10 @@ function App() {
       
       if (isEditingProfile) {
         setIsEditingProfile(false)
-        setCurrentScreen('my-profile')
+        navigateToScreen('my-profile')
         toast.success('Perfil atualizado com sucesso!')
       } else {
-        setCurrentScreen('feed')
+        navigateToScreen('feed')
         toast.success('Perfil criado com sucesso!')
       }
     } catch (error) {
@@ -433,6 +489,7 @@ function App() {
     setCurrentUser(null)
     setIsLoggedIn(false)
     setCurrentScreen('home')
+    setNavigationHistory(['home']) // Reset do histórico
     setProfileData({
       nome: '',
       descricao: '',
@@ -466,14 +523,14 @@ function App() {
   // Função para editar perfil
   const startEditProfile = () => {
     setIsEditingProfile(true)
-    setCurrentScreen('profile-setup')
+    navigateToScreen('profile-setup')
     setShowProfileMenu(false)
   }
 
   // Função para cancelar edição
   const cancelEdit = () => {
     setIsEditingProfile(false)
-    setCurrentScreen('my-profile')
+    navigateToScreen('my-profile')
     // Restaurar dados originais
     if (currentUser) {
       setProfileData({
@@ -509,7 +566,7 @@ function App() {
         {/* Logo TEX à esquerda */}
         <div 
           className="tex-logo-container tex-logo-scrolled"
-          onClick={() => setCurrentScreen('feed')}
+          onClick={() => navigateToScreen('feed')}
           style={{ cursor: 'pointer' }}
         >
           <div className="tex-logo-text">TEX</div>
@@ -613,7 +670,7 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          setCurrentScreen('my-profile')
+                          navigateToScreen('my-profile')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -624,7 +681,7 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          setCurrentScreen('feed')
+                          navigateToScreen('feed')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -671,12 +728,12 @@ function App() {
             placeholder="Buscar profissionais, serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && setCurrentScreen('feed')}
+            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && navigateToScreen('feed')}
           />
           
           <button 
             className="explore-btn"
-            onClick={() => setCurrentScreen('feed')}
+            onClick={() => navigateToScreen('feed')}
           >
             <i className="fas fa-search"></i>
             Explorar Profissionais
@@ -698,7 +755,7 @@ function App() {
 
         <button 
           className="whatsapp-login-btn"
-          onClick={() => setCurrentScreen('verify')}
+          onClick={() => navigateToScreen('verify')}
         >
           <i className="fab fa-whatsapp"></i>
           Entrar com WhatsApp
@@ -711,7 +768,7 @@ function App() {
   const renderVerifyScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
-        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+        <button className="back-button" onClick={goBack}>
           <i className="fas fa-arrow-left"></i>
           Voltar
         </button>
@@ -754,13 +811,7 @@ function App() {
       <div className="back-button-container">
         <button 
           className="back-button" 
-          onClick={() => {
-            if (isEditingProfile) {
-              cancelEdit()
-            } else {
-              setCurrentScreen('verify')
-            }
-          }}
+          onClick={goBack}
         >
           <i className="fas fa-arrow-left"></i>
           Voltar
@@ -955,7 +1006,7 @@ function App() {
               <p>Você precisa criar um perfil primeiro</p>
               <button 
                 className="create-profile-btn"
-                onClick={() => setCurrentScreen('verify')}
+                onClick={() => navigateToScreen('verify')}
               >
                 Criar Perfil
               </button>
@@ -1133,7 +1184,7 @@ function App() {
               }}>
                 Ver todos os profissionais
               </button>
-              <button className="back-home-btn" onClick={() => setCurrentScreen('home')}>
+              <button className="back-home-btn" onClick={() => navigateToScreen('home')}>
                 <i className="fas fa-home"></i>
                 Voltar ao início
               </button>
@@ -1215,7 +1266,7 @@ function App() {
   const renderAboutScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
-        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+        <button className="back-button" onClick={goBack}>
           <i className="fas fa-arrow-left"></i>
           Voltar
         </button>
@@ -1279,7 +1330,7 @@ function App() {
   const renderTermsScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
-        <button className="back-button" onClick={() => setCurrentScreen('home')}>
+        <button className="back-button" onClick={goBack}>
           <i className="fas fa-arrow-left"></i>
           Voltar
         </button>
@@ -1359,9 +1410,9 @@ function App() {
   const renderFooter = () => (
     <footer>
       <nav className="footer-nav">
-        <button onClick={() => setCurrentScreen('home')}>Home</button>
-        <button onClick={() => setCurrentScreen('about')}>Sobre</button>
-        <button onClick={() => setCurrentScreen('terms')}>Termos</button>
+        <button onClick={() => navigateToScreen('home')}>Home</button>
+        <button onClick={() => navigateToScreen('about')}>Sobre</button>
+        <button onClick={() => navigateToScreen('terms')}>Termos</button>
         <a href="https://instagram.com/tex.app" target="_blank" rel="noopener noreferrer">
           Instagram
         </a>
