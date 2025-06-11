@@ -44,27 +44,46 @@ function App() {
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-  // Verificar se usuário já está logado ao carregar
+  // Verificar se usuário já está logado ao carregar (CORRIGIDO)
   useEffect(() => {
-    const savedUser = localStorage.getItem('tex-current-user')
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser)
-        setCurrentUser(user)
-        setIsLoggedIn(true)
-        setProfileData({
-          nome: user.nome || '',
-          descricao: user.descricao || '',
-          tags: user.tags || [],
-          foto_url: user.foto_url || '',
-          localizacao: user.localizacao || '',
-          status: user.status || 'available'
-        })
-      } catch (error) {
-        console.error('Erro ao carregar usuário salvo:', error)
-        localStorage.removeItem('tex-current-user')
+    const loadSavedUser = async () => {
+      const savedUser = localStorage.getItem('tex-current-user')
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser)
+          console.log('🔍 Verificando usuário salvo:', user.id)
+          
+          // Verificar se o usuário ainda existe no banco de dados
+          const existingUser = await DatabaseService.getUsuario(user.id)
+          
+          if (existingUser) {
+            console.log('✅ Usuário verificado e atualizado:', existingUser)
+            setCurrentUser(existingUser)
+            setIsLoggedIn(true)
+            setProfileData({
+              nome: existingUser.nome || '',
+              descricao: existingUser.descricao || '',
+              tags: existingUser.tags || [],
+              foto_url: existingUser.foto_url || '',
+              localizacao: existingUser.localizacao || '',
+              status: existingUser.status || 'available'
+            })
+            // Atualizar localStorage com dados frescos
+            localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
+          } else {
+            console.log('❌ Usuário não encontrado no banco, fazendo logout')
+            // Usuário não existe mais, limpar dados
+            logout()
+          }
+        } catch (error) {
+          console.error('❌ Erro ao verificar usuário salvo:', error)
+          // Em caso de erro, limpar dados para evitar problemas
+          logout()
+        }
       }
     }
+
+    loadSavedUser()
   }, [])
 
   // Carregar perfis quando a tela mudar para feed
@@ -439,10 +458,24 @@ function App() {
 
   // Função para atualizar status (CORRIGIDA)
   const updateStatus = async (newStatus: 'available' | 'busy') => {
-    if (!currentUser) return
+    if (!currentUser) {
+      console.log('❌ Nenhum usuário logado')
+      toast.error('Você precisa estar logado para alterar o status')
+      return
+    }
 
     try {
       console.log('🔄 Atualizando status para:', newStatus)
+      
+      // Verificar se o usuário ainda existe antes de tentar atualizar
+      const existingUser = await DatabaseService.getUsuario(currentUser.id)
+      if (!existingUser) {
+        console.log('❌ Usuário não encontrado no banco, fazendo logout')
+        toast.error('Sua sessão expirou. Faça login novamente.')
+        logout()
+        return
+      }
+      
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
@@ -453,7 +486,14 @@ function App() {
       console.log('✅ Status atualizado com sucesso')
     } catch (error) {
       console.error('❌ Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
+      
+      if (error instanceof Error && error.message.includes('não encontrado')) {
+        console.log('❌ Usuário não encontrado, fazendo logout')
+        toast.error('Sua sessão expirou. Faça login novamente.')
+        logout()
+      } else {
+        toast.error('Erro ao atualizar status')
+      }
     }
   }
 
