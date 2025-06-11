@@ -138,7 +138,7 @@ function App() {
     }
   }
 
-  // Função para verificar WhatsApp e fazer login (MELHORADA)
+  // Função para verificar WhatsApp e fazer login (FLUXO MELHORADO)
   const handleWhatsAppLogin = async () => {
     if (!phoneNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
@@ -154,11 +154,11 @@ function App() {
     try {
       setIsVerifying(true)
       
-      // Verificar se usuário já existe
+      // Verificar se usuário já existe (SEM MOSTRAR ERRO)
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedPhone)
       
       if (existingUser) {
-        // USUÁRIO EXISTENTE - Login com mensagem personalizada
+        // USUÁRIO EXISTENTE - Login direto e fluido
         console.log('✅ Usuário existente encontrado:', existingUser)
         
         setCurrentUser(existingUser)
@@ -175,17 +175,18 @@ function App() {
           status: existingUser.status || 'available'
         })
         
-        // FLUXO MELHORADO: Mensagem de boas-vindas personalizada
+        // MENSAGEM DE BOAS-VINDAS PERSONALIZADA (SEM ERRO)
         toast.success(`Bem-vindo de volta, ${existingUser.nome}! 👋`, {
           duration: 4000,
           style: {
             background: 'linear-gradient(135deg, #FFD700, #00FFFF)',
             color: '#000',
-            fontWeight: '600'
+            fontWeight: '600',
+            fontSize: '16px'
           }
         })
         
-        // Ir direto para o perfil do usuário (não para o feed)
+        // Ir direto para o perfil do usuário
         setCurrentScreen('my-profile')
         
       } else {
@@ -193,11 +194,23 @@ function App() {
         console.log('🆕 Usuário novo, redirecionando para cadastro')
         setCurrentScreen('profile-setup')
         setProfileData(prev => ({ ...prev }))
-        toast.success('Vamos criar seu perfil profissional! 🚀')
+        
+        // Mensagem amigável para novo usuário
+        toast.success('Vamos criar seu perfil profissional! 🚀', {
+          duration: 3000,
+          style: {
+            background: 'linear-gradient(135deg, #FFD700, #00FFFF)',
+            color: '#000',
+            fontWeight: '600'
+          }
+        })
       }
     } catch (error) {
       console.error('❌ Erro no login:', error)
-      toast.error('Erro ao verificar WhatsApp. Tente novamente.')
+      // Mensagem de erro mais amigável
+      toast.error('Não foi possível conectar. Tente novamente.', {
+        duration: 3000
+      })
     } finally {
       setIsVerifying(false)
     }
@@ -678,7 +691,7 @@ function App() {
     </div>
   )
 
-  // Renderizar tela de verificação
+  // Renderizar tela de verificação (MELHORADA)
   const renderVerifyScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
@@ -690,7 +703,7 @@ function App() {
 
       <div className="form-container">
         <h2>Entrar no TEX</h2>
-        <p>Digite seu número do WhatsApp para entrar ou criar sua conta</p>
+        <p>Digite seu número do WhatsApp para acessar seu perfil ou criar uma conta</p>
         
         <div className="info-box">
           <i className="fab fa-whatsapp"></i>
