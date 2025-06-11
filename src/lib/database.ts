@@ -63,20 +63,25 @@ export class DatabaseService {
         throw new Error('Pelo menos uma especialidade é obrigatória')
       }
 
+      // Preparar dados para inserção
+      const insertData = {
+        id: userData.id,
+        nome: userData.nome.trim(),
+        whatsapp: userData.whatsapp.trim(),
+        descricao: userData.descricao.trim(),
+        tags: userData.tags,
+        foto_url: userData.foto_url || null,
+        localizacao: userData.localizacao?.trim() || null,
+        status: userData.status || 'available',
+        latitude: userData.latitude || null,
+        longitude: userData.longitude || null
+      }
+
+      console.log('📝 Dados preparados para inserção:', insertData)
+
       const { data, error } = await supabase
         .from('usuarios')
-        .insert({
-          id: userData.id,
-          nome: userData.nome.trim(),
-          whatsapp: userData.whatsapp.trim(),
-          descricao: userData.descricao.trim(),
-          tags: userData.tags,
-          foto_url: userData.foto_url || null,
-          localizacao: userData.localizacao?.trim() || null,
-          status: userData.status || 'available',
-          latitude: userData.latitude || null,
-          longitude: userData.longitude || null
-        })
+        .insert(insertData)
         .select()
         .single()
 
@@ -101,9 +106,14 @@ export class DatabaseService {
     console.log('🔄 Atualizando usuário:', id, userData)
     
     try {
+      // Validar ID
+      if (!id?.trim()) {
+        throw new Error('ID do usuário é obrigatório')
+      }
+
       const updateData: any = {}
       
-      // Validar e limpar dados
+      // Validar e limpar dados apenas se fornecidos
       if (userData.nome !== undefined) {
         if (!userData.nome?.trim()) {
           throw new Error('Nome não pode estar vazio')
@@ -119,7 +129,7 @@ export class DatabaseService {
       }
       
       if (userData.tags !== undefined) {
-        updateData.tags = userData.tags
+        updateData.tags = userData.tags || []
       }
       
       if (userData.foto_url !== undefined) {
@@ -142,6 +152,13 @@ export class DatabaseService {
         updateData.longitude = userData.longitude
       }
 
+      console.log('📝 Dados preparados para atualização:', updateData)
+
+      // Verificar se há dados para atualizar
+      if (Object.keys(updateData).length === 0) {
+        throw new Error('Nenhum dado fornecido para atualização')
+      }
+
       const { data, error } = await supabase
         .from('usuarios')
         .update(updateData)
@@ -154,7 +171,14 @@ export class DatabaseService {
         if (error.code === '23505') {
           throw new Error('Este número de WhatsApp já está cadastrado')
         }
+        if (error.code === 'PGRST116') {
+          throw new Error('Usuário não encontrado')
+        }
         throw new Error(`Erro ao atualizar perfil: ${error.message}`)
+      }
+
+      if (!data) {
+        throw new Error('Nenhum usuário foi atualizado')
       }
 
       console.log('✅ Usuário atualizado com sucesso:', data)
@@ -168,6 +192,8 @@ export class DatabaseService {
   // Update last access timestamp
   static async updateLastAccess(id: string): Promise<void> {
     try {
+      if (!id?.trim()) return
+
       const { error } = await supabase
         .from('usuarios')
         .update({ ultimo_acesso: new Date().toISOString() })
@@ -184,6 +210,10 @@ export class DatabaseService {
   // Get user profile by ID
   static async getUsuario(id: string): Promise<Usuario | null> {
     try {
+      if (!id?.trim()) {
+        throw new Error('ID é obrigatório')
+      }
+
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -210,6 +240,10 @@ export class DatabaseService {
   // Get user profile by WhatsApp number
   static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
     try {
+      if (!whatsapp?.trim()) {
+        throw new Error('WhatsApp é obrigatório')
+      }
+
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -236,6 +270,10 @@ export class DatabaseService {
   // Delete user profile
   static async deleteUsuario(id: string): Promise<void> {
     try {
+      if (!id?.trim()) {
+        throw new Error('ID é obrigatório')
+      }
+
       const { error } = await supabase
         .from('usuarios')
         .delete()
@@ -390,6 +428,8 @@ export class DatabaseService {
   // Check if WhatsApp number is already registered
   static async isWhatsAppRegistered(whatsapp: string): Promise<boolean> {
     try {
+      if (!whatsapp?.trim()) return false
+
       const { data, error } = await supabase
         .from('usuarios')
         .select('id')

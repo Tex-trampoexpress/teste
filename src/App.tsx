@@ -44,65 +44,6 @@ function App() {
   // Estados do menu do perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-  // Estado para controle do toggle de status (CORRIGIDO)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
-
-  // Estado para histórico de navegação (NOVO)
-  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
-
-  // Função para navegar com histórico (NOVA)
-  const navigateToScreen = (screen: string) => {
-    setNavigationHistory(prev => [...prev, screen])
-    setCurrentScreen(screen)
-  }
-
-  // Função para voltar na navegação (NOVA)
-  const goBack = () => {
-    if (navigationHistory.length > 1) {
-      const newHistory = [...navigationHistory]
-      newHistory.pop() // Remove a tela atual
-      const previousScreen = newHistory[newHistory.length - 1]
-      setNavigationHistory(newHistory)
-      setCurrentScreen(previousScreen)
-      return true
-    }
-    return false
-  }
-
-  // Suporte ao botão voltar nativo do celular (NOVO)
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      console.log('🔙 Botão voltar nativo pressionado')
-      event.preventDefault()
-      
-      const canGoBack = goBack()
-      if (!canGoBack) {
-        // Se não pode voltar mais, vai para home
-        setCurrentScreen('home')
-        setNavigationHistory(['home'])
-      }
-    }
-
-    // Adicionar estado inicial ao histórico do navegador
-    if (window.history.state === null) {
-      window.history.replaceState({ screen: currentScreen }, '', window.location.href)
-    }
-
-    // Escutar o evento popstate (botão voltar)
-    window.addEventListener('popstate', handlePopState)
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
-  }, [navigationHistory, currentScreen])
-
-  // Atualizar histórico do navegador quando a tela mudar (NOVO)
-  useEffect(() => {
-    if (currentScreen !== 'home') {
-      window.history.pushState({ screen: currentScreen }, '', window.location.href)
-    }
-  }, [currentScreen])
-
   // Verificar se usuário já está logado ao carregar
   useEffect(() => {
     const savedUser = localStorage.getItem('tex-current-user')
@@ -223,10 +164,10 @@ function App() {
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         
         if (existingUser.perfil_completo) {
-          navigateToScreen('feed')
+          setCurrentScreen('feed')
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         } else {
-          navigateToScreen('profile-setup')
+          setCurrentScreen('profile-setup')
           setProfileData({
             nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
@@ -239,7 +180,7 @@ function App() {
         }
       } else {
         // Usuário novo - ir para cadastro
-        navigateToScreen('profile-setup')
+        setCurrentScreen('profile-setup')
         setProfileData(prev => ({ ...prev }))
         toast.success('Vamos criar seu perfil!')
       }
@@ -270,11 +211,17 @@ function App() {
     }))
   }
 
-  // Função para upload de foto (SEM LIMITAÇÃO DE TAMANHO - CORRIGIDO)
+  // Função para upload de foto
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Verificar apenas o tipo do arquivo
+      // Verificar tamanho do arquivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 5MB.')
+        return
+      }
+
+      // Verificar tipo do arquivo
       if (!file.type.startsWith('image/')) {
         toast.error('Apenas imagens são permitidas.')
         return
@@ -290,9 +237,15 @@ function App() {
     }
   }
 
-  // Função para salvar perfil (COMPLETAMENTE CORRIGIDA)
+  // Função para salvar perfil (CORRIGIDA)
   const saveProfile = async () => {
-    // Validações
+    console.log('🔄 Iniciando salvamento do perfil...')
+    console.log('📝 Dados do perfil:', profileData)
+    console.log('👤 Usuário atual:', currentUser)
+    console.log('📱 Telefone:', phoneNumber)
+    console.log('✏️ Editando:', isEditingProfile)
+
+    // Validações básicas
     if (!profileData.nome.trim()) {
       toast.error('Nome é obrigatório')
       return
@@ -308,13 +261,13 @@ function App() {
 
     try {
       setIsLoading(true)
-      console.log('🔄 Iniciando salvamento do perfil...')
+      console.log('🚀 Iniciando operação no banco...')
 
       let user: Usuario
 
       if (currentUser && isEditingProfile) {
-        // Atualizar usuário existente
-        console.log('📝 Atualizando usuário existente:', currentUser.id)
+        // ATUALIZAR usuário existente
+        console.log('✏️ Atualizando usuário existente:', currentUser.id)
         
         const updateData = {
           nome: profileData.nome.trim(),
@@ -326,13 +279,15 @@ function App() {
           latitude: userLocation?.latitude || null,
           longitude: userLocation?.longitude || null
         }
-        
-        console.log('📊 Dados para atualização:', updateData)
+
+        console.log('📝 Dados para atualização:', updateData)
         user = await DatabaseService.updateUsuario(currentUser.id, updateData)
-        console.log('✅ Usuário atualizado com sucesso:', user)
+        console.log('✅ Usuário atualizado:', user)
+        
       } else {
-        // Criar novo usuário
-        console.log('🆕 Criando novo usuário')
+        // CRIAR novo usuário
+        console.log('🆕 Criando novo usuário...')
+        
         if (!phoneNumber.trim()) {
           toast.error('Número do WhatsApp é obrigatório')
           return
@@ -343,10 +298,8 @@ function App() {
           formattedPhone = '+55' + formattedPhone.replace(/\D/g, '')
         }
 
-        const userId = currentUser?.id || crypto.randomUUID()
-        
         const createData = {
-          id: userId,
+          id: crypto.randomUUID(),
           nome: profileData.nome.trim(),
           whatsapp: formattedPhone,
           descricao: profileData.descricao.trim(),
@@ -357,10 +310,10 @@ function App() {
           latitude: userLocation?.latitude || undefined,
           longitude: userLocation?.longitude || undefined
         }
-        
-        console.log('📊 Dados para criação:', createData)
+
+        console.log('📝 Dados para criação:', createData)
         user = await DatabaseService.createUsuario(createData)
-        console.log('✅ Usuário criado com sucesso:', user)
+        console.log('✅ Usuário criado:', user)
       }
 
       // Atualizar estado local
@@ -368,17 +321,33 @@ function App() {
       setIsLoggedIn(true)
       localStorage.setItem('tex-current-user', JSON.stringify(user))
       
+      // Navegar para a tela apropriada
       if (isEditingProfile) {
         setIsEditingProfile(false)
-        navigateToScreen('my-profile')
+        setCurrentScreen('my-profile')
         toast.success('Perfil atualizado com sucesso!')
       } else {
-        navigateToScreen('feed')
+        setCurrentScreen('feed')
         toast.success('Perfil criado com sucesso!')
       }
+
+      console.log('🎉 Salvamento concluído com sucesso!')
+      
     } catch (error) {
       console.error('❌ Erro ao salvar perfil:', error)
-      toast.error('Erro ao salvar perfil. Tente novamente.')
+      
+      // Mensagens de erro específicas
+      if (error instanceof Error) {
+        if (error.message.includes('WhatsApp já está cadastrado')) {
+          toast.error('Este número de WhatsApp já está cadastrado')
+        } else if (error.message.includes('obrigatório')) {
+          toast.error(error.message)
+        } else {
+          toast.error('Erro ao salvar perfil: ' + error.message)
+        }
+      } else {
+        toast.error('Erro inesperado ao salvar perfil')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -443,45 +412,20 @@ function App() {
     searchProfiles()
   }
 
-  // Função para atualizar status (COMPLETAMENTE CORRIGIDA)
+  // Função para atualizar status
   const updateStatus = async (newStatus: 'available' | 'busy') => {
-    if (!currentUser || isUpdatingStatus) {
-      console.log('⚠️ Não é possível atualizar status:', { currentUser: !!currentUser, isUpdatingStatus })
-      return
-    }
+    if (!currentUser) return
 
     try {
-      setIsUpdatingStatus(true)
-      console.log('🔄 Atualizando status de', currentUser.status, 'para', newStatus)
-      
-      // Usar a função específica de atualização de status
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
-      
-      // Atualizar todos os estados relacionados
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
       localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
-      
-      const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
-      toast.success(`Status alterado para ${statusText}`)
-      console.log('✅ Status atualizado com sucesso para:', newStatus)
+      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
     } catch (error) {
-      console.error('❌ Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status. Tente novamente.')
-    } finally {
-      setIsUpdatingStatus(false)
+      console.error('Erro ao atualizar status:', error)
+      toast.error('Erro ao atualizar status')
     }
-  }
-
-  // Função para alternar status (NOVA E CORRIGIDA)
-  const toggleStatus = () => {
-    if (!currentUser || isUpdatingStatus) {
-      console.log('⚠️ Toggle status bloqueado:', { currentUser: !!currentUser, isUpdatingStatus })
-      return
-    }
-    const newStatus = currentUser.status === 'available' ? 'busy' : 'available'
-    console.log('🔄 Alternando status de', currentUser.status, 'para', newStatus)
-    updateStatus(newStatus)
   }
 
   // Função para logout
@@ -489,7 +433,6 @@ function App() {
     setCurrentUser(null)
     setIsLoggedIn(false)
     setCurrentScreen('home')
-    setNavigationHistory(['home']) // Reset do histórico
     setProfileData({
       nome: '',
       descricao: '',
@@ -523,14 +466,14 @@ function App() {
   // Função para editar perfil
   const startEditProfile = () => {
     setIsEditingProfile(true)
-    navigateToScreen('profile-setup')
+    setCurrentScreen('profile-setup')
     setShowProfileMenu(false)
   }
 
   // Função para cancelar edição
   const cancelEdit = () => {
     setIsEditingProfile(false)
-    navigateToScreen('my-profile')
+    setCurrentScreen('my-profile')
     // Restaurar dados originais
     if (currentUser) {
       setProfileData({
@@ -566,7 +509,7 @@ function App() {
         {/* Logo TEX à esquerda */}
         <div 
           className="tex-logo-container tex-logo-scrolled"
-          onClick={() => navigateToScreen('feed')}
+          onClick={() => setCurrentScreen('feed')}
           style={{ cursor: 'pointer' }}
         >
           <div className="tex-logo-text">TEX</div>
@@ -583,12 +526,6 @@ function App() {
                 <img 
                   src={currentUser.foto_url} 
                   alt="Perfil"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    objectFit: 'cover'
-                  }}
                 />
               ) : (
                 <i className="fas fa-user"></i>
@@ -617,60 +554,11 @@ function App() {
                       </div>
                     </div>
                     
-                    {/* TOGGLE DE STATUS INTERATIVO (CORRIGIDO) */}
-                    <div className="status-toggle-container">
-                      <div className="status-toggle-label">
-                        <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
-                        Status
-                      </div>
-                      <div 
-                        className={`status-toggle-switch ${currentUser.status} ${isUpdatingStatus ? 'updating' : ''}`}
-                        onClick={toggleStatus}
-                        style={{
-                          width: '70px',
-                          height: '32px',
-                          backgroundColor: currentUser.status === 'available' ? '#4CAF50' : '#f44336',
-                          borderRadius: '16px',
-                          position: 'relative',
-                          cursor: isUpdatingStatus ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: currentUser.status === 'available' ? 'flex-end' : 'flex-start',
-                          padding: '2px',
-                          transition: 'all 0.3s ease',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                          opacity: isUpdatingStatus ? 0.6 : 1
-                        }}
-                      >
-                        <div 
-                          className="status-toggle-handle"
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            backgroundColor: 'white',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '8px',
-                            fontWeight: 'bold',
-                            color: currentUser.status === 'available' ? '#4CAF50' : '#f44336',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                          }}
-                        >
-                          <span className="status-toggle-text">
-                            {isUpdatingStatus ? '...' : (currentUser.status === 'available' ? 'ON' : 'OFF')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <div className="profile-menu-actions">
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          navigateToScreen('my-profile')
+                          setCurrentScreen('my-profile')
                           setShowProfileMenu(false)
                         }}
                       >
@@ -681,12 +569,22 @@ function App() {
                       <button 
                         className="profile-menu-item"
                         onClick={() => {
-                          navigateToScreen('feed')
+                          setCurrentScreen('feed')
                           setShowProfileMenu(false)
                         }}
                       >
                         <i className="fas fa-search"></i>
                         Buscar Profissionais
+                      </button>
+                      
+                      <div className="profile-menu-divider"></div>
+                      
+                      <button 
+                        className="profile-menu-item"
+                        onClick={() => updateStatus(currentUser.status === 'available' ? 'busy' : 'available')}
+                      >
+                        <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
+                        {currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
                       </button>
                       
                       <div className="profile-menu-divider"></div>
@@ -728,12 +626,12 @@ function App() {
             placeholder="Buscar profissionais, serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && navigateToScreen('feed')}
+            onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && setCurrentScreen('feed')}
           />
           
           <button 
             className="explore-btn"
-            onClick={() => navigateToScreen('feed')}
+            onClick={() => setCurrentScreen('feed')}
           >
             <i className="fas fa-search"></i>
             Explorar Profissionais
@@ -755,7 +653,7 @@ function App() {
 
         <button 
           className="whatsapp-login-btn"
-          onClick={() => navigateToScreen('verify')}
+          onClick={() => setCurrentScreen('verify')}
         >
           <i className="fab fa-whatsapp"></i>
           Entrar com WhatsApp
@@ -768,7 +666,7 @@ function App() {
   const renderVerifyScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
-        <button className="back-button" onClick={goBack}>
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
           <i className="fas fa-arrow-left"></i>
           Voltar
         </button>
@@ -811,7 +709,13 @@ function App() {
       <div className="back-button-container">
         <button 
           className="back-button" 
-          onClick={goBack}
+          onClick={() => {
+            if (isEditingProfile) {
+              cancelEdit()
+            } else {
+              setCurrentScreen('verify')
+            }
+          }}
         >
           <i className="fas fa-arrow-left"></i>
           Voltar
@@ -1006,7 +910,7 @@ function App() {
               <p>Você precisa criar um perfil primeiro</p>
               <button 
                 className="create-profile-btn"
-                onClick={() => navigateToScreen('verify')}
+                onClick={() => setCurrentScreen('verify')}
               >
                 Criar Perfil
               </button>
@@ -1184,7 +1088,7 @@ function App() {
               }}>
                 Ver todos os profissionais
               </button>
-              <button className="back-home-btn" onClick={() => navigateToScreen('home')}>
+              <button className="back-home-btn" onClick={() => setCurrentScreen('home')}>
                 <i className="fas fa-home"></i>
                 Voltar ao início
               </button>
@@ -1266,7 +1170,7 @@ function App() {
   const renderAboutScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
-        <button className="back-button" onClick={goBack}>
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
           <i className="fas fa-arrow-left"></i>
           Voltar
         </button>
@@ -1330,7 +1234,7 @@ function App() {
   const renderTermsScreen = () => (
     <div className="screen active">
       <div className="back-button-container">
-        <button className="back-button" onClick={goBack}>
+        <button className="back-button" onClick={() => setCurrentScreen('home')}>
           <i className="fas fa-arrow-left"></i>
           Voltar
         </button>
@@ -1381,15 +1285,6 @@ function App() {
             </p>
           </div>
 
-          <div className="terms-section">
-            <h2><i className="fas fa-credit-card"></i>Modelo de Receita</h2>
-            <p>
-              O TEX opera com um modelo de receita baseado em taxa fixa via QR Code. 
-              Profissionais ativos podem contribuir voluntariamente para manter e 
-              melhorar a plataforma através de pagamentos seguros e transparentes.
-            </p>
-          </div>
-
           <div className="terms-section coming-soon">
             <h2>
               <i className="fas fa-star"></i>
@@ -1401,6 +1296,18 @@ function App() {
               para aumentar a confiança entre usuários e melhorar a qualidade dos serviços.
             </p>
           </div>
+
+          <div className="terms-section coming-soon">
+            <h2>
+              <i className="fas fa-credit-card"></i>
+              Pagamentos Integrados
+              <span className="badge">Futuro</span>
+            </h2>
+            <p>
+              Planejamos integrar um sistema de <span className="highlight">pagamentos seguros</span> 
+              diretamente na plataforma para maior comodidade e segurança nas transações.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -1410,9 +1317,9 @@ function App() {
   const renderFooter = () => (
     <footer>
       <nav className="footer-nav">
-        <button onClick={() => navigateToScreen('home')}>Home</button>
-        <button onClick={() => navigateToScreen('about')}>Sobre</button>
-        <button onClick={() => navigateToScreen('terms')}>Termos</button>
+        <button onClick={() => setCurrentScreen('home')}>Home</button>
+        <button onClick={() => setCurrentScreen('about')}>Sobre</button>
+        <button onClick={() => setCurrentScreen('terms')}>Termos</button>
         <a href="https://instagram.com/tex.app" target="_blank" rel="noopener noreferrer">
           Instagram
         </a>
