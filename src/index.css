@@ -107,7 +107,7 @@ body::before {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
-/* Profile Header Button - TAMANHO FIXO */
+/* Profile Header Button - CORREÇÃO ESPECÍFICA PARA FOTO */
 .profile-header-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -118,7 +118,7 @@ body::before {
   transition: all 0.3s ease;
   font-size: 1.2rem;
   backdrop-filter: blur(10px);
-  /* TAMANHO FIXO PARA EVITAR PROBLEMAS */
+  /* TAMANHO FIXO APENAS PARA O BOTÃO */
   width: 48px;
   height: 48px;
   display: flex;
@@ -132,14 +132,12 @@ body::before {
   transform: scale(1.1);
 }
 
-/* CORREÇÃO: Imagem dentro do botão do header */
+/* CORREÇÃO ESPECÍFICA: Imagem dentro do botão do header */
 .profile-header-btn img {
-  width: 100% !important;
-  height: 100% !important;
+  width: 40px !important;
+  height: 40px !important;
   border-radius: 50% !important;
   object-fit: cover !important;
-  max-width: 40px !important;
-  max-height: 40px !important;
 }
 
 /* Profile Menu Dropdown */
@@ -193,8 +191,8 @@ body::before {
 }
 
 .profile-menu-avatar img {
-  width: 100% !important;
-  height: 100% !important;
+  width: 46px !important;
+  height: 46px !important;
   border-radius: 50% !important;
   object-fit: cover !important;
 }
@@ -290,7 +288,7 @@ body::before {
   flex-direction: column;
   align-items: center;
   padding: 2rem;
-  margin-top: 0; /* Removido margin-top para subir o conteúdo */
+  margin-top: 0;
   gap: 2rem;
 }
 
@@ -328,13 +326,13 @@ body::before {
   font-size: 0.8rem;
 }
 
-/* Home Screen - Container mais próximo do topo */
+/* Home Screen - Container normal */
 .hero-container {
   text-align: center;
   max-width: 800px;
   width: 100%;
-  padding: 2rem; /* Reduzido de 3rem para 2rem */
-  margin-top: 1rem; /* Adicionado margin-top pequeno para não colar no topo */
+  padding: 2rem;
+  margin-top: 1rem;
   background: rgba(0, 0, 0, 0.6);
   border-radius: 20px;
   box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
@@ -493,7 +491,7 @@ input:focus, textarea:focus {
   width: 100%;
   max-width: 500px;
   text-align: center;
-  margin-top: 1rem; /* Adicionado para subir o container */
+  margin-top: 1rem;
 }
 
 .form-container h2 {
@@ -604,12 +602,10 @@ input:focus, textarea:focus {
 }
 
 .photo-preview img {
-  width: 100% !important;
-  height: 100% !important;
+  width: 114px !important;
+  height: 114px !important;
   border-radius: 50% !important;
   object-fit: cover !important;
-  max-width: 114px !important;
-  max-height: 114px !important;
 }
 
 #photo-input, #edit-photo-input {
@@ -890,7 +886,7 @@ input:focus, textarea:focus {
 .feed {
   width: 100%;
   max-width: 600px;
-  margin-top: 1rem; /* Reduzido para subir o feed */
+  margin-top: 1rem;
 }
 
 /* Search Header */
@@ -1160,12 +1156,10 @@ input:focus, textarea:focus {
 }
 
 .profile-pic img {
-  width: 100% !important;
-  height: 100% !important;
+  width: 74px !important;
+  height: 74px !important;
   border-radius: 50% !important;
   object-fit: cover !important;
-  max-width: 74px !important;
-  max-height: 74px !important;
 }
 
 .profile-info {
@@ -1260,7 +1254,7 @@ input:focus, textarea:focus {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  margin-top: 1rem; /* Adicionado para subir o conteúdo */
+  margin-top: 1rem;
 }
 
 .page-title {
@@ -1623,9 +1617,9 @@ footer {
 
   /* Hero container mais compacto no mobile */
   .hero-container {
-    padding: 1.5rem 1rem; /* Reduzido ainda mais no mobile */
-    margin: 0.5rem 1rem; /* Margem menor no mobile */
-    margin-top: 0.5rem; /* Margin-top menor */
+    padding: 1.5rem 1rem;
+    margin: 0.5rem 1rem;
+    margin-top: 0.5rem;
   }
 
   h1 {
@@ -1659,8 +1653,8 @@ footer {
 
   /* CORREÇÃO: Profile pic mobile */
   .profile-pic img {
-    max-width: 94px !important;
-    max-height: 94px !important;
+    width: 94px !important;
+    height: 94px !important;
   }
 
   .status-toggle {
@@ -1706,7 +1700,7 @@ footer {
   /* Content pages responsive */
   .content-container {
     padding: 1rem;
-    margin-top: 0.5rem; /* Margin-top menor no mobile */
+    margin-top: 0.5rem;
   }
 
   .page-title {
@@ -1756,8 +1750,8 @@ footer {
 
   /* Hero container ainda mais compacto */
   .hero-container {
-    padding: 1rem; /* Padding mínimo */
-    margin: 0.5rem; /* Margem mínima */
+    padding: 1rem;
+    margin: 0.5rem;
     margin-top: 0.5rem;
   }
 
@@ -1802,7 +1796,7 @@ footer {
 
   .form-container {
     padding: 1.5rem;
-    margin-top: 0.5rem; /* Margin-top menor */
+    margin-top: 0.5rem;
   }
 
   .phone-input {
@@ -1825,7 +1819,7 @@ footer {
 
   /* Content pages mobile */
   .content-container {
-    margin-top: 0.5rem; /* Margin-top menor */
+    margin-top: 0.5rem;
   }
 
   .page-title {
