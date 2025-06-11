@@ -49,14 +49,28 @@ export class DatabaseService {
     console.log('🔄 Criando usuário:', userData)
     
     try {
+      // Validar dados obrigatórios
+      if (!userData.nome?.trim()) {
+        throw new Error('Nome é obrigatório')
+      }
+      if (!userData.whatsapp?.trim()) {
+        throw new Error('WhatsApp é obrigatório')
+      }
+      if (!userData.descricao?.trim()) {
+        throw new Error('Descrição é obrigatória')
+      }
+      if (!userData.tags || userData.tags.length === 0) {
+        throw new Error('Pelo menos uma especialidade é obrigatória')
+      }
+
       const { data, error } = await supabase
         .from('usuarios')
         .insert({
           id: userData.id,
           nome: userData.nome.trim(),
           whatsapp: userData.whatsapp.trim(),
-          descricao: userData.descricao?.trim() || null,
-          tags: userData.tags || [],
+          descricao: userData.descricao.trim(),
+          tags: userData.tags,
           foto_url: userData.foto_url || null,
           localizacao: userData.localizacao?.trim() || null,
           status: userData.status || 'available',
@@ -68,6 +82,9 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro ao criar usuário:', error)
+        if (error.code === '23505') {
+          throw new Error('Este número de WhatsApp já está cadastrado')
+        }
         throw new Error(`Erro ao criar perfil: ${error.message}`)
       }
 
@@ -86,15 +103,44 @@ export class DatabaseService {
     try {
       const updateData: any = {}
       
-      // Only include fields that are provided and clean them
-      if (userData.nome !== undefined) updateData.nome = userData.nome.trim()
-      if (userData.descricao !== undefined) updateData.descricao = userData.descricao?.trim() || null
-      if (userData.tags !== undefined) updateData.tags = userData.tags
-      if (userData.foto_url !== undefined) updateData.foto_url = userData.foto_url
-      if (userData.localizacao !== undefined) updateData.localizacao = userData.localizacao?.trim() || null
-      if (userData.status !== undefined) updateData.status = userData.status
-      if (userData.latitude !== undefined) updateData.latitude = userData.latitude
-      if (userData.longitude !== undefined) updateData.longitude = userData.longitude
+      // Validar e limpar dados
+      if (userData.nome !== undefined) {
+        if (!userData.nome?.trim()) {
+          throw new Error('Nome não pode estar vazio')
+        }
+        updateData.nome = userData.nome.trim()
+      }
+      
+      if (userData.descricao !== undefined) {
+        if (userData.descricao && !userData.descricao.trim()) {
+          throw new Error('Descrição não pode estar vazia')
+        }
+        updateData.descricao = userData.descricao?.trim() || null
+      }
+      
+      if (userData.tags !== undefined) {
+        updateData.tags = userData.tags
+      }
+      
+      if (userData.foto_url !== undefined) {
+        updateData.foto_url = userData.foto_url
+      }
+      
+      if (userData.localizacao !== undefined) {
+        updateData.localizacao = userData.localizacao?.trim() || null
+      }
+      
+      if (userData.status !== undefined) {
+        updateData.status = userData.status
+      }
+      
+      if (userData.latitude !== undefined) {
+        updateData.latitude = userData.latitude
+      }
+      
+      if (userData.longitude !== undefined) {
+        updateData.longitude = userData.longitude
+      }
 
       const { data, error } = await supabase
         .from('usuarios')
@@ -105,6 +151,9 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro ao atualizar usuário:', error)
+        if (error.code === '23505') {
+          throw new Error('Este número de WhatsApp já está cadastrado')
+        }
         throw new Error(`Erro ao atualizar perfil: ${error.message}`)
       }
 
@@ -229,14 +278,54 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro na busca de usuários:', error)
-        throw new Error(`Erro na busca: ${error.message}`)
+        // Fallback para busca simples se a função RPC falhar
+        console.log('🔄 Tentando busca simples como fallback...')
+        return this.getUsuariosSimple(filters)
       }
 
       console.log(`✅ Encontrados ${data?.length || 0} usuários`)
       return data || []
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      throw error
+      // Fallback para busca simples
+      return this.getUsuariosSimple(filters)
+    }
+  }
+
+  // Fallback simple search
+  private static async getUsuariosSimple(filters?: {
+    status?: 'available' | 'busy'
+    search?: string
+    limit?: number
+  }): Promise<Usuario[]> {
+    try {
+      let query = supabase
+        .from('usuarios')
+        .select('*')
+        .eq('status', filters?.status || 'available')
+        .eq('perfil_completo', true)
+        .order('ultimo_acesso', { ascending: false })
+
+      if (filters?.search?.trim()) {
+        const searchTerm = filters.search.trim()
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
+      }
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('❌ Erro na busca simples:', error)
+        throw error
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('❌ Erro na busca simples:', error)
+      return []
     }
   }
 
@@ -258,7 +347,8 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro na busca por proximidade:', error)
-        throw new Error(`Erro na busca por proximidade: ${error.message}`)
+        // Fallback para busca simples
+        return this.getUsuarios({ status: 'available', limit: 20 })
       }
 
       // Map the distance_km field to distancia for consistency
@@ -271,7 +361,8 @@ export class DatabaseService {
       return users
     } catch (error) {
       console.error('❌ Erro na busca por proximidade:', error)
-      throw error
+      // Fallback para busca simples
+      return this.getUsuarios({ status: 'available', limit: 20 })
     }
   }
 
@@ -307,13 +398,13 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro ao verificar WhatsApp:', error)
-        throw new Error(`Erro ao verificar WhatsApp: ${error.message}`)
+        return false
       }
 
       return !!data
     } catch (error) {
       console.error('❌ Erro ao verificar WhatsApp:', error)
-      throw error
+      return false
     }
   }
 
@@ -355,13 +446,13 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro ao buscar usuários recentes:', error)
-        throw new Error(`Erro ao buscar usuários recentes: ${error.message}`)
+        return []
       }
 
       return data || []
     } catch (error) {
       console.error('❌ Erro ao buscar usuários recentes:', error)
-      throw error
+      return []
     }
   }
 
@@ -379,18 +470,39 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro ao buscar usuários em destaque:', error)
-        throw new Error(`Erro ao buscar usuários em destaque: ${error.message}`)
+        return []
       }
 
       return data || []
     } catch (error) {
       console.error('❌ Erro ao buscar usuários em destaque:', error)
-      throw error
+      return []
     }
   }
 
   // Verify user profile
   static async verifyUser(id: string): Promise<Usuario> {
     return this.updateUsuario(id, { verificado: true })
+  }
+
+  // Test database connection
+  static async testConnection(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('count')
+        .limit(1)
+
+      if (error) {
+        console.error('❌ Erro na conexão:', error)
+        return false
+      }
+
+      console.log('✅ Conexão com banco de dados OK')
+      return true
+    } catch (error) {
+      console.error('❌ Erro na conexão:', error)
+      return false
+    }
   }
 }
