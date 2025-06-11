@@ -138,7 +138,7 @@ function App() {
     }
   }
 
-  // Função para verificar WhatsApp e fazer login
+  // Função para verificar WhatsApp e fazer login (MELHORADA)
   const handleWhatsAppLogin = async () => {
     if (!phoneNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
@@ -158,34 +158,45 @@ function App() {
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedPhone)
       
       if (existingUser) {
-        // Usuário existe - fazer login
+        // USUÁRIO EXISTENTE - Login com mensagem personalizada
+        console.log('✅ Usuário existente encontrado:', existingUser)
+        
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         
-        if (existingUser.perfil_completo) {
-          setCurrentScreen('feed')
-          toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        } else {
-          setCurrentScreen('profile-setup')
-          setProfileData({
-            nome: existingUser.nome || '',
-            descricao: existingUser.descricao || '',
-            tags: existingUser.tags || [],
-            foto_url: existingUser.foto_url || '',
-            localizacao: existingUser.localizacao || '',
-            status: existingUser.status || 'available'
-          })
-          toast.success('Complete seu perfil para continuar')
-        }
+        // Atualizar dados do perfil no estado
+        setProfileData({
+          nome: existingUser.nome || '',
+          descricao: existingUser.descricao || '',
+          tags: existingUser.tags || [],
+          foto_url: existingUser.foto_url || '',
+          localizacao: existingUser.localizacao || '',
+          status: existingUser.status || 'available'
+        })
+        
+        // FLUXO MELHORADO: Mensagem de boas-vindas personalizada
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}! 👋`, {
+          duration: 4000,
+          style: {
+            background: 'linear-gradient(135deg, #FFD700, #00FFFF)',
+            color: '#000',
+            fontWeight: '600'
+          }
+        })
+        
+        // Ir direto para o perfil do usuário (não para o feed)
+        setCurrentScreen('my-profile')
+        
       } else {
-        // Usuário novo - ir para cadastro
+        // USUÁRIO NOVO - Ir para cadastro
+        console.log('🆕 Usuário novo, redirecionando para cadastro')
         setCurrentScreen('profile-setup')
         setProfileData(prev => ({ ...prev }))
-        toast.success('Vamos criar seu perfil!')
+        toast.success('Vamos criar seu perfil profissional! 🚀')
       }
     } catch (error) {
-      console.error('Erro no login:', error)
+      console.error('❌ Erro no login:', error)
       toast.error('Erro ao verificar WhatsApp. Tente novamente.')
     } finally {
       setIsVerifying(false)
@@ -327,8 +338,9 @@ function App() {
         setCurrentScreen('my-profile')
         toast.success('Perfil atualizado com sucesso!')
       } else {
-        setCurrentScreen('feed')
-        toast.success('Perfil criado com sucesso!')
+        // NOVO USUÁRIO: Ir para o perfil (não para o feed)
+        setCurrentScreen('my-profile')
+        toast.success(`Perfil criado com sucesso, ${user.nome}! 🎉`)
       }
 
       console.log('🎉 Salvamento concluído com sucesso!')
@@ -412,18 +424,22 @@ function App() {
     searchProfiles()
   }
 
-  // Função para atualizar status
+  // Função para atualizar status (CORRIGIDA)
   const updateStatus = async (newStatus: 'available' | 'busy') => {
     if (!currentUser) return
 
     try {
+      console.log('🔄 Atualizando status para:', newStatus)
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
       setCurrentUser(updatedUser)
       setProfileData(prev => ({ ...prev, status: newStatus }))
       localStorage.setItem('tex-current-user', JSON.stringify(updatedUser))
-      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
+      
+      const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
+      toast.success(`Status alterado para ${statusText}`)
+      console.log('✅ Status atualizado com sucesso')
     } catch (error) {
-      console.error('Erro ao atualizar status:', error)
+      console.error('❌ Erro ao atualizar status:', error)
       toast.error('Erro ao atualizar status')
     }
   }
@@ -834,7 +850,7 @@ function App() {
             )}
           </div>
 
-          {/* Status */}
+          {/* Status - RECOLOCADO */}
           <div className="form-group">
             <label>Status</label>
             <div className="status-toggle">
@@ -899,7 +915,7 @@ function App() {
     </div>
   )
 
-  // Renderizar tela do meu perfil
+  // Renderizar tela do meu perfil (MELHORADA)
   const renderMyProfileScreen = () => {
     if (!currentUser) {
       return (
@@ -960,6 +976,29 @@ function App() {
                 ))}
               </div>
             )}
+
+            {/* INTERRUPTOR DE STATUS RECOLOCADO */}
+            <div className="form-group" style={{ marginTop: '1.5rem' }}>
+              <label>Alterar Status</label>
+              <div className="status-toggle">
+                <button
+                  type="button"
+                  className={`status-btn ${currentUser.status === 'available' ? 'active' : ''}`}
+                  onClick={() => updateStatus('available')}
+                >
+                  <div className="dot available"></div>
+                  Disponível
+                </button>
+                <button
+                  type="button"
+                  className={`status-btn ${currentUser.status === 'busy' ? 'active' : ''}`}
+                  onClick={() => updateStatus('busy')}
+                >
+                  <div className="dot busy"></div>
+                  Ocupado
+                </button>
+              </div>
+            </div>
 
             <div className="profile-stats">
               <div className="stat">
