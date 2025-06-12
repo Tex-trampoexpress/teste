@@ -51,7 +51,7 @@ body::before {
   50% { opacity: 0.8; }
 }
 
-/* Logo TEX no canto superior ESQUERDO */
+/* Logo TEX no header - POSICIONADO À ESQUERDA */
 .tex-logo-container {
   position: relative;
   display: flex;
