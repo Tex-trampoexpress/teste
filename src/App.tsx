@@ -408,10 +408,10 @@ const App: React.FC = () => {
   const renderHeader = () => (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
       <div className="flex items-center justify-between p-4">
-        {/* Espaço vazio à esquerda para manter o botão de login centralizado à direita */}
+        {/* Espaço vazio à esquerda */}
         <div className="w-12"></div>
 
-        {/* Botão de login/perfil à direita */}
+        {/* Botão de perfil à direita - APENAS se logado */}
         <div className="relative">
           {isLoggedIn && currentUser ? (
             <div className="relative">
@@ -506,12 +506,8 @@ const App: React.FC = () => {
               )}
             </div>
           ) : (
-            <button
-              onClick={() => navigateTo('verify')}
-              className="profile-header-btn"
-            >
-              <i className="fas fa-sign-in-alt"></i>
-            </button>
+            // Espaço vazio quando não logado - sem botão de login
+            <div className="w-12"></div>
           )}
         </div>
       </div>
