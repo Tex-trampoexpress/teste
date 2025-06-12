@@ -237,12 +237,62 @@ export class DatabaseService {
     }
   }
 
-  // Get user profile by WhatsApp number
+  // Get user profile by WhatsApp number (CORRIGIDO)
   static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
     try {
       if (!whatsapp?.trim()) {
         throw new Error('WhatsApp é obrigatório')
       }
+
+      console.log('🔍 Buscando usuário por WhatsApp:', whatsapp)
+
+      // Usar a função SQL otimizada
+      const { data, error } = await supabase
+        .rpc('get_user_by_whatsapp', {
+          phone_number: whatsapp.trim()
+        })
+
+      if (error) {
+        console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
+        // Fallback para busca direta se a função falhar
+        return this.getUsuarioByWhatsAppDirect(whatsapp)
+      }
+
+      if (data && data.length > 0) {
+        const user = data[0]
+        console.log('✅ Usuário encontrado:', user.nome)
+        return {
+          id: user.user_id,
+          nome: user.nome,
+          whatsapp: user.whatsapp,
+          descricao: user.descricao,
+          tags: user.tags,
+          foto_url: user.foto_url,
+          localizacao: user.localizacao,
+          status: user.status,
+          latitude: user.latitude,
+          longitude: user.longitude,
+          criado_em: user.criado_em,
+          atualizado_em: user.atualizado_em,
+          ultimo_acesso: user.ultimo_acesso,
+          perfil_completo: user.perfil_completo,
+          verificado: user.verificado
+        }
+      }
+
+      console.log('ℹ️ Usuário não encontrado para WhatsApp:', whatsapp)
+      return null
+    } catch (error) {
+      console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
+      // Fallback para busca direta
+      return this.getUsuarioByWhatsAppDirect(whatsapp)
+    }
+  }
+
+  // Fallback para busca direta por WhatsApp
+  private static async getUsuarioByWhatsAppDirect(whatsapp: string): Promise<Usuario | null> {
+    try {
+      console.log('🔄 Tentando busca direta por WhatsApp:', whatsapp)
 
       const { data, error } = await supabase
         .from('usuarios')
@@ -251,19 +301,20 @@ export class DatabaseService {
         .maybeSingle()
 
       if (error) {
-        console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
-        throw new Error(`Erro ao buscar por WhatsApp: ${error.message}`)
+        console.error('❌ Erro na busca direta por WhatsApp:', error)
+        return null
       }
 
-      // Update last access when user logs in
       if (data) {
+        console.log('✅ Usuário encontrado na busca direta:', data.nome)
+        // Atualizar último acesso
         this.updateLastAccess(data.id)
       }
 
       return data
     } catch (error) {
-      console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
-      throw error
+      console.error('❌ Erro na busca direta por WhatsApp:', error)
+      return null
     }
   }
 
@@ -425,22 +476,27 @@ export class DatabaseService {
     })
   }
 
-  // Check if WhatsApp number is already registered
+  // Check if WhatsApp number is already registered (CORRIGIDO)
   static async isWhatsAppRegistered(whatsapp: string): Promise<boolean> {
     try {
       if (!whatsapp?.trim()) return false
 
+      console.log('🔍 Verificando se WhatsApp está registrado:', whatsapp)
+
+      // Usar a função SQL otimizada
       const { data, error } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('whatsapp', whatsapp.trim())
-        .maybeSingle()
+        .rpc('check_whatsapp_exists', {
+          phone_number: whatsapp.trim()
+        })
 
       if (error) {
         console.error('❌ Erro ao verificar WhatsApp:', error)
-        return false
+        // Fallback para verificação direta
+        const user = await this.getUsuarioByWhatsAppDirect(whatsapp)
+        return !!user
       }
 
+      console.log('✅ Verificação de WhatsApp concluída:', data)
       return !!data
     } catch (error) {
       console.error('❌ Erro ao verificar WhatsApp:', error)
