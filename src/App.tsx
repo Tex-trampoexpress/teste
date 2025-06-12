@@ -408,10 +408,8 @@ const App: React.FC = () => {
   const renderHeader = () => (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
       <div className="flex items-center justify-between p-4">
-        {/* Logo à esquerda */}
-        <div className="tex-logo-container tex-logo-normal">
-          <div className="tex-logo-text">TEX</div>
-        </div>
+        {/* Espaço vazio à esquerda para manter o botão de login centralizado à direita */}
+        <div className="w-12"></div>
 
         {/* Botão de login/perfil à direita */}
         <div className="relative">
@@ -536,6 +534,11 @@ const App: React.FC = () => {
   const renderHomeScreen = () => (
     <div className="screen active">
       <div className="hero-container">
+        {/* LOGO TEX MOVIDO PARA DENTRO DO CONTAINER */}
+        <div className="tex-logo-container-inside">
+          <div className="tex-logo-text-inside">TEX</div>
+        </div>
+        
         <h1>
           Do trampo ao
           <br />

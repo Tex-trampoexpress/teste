@@ -107,6 +107,33 @@ body::before {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
+/* NOVO: Logo TEX dentro do container da home */
+.tex-logo-container-inside {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.tex-logo-text-inside {
+  font-family: 'Arial Black', Arial, sans-serif;
+  font-weight: 900;
+  font-size: 3rem;
+  letter-spacing: 2px;
+  background: linear-gradient(45deg, #FFD700, #00FFFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.tex-logo-container-inside:hover .tex-logo-text-inside {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
 /* Profile Header Button - CORREÇÃO ESPECÍFICA PARA FOTO */
 .profile-header-btn {
   background: rgba(255, 255, 255, 0.1);
@@ -338,7 +365,7 @@ body::before {
 /* Home Screen - AJUSTADO PARA MELHOR DISTRIBUIÇÃO */
 .hero-container {
   text-align: center;
-  max-width: 400px;
+  max-width: 500px;
   width: 100%;
   padding: 2rem 1.5rem;
   /* AJUSTE: Remover margin-top e deixar o flexbox centralizar */
@@ -1624,11 +1651,17 @@ footer {
     padding: 6px 12px;
   }
 
+  /* AJUSTE: Logo dentro do container no mobile */
+  .tex-logo-text-inside {
+    font-size: 2.5rem;
+  }
+
   /* AJUSTE: Hero container mais compacto no mobile */
   .hero-container {
     padding: 1.5rem 1rem;
     margin: 0.5rem;
     gap: 1.2rem;
+    max-width: 100%;
   }
 
   h1 {
@@ -1765,6 +1798,11 @@ footer {
     padding: 4px 8px;
   }
 
+  /* AJUSTE: Logo dentro do container em telas pequenas */
+  .tex-logo-text-inside {
+    font-size: 2.2rem;
+  }
+
   /* AJUSTE: Hero container ainda mais compacto */
   .hero-container {
     padding: 1rem 0.8rem;
@@ -1882,5 +1920,31 @@ footer {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
+  }
+}
+
+/* AJUSTE DESKTOP: Garantir que funcione bem em desktop também */
+@media (min-width: 769px) {
+  .hero-container {
+    max-width: 600px;
+    padding: 3rem 2rem;
+    gap: 2rem;
+  }
+
+  .tex-logo-text-inside {
+    font-size: 3.5rem;
+  }
+
+  h1 {
+    font-size: 3.2rem;
+  }
+
+  h1 span {
+    font-size: 3.8rem;
+  }
+
+  .screen {
+    padding: 2rem;
+    gap: 2rem;
   }
 }
