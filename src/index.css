@@ -134,7 +134,7 @@ body::before {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
-/* Profile Header Button - POSICIONADO À DIREITA */
+/* Profile Header Button - CORRIGIDO PARA FICAR À DIREITA */
 .profile-header-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -167,11 +167,11 @@ body::before {
   object-fit: cover !important;
 }
 
-/* Profile Menu Dropdown - POSICIONADO À DIREITA */
+/* Profile Menu Dropdown - CORRIGIDO PARA ABRIR NA POSIÇÃO CORRETA */
 .profile-menu {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  position: fixed;
+  top: 70px;
+  right: 10px;
   background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1891,9 +1891,9 @@ footer {
     flex-direction: column;
   }
 
-  /* Profile Menu Mobile - AJUSTADO PARA DIREITA */
+  /* Profile Menu Mobile - CORRIGIDO PARA FICAR À DIREITA */
   .profile-menu {
-    right: 0;
+    right: 5px;
     min-width: 260px;
   }
 }
@@ -2044,7 +2044,7 @@ footer {
 
   /* Profile Menu Mobile - MANTIDO À DIREITA */
   .profile-menu {
-    right: 0;
+    right: 5px;
     min-width: 240px;
   }
 
@@ -2080,6 +2080,12 @@ footer {
   .screen {
     padding: 1rem;
     gap: 1rem;
+  }
+
+  /* Profile Menu Desktop - POSICIONADO CORRETAMENTE À DIREITA */
+  .profile-menu {
+    right: 10px;
+    min-width: 300px;
   }
 }
 
