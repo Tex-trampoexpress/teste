@@ -243,7 +243,7 @@ const App: React.FC = () => {
       return
     }
 
-    // Criar URL da imagem
+    // Criar URL da imagem (sem limite de tamanho)
     const imageUrl = URL.createObjectURL(file)
     setProfileForm(prev => ({ ...prev, foto_url: imageUrl }))
     toast.success('Foto carregada!')
@@ -537,14 +537,16 @@ const App: React.FC = () => {
     <div className="screen active">
       <div className="hero-container">
         <h1>
-          Encontre profissionais
-          <span>próximos a você</span>
+          Do trampo ao
+          <br />
+          encontro
+          <span>TrampoExpress</span>
         </h1>
         
         <div className="search-box">
           <input
             type="text"
-            placeholder="Buscar por serviço, profissional ou localização..."
+            placeholder="Buscar profissionais, serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && searchTerm.trim() && (searchUsers(), navigateTo('feed'))}
@@ -560,7 +562,7 @@ const App: React.FC = () => {
             }}
           >
             <i className="fas fa-search"></i>
-            {searchTerm.trim() ? 'Buscar' : 'Explorar Profissionais'}
+            EXPLORAR PROFISSIONAIS
           </button>
         </div>
 
@@ -568,7 +570,7 @@ const App: React.FC = () => {
           {location.enabled ? (
             <p className="text-cyan-400">
               <i className="fas fa-map-marker-alt"></i>
-              Localização ativada - Busca por proximidade disponível
+              Localização ativada
             </p>
           ) : (
             <button 
@@ -577,20 +579,18 @@ const App: React.FC = () => {
               className="location-enable-btn"
             >
               <i className={`fas ${location.loading ? 'fa-spinner fa-spin' : 'fa-map-marker-alt'}`}></i>
-              {location.loading ? 'Obtendo localização...' : 'Ativar localização para busca próxima'}
+              Ativar localização
             </button>
           )}
         </div>
 
-        {!isLoggedIn && (
-          <button 
-            onClick={() => navigateTo('verify')}
-            className="whatsapp-login-btn"
-          >
-            <i className="fab fa-whatsapp"></i>
-            Entrar com WhatsApp
-          </button>
-        )}
+        <button 
+          onClick={() => navigateTo('verify')}
+          className="whatsapp-login-btn"
+        >
+          <i className="fab fa-whatsapp"></i>
+          Entrar com WhatsApp
+        </button>
       </div>
     </div>
   )
@@ -1221,7 +1221,7 @@ const App: React.FC = () => {
           <button onClick={() => navigateTo('home')}>Home</button>
           <button onClick={() => navigateTo('about')}>Sobre</button>
           <button onClick={() => navigateTo('terms')}>Termos</button>
-          <a href="#" onClick={(e) => e.preventDefault()}>Redes Sociais</a>
+          <a href="#" onClick={(e) => e.preventDefault()}>Instagram</a>
         </nav>
         <div className="copyright">
           © 2025 TrampoExpress. Todos os direitos reservados.
