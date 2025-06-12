@@ -253,7 +253,7 @@ const App: React.FC = () => {
     }
   }
 
-  // Profile functions - CORRIGIDO para salvar foto corretamente
+  // Profile functions - CORRIGIDO para aceitar qualquer tamanho de foto
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -264,12 +264,7 @@ const App: React.FC = () => {
       return
     }
 
-    // Verificar tamanho do arquivo (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 5MB.')
-      return
-    }
-
+    // REMOVIDO: Limite de tamanho - agora aceita qualquer tamanho
     console.log('📷 Processando upload de foto:', file.name, file.size, 'bytes')
 
     // Criar URL da imagem
@@ -734,7 +729,7 @@ const App: React.FC = () => {
         <p>{isEditing ? 'Atualize suas informações' : 'Complete seu perfil para começar'}</p>
         
         <div className="profile-setup">
-          {/* Upload de foto - CORRIGIDO */}
+          {/* Upload de foto - CORRIGIDO SEM LIMITE DE TAMANHO */}
           <div className="photo-upload">
             <div className="photo-preview">
               {profileForm.foto_url ? (
