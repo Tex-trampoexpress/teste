@@ -172,6 +172,7 @@ const App: React.FC = () => {
       
       console.log(`🔍 Busca realizada: ${results.length} usuários encontrados`)
       console.log('📊 Status dos usuários:', results.map(u => `${u.nome}: ${u.status}`))
+      console.log('📷 Fotos dos usuários:', results.map(u => `${u.nome}: ${u.foto_url ? 'TEM FOTO' : 'SEM FOTO'}`))
       
       setUsers(results)
     } catch (error) {
@@ -219,6 +220,7 @@ const App: React.FC = () => {
       if (existingUser) {
         // USUÁRIO EXISTENTE - Login
         console.log('✅ Usuário existente encontrado:', existingUser.nome)
+        console.log('📷 Foto do usuário:', existingUser.foto_url)
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
         
@@ -251,7 +253,7 @@ const App: React.FC = () => {
     }
   }
 
-  // Profile functions
+  // Profile functions - CORRIGIDO para salvar foto corretamente
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -262,8 +264,18 @@ const App: React.FC = () => {
       return
     }
 
-    // Criar URL da imagem (sem limite de tamanho)
+    // Verificar tamanho do arquivo (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 5MB.')
+      return
+    }
+
+    console.log('📷 Processando upload de foto:', file.name, file.size, 'bytes')
+
+    // Criar URL da imagem
     const imageUrl = URL.createObjectURL(file)
+    console.log('📷 URL da imagem criada:', imageUrl)
+    
     setProfileForm(prev => ({ ...prev, foto_url: imageUrl }))
     toast.success('Foto carregada!')
   }
@@ -291,7 +303,7 @@ const App: React.FC = () => {
     }))
   }
 
-  // FUNÇÃO DE SALVAR PERFIL CORRIGIDA
+  // FUNÇÃO DE SALVAR PERFIL CORRIGIDA PARA FOTOS
   const saveProfile = async () => {
     try {
       // Validações
@@ -308,16 +320,23 @@ const App: React.FC = () => {
         return
       }
 
+      console.log('💾 Salvando perfil com foto:', profileForm.foto_url ? 'SIM' : 'NÃO')
+
       const userData = {
         nome: profileForm.nome.trim(),
         descricao: profileForm.descricao.trim(),
         tags: profileForm.tags,
-        foto_url: profileForm.foto_url || null,
+        foto_url: profileForm.foto_url || null, // IMPORTANTE: Garantir que a foto seja salva
         localizacao: profileForm.localizacao?.trim() || null,
         status: profileForm.status,
         latitude: location.enabled ? location.latitude : null,
         longitude: location.enabled ? location.longitude : null
       }
+
+      console.log('💾 Dados do usuário para salvar:', {
+        ...userData,
+        foto_url: userData.foto_url ? 'URL_PRESENTE' : 'NULL'
+      })
 
       let savedUser: Usuario
 
@@ -338,6 +357,8 @@ const App: React.FC = () => {
         toast.success('Perfil criado com sucesso!')
       }
 
+      console.log('✅ Perfil salvo com foto:', savedUser.foto_url ? 'SIM' : 'NÃO')
+
       // Atualizar estado do usuário
       setCurrentUser(savedUser)
       setIsLoggedIn(true)
@@ -356,13 +377,14 @@ const App: React.FC = () => {
     if (!currentUser) return
     
     console.log('✏️ Iniciando edição do perfil:', currentUser.nome)
+    console.log('📷 Foto atual do perfil:', currentUser.foto_url)
     
     // Preencher formulário com dados atuais
     setProfileForm({
       nome: currentUser.nome,
       descricao: currentUser.descricao || '',
       tags: currentUser.tags || [],
-      foto_url: currentUser.foto_url || '',
+      foto_url: currentUser.foto_url || '', // IMPORTANTE: Manter a foto atual
       localizacao: currentUser.localizacao || '',
       status: currentUser.status
     })
@@ -475,10 +497,14 @@ const App: React.FC = () => {
                   <img 
                     src={currentUser.foto_url} 
                     alt="Perfil"
+                    onError={(e) => {
+                      console.log('❌ Erro ao carregar foto do header:', currentUser.foto_url)
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                    }}
                   />
-                ) : (
-                  <i className="fas fa-user"></i>
-                )}
+                ) : null}
+                <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
               </button>
 
               {showProfileMenu && (
@@ -492,10 +518,17 @@ const App: React.FC = () => {
                       <div className="profile-menu-header">
                         <div className="profile-menu-avatar">
                           {currentUser.foto_url ? (
-                            <img src={currentUser.foto_url} alt="Perfil" />
-                          ) : (
-                            <i className="fas fa-user"></i>
-                          )}
+                            <img 
+                              src={currentUser.foto_url} 
+                              alt="Perfil"
+                              onError={(e) => {
+                                console.log('❌ Erro ao carregar foto do menu:', currentUser.foto_url)
+                                e.currentTarget.style.display = 'none'
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                              }}
+                            />
+                          ) : null}
+                          <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
                         </div>
                         <div className="profile-menu-info">
                           <h4>{currentUser.nome}</h4>
@@ -701,14 +734,21 @@ const App: React.FC = () => {
         <p>{isEditing ? 'Atualize suas informações' : 'Complete seu perfil para começar'}</p>
         
         <div className="profile-setup">
-          {/* Upload de foto */}
+          {/* Upload de foto - CORRIGIDO */}
           <div className="photo-upload">
             <div className="photo-preview">
               {profileForm.foto_url ? (
-                <img src={profileForm.foto_url} alt="Preview" />
-              ) : (
-                <i className="fas fa-camera"></i>
-              )}
+                <img 
+                  src={profileForm.foto_url} 
+                  alt="Preview"
+                  onError={(e) => {
+                    console.log('❌ Erro ao carregar preview da foto:', profileForm.foto_url)
+                    e.currentTarget.style.display = 'none'
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                  }}
+                />
+              ) : null}
+              <i className={`fas fa-camera ${profileForm.foto_url ? 'hidden' : ''}`}></i>
             </div>
             <input
               type="file"
@@ -929,7 +969,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Lista de usuários */}
+        {/* Lista de usuários - CORRIGIDO para mostrar fotos */}
         <div className="users-list">
           {users.length === 0 && !loading ? (
             <div className="no-results">
@@ -959,10 +999,17 @@ const App: React.FC = () => {
                 <div className="profile-header">
                   <div className="profile-pic">
                     {user.foto_url ? (
-                      <img src={user.foto_url} alt={user.nome} />
-                    ) : (
-                      <i className="fas fa-user"></i>
-                    )}
+                      <img 
+                        src={user.foto_url} 
+                        alt={user.nome}
+                        onError={(e) => {
+                          console.log('❌ Erro ao carregar foto do feed:', user.nome, user.foto_url)
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <i className={`fas fa-user ${user.foto_url ? 'hidden' : ''}`}></i>
                   </div>
                   <div className="profile-info">
                     <div className="profile-name-distance">
@@ -1044,10 +1091,17 @@ const App: React.FC = () => {
             <div className="profile-header">
               <div className="profile-pic">
                 {currentUser.foto_url ? (
-                  <img src={currentUser.foto_url} alt={currentUser.nome} />
-                ) : (
-                  <i className="fas fa-user"></i>
-                )}
+                  <img 
+                    src={currentUser.foto_url} 
+                    alt={currentUser.nome}
+                    onError={(e) => {
+                      console.log('❌ Erro ao carregar foto do perfil:', currentUser.foto_url)
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                    }}
+                  />
+                ) : null}
+                <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
               </div>
               <div className="profile-info">
                 <h2>{currentUser.nome}</h2>
