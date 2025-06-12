@@ -784,6 +784,45 @@ input:focus, textarea:focus {
   border-color: var(--cyan);
 }
 
+/* ADICIONADO: Interruptor de status no perfil */
+.status-toggle-profile {
+  display: flex;
+  gap: 0.8rem;
+  margin: 1rem 0;
+  justify-content: center;
+}
+
+.status-btn-profile {
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.status-btn-profile .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-btn-profile.active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--cyan);
+  transform: scale(1.05);
+}
+
+.status-btn-profile:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
 .whatsapp-preview {
   background: rgba(37, 211, 102, 0.1);
   border: 1px solid rgba(37, 211, 102, 0.3);

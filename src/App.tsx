@@ -197,7 +197,7 @@ const App: React.FC = () => {
     setUsers([])
   }
 
-  // WhatsApp verification
+  // WhatsApp verification - FLUXO CORRIGIDO
   const verifyWhatsApp = async () => {
     if (!whatsappNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
@@ -206,27 +206,41 @@ const App: React.FC = () => {
 
     setVerifying(true)
     try {
+      console.log('🔍 Verificando WhatsApp:', whatsappNumber)
+      
+      // Verificar se usuário já existe
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
       
       if (existingUser) {
+        // USUÁRIO EXISTENTE - Login
+        console.log('✅ Usuário existente encontrado:', existingUser.nome)
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
         
-        if (existingUser.perfil_completo) {
-          navigateTo('feed')
-          toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        } else {
-          navigateTo('profile-setup')
-          toast.success('Complete seu perfil para continuar')
-        }
+        // Ir direto para o perfil com mensagem de boas-vindas
+        navigateTo('my-profile')
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
       } else {
-        // Novo usuário - ir para criação de perfil
+        // USUÁRIO NOVO - Criar perfil
+        console.log('ℹ️ Usuário novo, redirecionando para criação de perfil')
+        setIsEditing(false) // Garantir que não está em modo de edição
+        
+        // Limpar formulário para novo usuário
+        setProfileForm({
+          nome: '',
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available'
+        })
+        
         navigateTo('profile-setup')
         toast.success('Vamos criar seu perfil!')
       }
     } catch (error) {
-      console.error('Erro na verificação:', error)
-      toast.error('Erro ao verificar WhatsApp')
+      console.error('❌ Erro na verificação:', error)
+      toast.error('Erro ao verificar WhatsApp. Tente novamente.')
     } finally {
       setVerifying(false)
     }
@@ -272,6 +286,7 @@ const App: React.FC = () => {
     }))
   }
 
+  // FUNÇÃO DE SALVAR PERFIL CORRIGIDA
   const saveProfile = async () => {
     try {
       // Validações
@@ -289,11 +304,11 @@ const App: React.FC = () => {
       }
 
       const userData = {
-        nome: profileForm.nome,
-        descricao: profileForm.descricao,
+        nome: profileForm.nome.trim(),
+        descricao: profileForm.descricao.trim(),
         tags: profileForm.tags,
         foto_url: profileForm.foto_url || null,
-        localizacao: profileForm.localizacao || null,
+        localizacao: profileForm.localizacao?.trim() || null,
         status: profileForm.status,
         latitude: location.enabled ? location.latitude : null,
         longitude: location.enabled ? location.longitude : null
@@ -302,11 +317,13 @@ const App: React.FC = () => {
       let savedUser: Usuario
 
       if (isEditing && currentUser) {
-        // Atualizar perfil existente
+        // EDITAR PERFIL EXISTENTE
+        console.log('✏️ Atualizando perfil existente:', currentUser.id)
         savedUser = await DatabaseService.updateUsuario(currentUser.id, userData)
         toast.success('Perfil atualizado com sucesso!')
       } else {
-        // Criar novo perfil
+        // CRIAR NOVO PERFIL
+        console.log('📝 Criando novo perfil para WhatsApp:', whatsappNumber)
         const userId = crypto.randomUUID()
         savedUser = await DatabaseService.createUsuario({
           id: userId,
@@ -316,19 +333,26 @@ const App: React.FC = () => {
         toast.success('Perfil criado com sucesso!')
       }
 
+      // Atualizar estado do usuário
       setCurrentUser(savedUser)
       setIsLoggedIn(true)
       setIsEditing(false)
+      
+      // Ir para o perfil
       navigateTo('my-profile')
     } catch (error) {
-      console.error('Erro ao salvar perfil:', error)
+      console.error('❌ Erro ao salvar perfil:', error)
       toast.error(error instanceof Error ? error.message : 'Erro ao salvar perfil')
     }
   }
 
+  // FUNÇÃO DE EDITAR PERFIL CORRIGIDA
   const editProfile = () => {
     if (!currentUser) return
     
+    console.log('✏️ Iniciando edição do perfil:', currentUser.nome)
+    
+    // Preencher formulário com dados atuais
     setProfileForm({
       nome: currentUser.nome,
       descricao: currentUser.descricao || '',
@@ -337,19 +361,25 @@ const App: React.FC = () => {
       localizacao: currentUser.localizacao || '',
       status: currentUser.status
     })
+    
+    // Definir como modo de edição
     setIsEditing(true)
+    
+    // Ir para tela de setup
     navigateTo('profile-setup')
   }
 
+  // FUNÇÃO DE ATUALIZAR STATUS CORRIGIDA (para o interruptor no perfil)
   const updateUserStatus = async (newStatus: 'available' | 'busy') => {
     if (!currentUser) return
 
     try {
+      console.log('🔄 Atualizando status para:', newStatus)
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
       setCurrentUser(updatedUser)
       toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
     } catch (error) {
-      console.error('Erro ao atualizar status:', error)
+      console.error('❌ Erro ao atualizar status:', error)
       toast.error('Erro ao atualizar status')
     }
   }
@@ -365,6 +395,7 @@ const App: React.FC = () => {
       await DatabaseService.deleteUsuario(currentUser.id)
       setCurrentUser(null)
       setIsLoggedIn(false)
+      setWhatsappNumber('')
       setProfileForm({
         nome: '',
         descricao: '',
@@ -393,6 +424,7 @@ const App: React.FC = () => {
       localizacao: '',
       status: 'available'
     })
+    setIsEditing(false)
     navigateTo('home')
     toast.success('Logout realizado com sucesso')
   }
@@ -744,7 +776,7 @@ const App: React.FC = () => {
               placeholder="Cidade, bairro ou região"
             />
             
-            {/* ADICIONADO: Opção de usar GPS para localização */}
+            {/* Opção de usar GPS para localização */}
             <div className="location-gps-option">
               {location.enabled ? (
                 <p className="location-gps-status">
@@ -765,28 +797,8 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Status */}
-          <div className="form-group">
-            <label>Status Inicial</label>
-            <div className="status-toggle">
-              <button
-                type="button"
-                className={`status-btn ${profileForm.status === 'available' ? 'active' : ''}`}
-                onClick={() => setProfileForm(prev => ({ ...prev, status: 'available' }))}
-              >
-                <span className="dot available"></span>
-                Disponível
-              </button>
-              <button
-                type="button"
-                className={`status-btn ${profileForm.status === 'busy' ? 'active' : ''}`}
-                onClick={() => setProfileForm(prev => ({ ...prev, status: 'busy' }))}
-              >
-                <span className="dot busy"></span>
-                Ocupado
-              </button>
-            </div>
-          </div>
+          {/* REMOVIDO: Status inicial na criação de perfil */}
+          {/* O status será sempre 'available' por padrão e pode ser alterado depois no perfil */}
 
           {/* Preview do WhatsApp */}
           <div className="whatsapp-preview">
@@ -1019,9 +1031,25 @@ const App: React.FC = () => {
               <div className="profile-info">
                 <h2>{currentUser.nome}</h2>
                 <p className="description">{currentUser.descricao}</p>
-                <span className={`status status-${currentUser.status}`}>
-                  {currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}
-                </span>
+                
+                {/* INTERRUPTOR DE STATUS DISPONÍVEL/OCUPADO */}
+                <div className="status-toggle-profile">
+                  <button
+                    onClick={() => updateUserStatus('available')}
+                    className={`status-btn-profile ${currentUser.status === 'available' ? 'active' : ''}`}
+                  >
+                    <span className="dot available"></span>
+                    Disponível
+                  </button>
+                  <button
+                    onClick={() => updateUserStatus('busy')}
+                    className={`status-btn-profile ${currentUser.status === 'busy' ? 'active' : ''}`}
+                  >
+                    <span className="dot busy"></span>
+                    Ocupado
+                  </button>
+                </div>
+                
                 {currentUser.localizacao && (
                   <p className="location">
                     <i className="fas fa-map-marker-alt"></i>
