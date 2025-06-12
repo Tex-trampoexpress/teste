@@ -134,7 +134,7 @@ body::before {
   filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
 }
 
-/* Profile Header Button - CORREÇÃO ESPECÍFICA PARA FOTO */
+/* Profile Header Button - POSICIONADO À DIREITA */
 .profile-header-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -167,7 +167,7 @@ body::before {
   object-fit: cover !important;
 }
 
-/* Profile Menu Dropdown */
+/* Profile Menu Dropdown - POSICIONADO À DIREITA */
 .profile-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -1858,9 +1858,9 @@ footer {
     flex-direction: column;
   }
 
-  /* Profile Menu Mobile */
+  /* Profile Menu Mobile - AJUSTADO PARA DIREITA */
   .profile-menu {
-    right: -10px;
+    right: 0;
     min-width: 260px;
   }
 }
@@ -1991,9 +1991,9 @@ footer {
     justify-content: center;
   }
 
-  /* Profile Menu Mobile */
+  /* Profile Menu Mobile - MANTIDO À DIREITA */
   .profile-menu {
-    right: -20px;
+    right: 0;
     min-width: 240px;
   }
 
