@@ -743,6 +743,26 @@ const App: React.FC = () => {
               onChange={(e) => setProfileForm(prev => ({ ...prev, localizacao: e.target.value }))}
               placeholder="Cidade, bairro ou região"
             />
+            
+            {/* ADICIONADO: Opção de usar GPS para localização */}
+            <div className="location-gps-option">
+              {location.enabled ? (
+                <p className="location-gps-status">
+                  <i className="fas fa-map-marker-alt text-cyan-400"></i>
+                  Localização GPS ativada
+                </p>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={enableLocation}
+                  disabled={location.loading}
+                  className="location-gps-btn"
+                >
+                  <i className={`fas ${location.loading ? 'fa-spinner fa-spin' : 'fa-location-arrow'}`}></i>
+                  {location.loading ? 'Obtendo localização...' : 'Usar minha localização atual'}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Status */}
