@@ -220,7 +220,7 @@ const App: React.FC = () => {
       if (existingUser) {
         // USUÁRIO EXISTENTE - Login
         console.log('✅ Usuário existente encontrado:', existingUser.nome)
-        console.log('📷 Foto do usuário:', existingUser.foto_url)
+        console.log('📷 Foto do usuário no login:', existingUser.foto_url)
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
         
@@ -253,8 +253,25 @@ const App: React.FC = () => {
     }
   }
 
-  // Profile functions - CORRIGIDO para aceitar qualquer tamanho de foto
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // FUNÇÃO CORRIGIDA: Converter imagem para Base64 para persistência
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result as string
+        console.log('📷 Imagem convertida para Base64, tamanho:', result.length, 'caracteres')
+        resolve(result)
+      }
+      reader.onerror = () => {
+        console.error('❌ Erro ao converter imagem para Base64')
+        reject(new Error('Erro ao processar imagem'))
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Profile functions - CORRIGIDO para persistir fotos corretamente
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -264,15 +281,19 @@ const App: React.FC = () => {
       return
     }
 
-    // REMOVIDO: Limite de tamanho - agora aceita qualquer tamanho
     console.log('📷 Processando upload de foto:', file.name, file.size, 'bytes')
 
-    // Criar URL da imagem
-    const imageUrl = URL.createObjectURL(file)
-    console.log('📷 URL da imagem criada:', imageUrl)
-    
-    setProfileForm(prev => ({ ...prev, foto_url: imageUrl }))
-    toast.success('Foto carregada!')
+    try {
+      // Converter para Base64 para persistência
+      const base64Image = await convertImageToBase64(file)
+      console.log('📷 Foto convertida para Base64 com sucesso')
+      
+      setProfileForm(prev => ({ ...prev, foto_url: base64Image }))
+      toast.success('Foto carregada!')
+    } catch (error) {
+      console.error('❌ Erro ao processar foto:', error)
+      toast.error('Erro ao processar foto. Tente novamente.')
+    }
   }
 
   const addTag = () => {
@@ -298,7 +319,7 @@ const App: React.FC = () => {
     }))
   }
 
-  // FUNÇÃO DE SALVAR PERFIL CORRIGIDA PARA FOTOS
+  // FUNÇÃO DE SALVAR PERFIL CORRIGIDA PARA PERSISTIR FOTOS
   const saveProfile = async () => {
     try {
       // Validações
@@ -315,13 +336,13 @@ const App: React.FC = () => {
         return
       }
 
-      console.log('💾 Salvando perfil com foto:', profileForm.foto_url ? 'SIM' : 'NÃO')
+      console.log('💾 Salvando perfil com foto:', profileForm.foto_url ? 'SIM (Base64)' : 'NÃO')
 
       const userData = {
         nome: profileForm.nome.trim(),
         descricao: profileForm.descricao.trim(),
         tags: profileForm.tags,
-        foto_url: profileForm.foto_url || null, // IMPORTANTE: Garantir que a foto seja salva
+        foto_url: profileForm.foto_url || null, // Base64 ou null
         localizacao: profileForm.localizacao?.trim() || null,
         status: profileForm.status,
         latitude: location.enabled ? location.latitude : null,
@@ -330,7 +351,7 @@ const App: React.FC = () => {
 
       console.log('💾 Dados do usuário para salvar:', {
         ...userData,
-        foto_url: userData.foto_url ? 'URL_PRESENTE' : 'NULL'
+        foto_url: userData.foto_url ? `Base64 (${userData.foto_url.length} chars)` : 'NULL'
       })
 
       let savedUser: Usuario
@@ -352,7 +373,7 @@ const App: React.FC = () => {
         toast.success('Perfil criado com sucesso!')
       }
 
-      console.log('✅ Perfil salvo com foto:', savedUser.foto_url ? 'SIM' : 'NÃO')
+      console.log('✅ Perfil salvo com foto:', savedUser.foto_url ? 'SIM (Base64)' : 'NÃO')
 
       // Atualizar estado do usuário
       setCurrentUser(savedUser)
@@ -372,14 +393,14 @@ const App: React.FC = () => {
     if (!currentUser) return
     
     console.log('✏️ Iniciando edição do perfil:', currentUser.nome)
-    console.log('📷 Foto atual do perfil:', currentUser.foto_url)
+    console.log('📷 Foto atual do perfil:', currentUser.foto_url ? 'PRESENTE (Base64)' : 'AUSENTE')
     
     // Preencher formulário com dados atuais
     setProfileForm({
       nome: currentUser.nome,
       descricao: currentUser.descricao || '',
       tags: currentUser.tags || [],
-      foto_url: currentUser.foto_url || '', // IMPORTANTE: Manter a foto atual
+      foto_url: currentUser.foto_url || '', // IMPORTANTE: Manter a foto atual (Base64)
       localizacao: currentUser.localizacao || '',
       status: currentUser.status
     })
@@ -493,7 +514,7 @@ const App: React.FC = () => {
                     src={currentUser.foto_url} 
                     alt="Perfil"
                     onError={(e) => {
-                      console.log('❌ Erro ao carregar foto do header:', currentUser.foto_url)
+                      console.log('❌ Erro ao carregar foto do header:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
                       e.currentTarget.style.display = 'none'
                       e.currentTarget.nextElementSibling?.classList.remove('hidden')
                     }}
@@ -517,7 +538,7 @@ const App: React.FC = () => {
                               src={currentUser.foto_url} 
                               alt="Perfil"
                               onError={(e) => {
-                                console.log('❌ Erro ao carregar foto do menu:', currentUser.foto_url)
+                                console.log('❌ Erro ao carregar foto do menu:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
                                 e.currentTarget.style.display = 'none'
                                 e.currentTarget.nextElementSibling?.classList.remove('hidden')
                               }}
@@ -729,7 +750,7 @@ const App: React.FC = () => {
         <p>{isEditing ? 'Atualize suas informações' : 'Complete seu perfil para começar'}</p>
         
         <div className="profile-setup">
-          {/* Upload de foto - CORRIGIDO SEM LIMITE DE TAMANHO */}
+          {/* Upload de foto - CORRIGIDO PARA BASE64 */}
           <div className="photo-upload">
             <div className="photo-preview">
               {profileForm.foto_url ? (
@@ -737,7 +758,7 @@ const App: React.FC = () => {
                   src={profileForm.foto_url} 
                   alt="Preview"
                   onError={(e) => {
-                    console.log('❌ Erro ao carregar preview da foto:', profileForm.foto_url)
+                    console.log('❌ Erro ao carregar preview da foto:', profileForm.foto_url ? 'Base64 presente' : 'Sem foto')
                     e.currentTarget.style.display = 'none'
                     e.currentTarget.nextElementSibling?.classList.remove('hidden')
                   }}
@@ -964,7 +985,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Lista de usuários - CORRIGIDO para mostrar fotos */}
+        {/* Lista de usuários - CORRIGIDO para mostrar fotos Base64 */}
         <div className="users-list">
           {users.length === 0 && !loading ? (
             <div className="no-results">
@@ -998,7 +1019,7 @@ const App: React.FC = () => {
                         src={user.foto_url} 
                         alt={user.nome}
                         onError={(e) => {
-                          console.log('❌ Erro ao carregar foto do feed:', user.nome, user.foto_url)
+                          console.log('❌ Erro ao carregar foto do feed:', user.nome, user.foto_url ? 'Base64 presente' : 'Sem foto')
                           e.currentTarget.style.display = 'none'
                           e.currentTarget.nextElementSibling?.classList.remove('hidden')
                         }}
@@ -1090,7 +1111,7 @@ const App: React.FC = () => {
                     src={currentUser.foto_url} 
                     alt={currentUser.nome}
                     onError={(e) => {
-                      console.log('❌ Erro ao carregar foto do perfil:', currentUser.foto_url)
+                      console.log('❌ Erro ao carregar foto do perfil:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
                       e.currentTarget.style.display = 'none'
                       e.currentTarget.nextElementSibling?.classList.remove('hidden')
                     }}
