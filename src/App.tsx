@@ -140,7 +140,7 @@ const App: React.FC = () => {
     }
   }
 
-  // Search functions
+  // Search functions - CORRIGIDO para mostrar apenas usuários disponíveis
   const searchUsers = async (term: string = searchTerm) => {
     setLoading(true)
     try {
@@ -162,12 +162,16 @@ const App: React.FC = () => {
           )
         }
       } else {
+        // IMPORTANTE: Buscar apenas usuários disponíveis
         results = await DatabaseService.getUsuarios({
           search: term,
-          status: 'available',
+          status: 'available', // Filtro para mostrar apenas disponíveis
           limit: 20
         })
       }
+      
+      console.log(`🔍 Busca realizada: ${results.length} usuários encontrados`)
+      console.log('📊 Status dos usuários:', results.map(u => `${u.nome}: ${u.status}`))
       
       setUsers(results)
     } catch (error) {
@@ -183,6 +187,7 @@ const App: React.FC = () => {
     setLoading(true)
     try {
       const results = await DatabaseService.searchByTags([tag])
+      console.log(`🏷️ Busca por tag "${tag}": ${results.length} usuários encontrados`)
       setUsers(results)
     } catch (error) {
       console.error('Erro na busca por tag:', error)
@@ -369,15 +374,29 @@ const App: React.FC = () => {
     navigateTo('profile-setup')
   }
 
-  // FUNÇÃO DE ATUALIZAR STATUS CORRIGIDA (para o interruptor no perfil)
+  // FUNÇÃO DE ATUALIZAR STATUS CORRIGIDA E OTIMIZADA
   const updateUserStatus = async (newStatus: 'available' | 'busy') => {
     if (!currentUser) return
 
     try {
-      console.log('🔄 Atualizando status para:', newStatus)
+      console.log('🔄 Atualizando status de', currentUser.status, 'para', newStatus)
+      
+      // Atualizar no banco de dados
       const updatedUser = await DatabaseService.updateStatus(currentUser.id, newStatus)
+      
+      // Atualizar estado local
       setCurrentUser(updatedUser)
-      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
+      
+      // Atualizar lista de usuários se estiver no feed
+      if (navigation.currentScreen === 'feed') {
+        console.log('🔄 Atualizando lista do feed após mudança de status')
+        await searchUsers() // Recarregar a lista para refletir mudanças
+      }
+      
+      const statusText = newStatus === 'available' ? 'Disponível' : 'Ocupado'
+      toast.success(`Status alterado para ${statusText}`)
+      
+      console.log('✅ Status atualizado com sucesso:', updatedUser.status)
     } catch (error) {
       console.error('❌ Erro ao atualizar status:', error)
       toast.error('Erro ao atualizar status')
@@ -429,9 +448,10 @@ const App: React.FC = () => {
     toast.success('Logout realizado com sucesso')
   }
 
-  // Load initial data
+  // Load initial data - CORRIGIDO para recarregar quando necessário
   useEffect(() => {
     if (navigation.currentScreen === 'feed') {
+      console.log('📱 Carregando feed de usuários')
       searchUsers('')
     }
   }, [navigation.currentScreen, proximityEnabled, proximityRadius])
@@ -955,6 +975,7 @@ const App: React.FC = () => {
                       )}
                     </div>
                     <p className="description">{user.descricao}</p>
+                    {/* STATUS SEMPRE VISÍVEL NO FEED */}
                     <span className={`status status-${user.status}`}>
                       {user.status === 'available' ? 'Disponível' : 'Ocupado'}
                     </span>
@@ -1032,7 +1053,7 @@ const App: React.FC = () => {
                 <h2>{currentUser.nome}</h2>
                 <p className="description">{currentUser.descricao}</p>
                 
-                {/* INTERRUPTOR DE STATUS DISPONÍVEL/OCUPADO */}
+                {/* INTERRUPTOR DE STATUS DISPONÍVEL/OCUPADO - CORRIGIDO */}
                 <div className="status-toggle-profile">
                   <button
                     onClick={() => updateUserStatus('available')}
