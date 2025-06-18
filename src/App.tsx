@@ -69,8 +69,9 @@ const App: React.FC = () => {
       history: [...prev.history, screen]
     }))
     
-    // Update browser history
-    window.history.pushState({ screen }, '', `#${screen}`)
+    // Update browser history for native back button support
+    const newUrl = screen === 'home' ? '/' : `/#${screen}`
+    window.history.pushState({ screen }, '', newUrl)
   }
 
   const goBack = () => {
@@ -86,20 +87,24 @@ const App: React.FC = () => {
         history: newHistory
       }
     })
-    
-    // Update browser history
-    window.history.back()
   }
 
-  // Handle browser back button
+  // CORRIGIDO: Handle browser back button (native mobile back button)
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      const screen = event.state?.screen || 'home'
+      event.preventDefault()
+      
+      // Get the screen from the event state or URL
+      const screen = event.state?.screen || 
+                   (window.location.hash ? window.location.hash.substring(1) : 'home')
+      
       setNavigation(prev => {
+        // If we're going back, remove the last item from history
         const newHistory = [...prev.history]
         if (newHistory.length > 1) {
           newHistory.pop()
         }
+        
         return {
           currentScreen: screen,
           history: newHistory
@@ -107,9 +112,35 @@ const App: React.FC = () => {
       })
     }
 
+    // IMPORTANTE: Adicionar estado inicial ao histórico do navegador
+    if (!window.history.state) {
+      window.history.replaceState({ screen: 'home' }, '', '/')
+    }
+
     window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
   }, [])
+
+  // ADICIONADO: Interceptar tentativas de sair da aplicação
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Se não estamos na tela inicial, prevenir saída e voltar
+      if (navigation.currentScreen !== 'home') {
+        event.preventDefault()
+        goBack()
+        return false
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [navigation.currentScreen])
 
   // Location functions
   const enableLocation = async () => {
