@@ -89,7 +89,7 @@ const App: React.FC = () => {
     })
   }
 
-  // CORRIGIDO: Handle browser back button (native mobile back button)
+  // ADICIONADO: Handle browser back button (native mobile back button)
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       event.preventDefault()
