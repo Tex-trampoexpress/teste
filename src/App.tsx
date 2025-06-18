@@ -124,24 +124,6 @@ const App: React.FC = () => {
     }
   }, [])
 
-  // ADICIONADO: Interceptar tentativas de sair da aplicação
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Se não estamos na tela inicial, prevenir saída e voltar
-      if (navigation.currentScreen !== 'home') {
-        event.preventDefault()
-        goBack()
-        return false
-      }
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [navigation.currentScreen])
-
   // Location functions
   const enableLocation = async () => {
     setLocation(prev => ({ ...prev, loading: true }))
@@ -637,13 +619,8 @@ const App: React.FC = () => {
             )}
           </div>
         ) : (
-          // Botão de login quando não logado - MANTIDO NO LADO DIREITO
-          <button 
-            onClick={() => navigateTo('verify')}
-            className="profile-header-btn"
-          >
-            <i className="fas fa-sign-in-alt"></i>
-          </button>
+          // Espaço vazio quando não logado
+          <div className="w-12"></div>
         )}
       </div>
     </header>
