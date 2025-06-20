@@ -511,10 +511,12 @@ const App: React.FC = () => {
   const renderHeader = () => (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
       <div className="flex items-center justify-between p-4">
-        {/* Espaço vazio à esquerda */}
-        <div className="w-12"></div>
+        {/* Logo TEX à esquerda - RESTAURADO POSIÇÃO ORIGINAL */}
+        <div className="tex-logo-container">
+          <div className="tex-logo-text">TEX</div>
+        </div>
 
-        {/* Botão de perfil à direita - MANTIDO NO LADO DIREITO */}
+        {/* Botão de login/perfil à direita - RESTAURADO COMPORTAMENTO ORIGINAL */}
         {isLoggedIn && currentUser ? (
           <div className="relative">
             <button
@@ -619,8 +621,13 @@ const App: React.FC = () => {
             )}
           </div>
         ) : (
-          // Espaço vazio quando não logado
-          <div className="w-12"></div>
+          <button 
+            onClick={() => navigateTo('verify')}
+            className="login-header-btn"
+          >
+            <i className="fab fa-whatsapp"></i>
+            Login
+          </button>
         )}
       </div>
     </header>
@@ -642,11 +649,6 @@ const App: React.FC = () => {
   const renderHomeScreen = () => (
     <div className="screen active">
       <div className="hero-container">
-        {/* LOGO TEX DENTRO DO CONTAINER - MOVIDO PARA CIMA DA FRASE */}
-        <div className="tex-logo-container-inside">
-          <div className="tex-logo-text-inside">TEX</div>
-        </div>
-        
         <h1>
           Do trampo ao
           <br />
@@ -694,16 +696,6 @@ const App: React.FC = () => {
             </button>
           )}
         </div>
-
-        {!isLoggedIn && (
-          <button 
-            onClick={() => navigateTo('verify')}
-            className="whatsapp-login-btn"
-          >
-            <i className="fab fa-whatsapp"></i>
-            Entrar com WhatsApp
-          </button>
-        )}
       </div>
     </div>
   )
