@@ -49,50 +49,76 @@
     
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- PWA Service Worker -->
+    <!-- PWA Service Worker - VERSÃO CORRIGIDA -->
     <script>
       // Registrar Service Worker
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registrado com sucesso:', registration.scope)
+        window.addEventListener('load', async () => {
+          try {
+            const registration = await navigator.serviceWorker.register('/sw.js')
+            console.log('✅ SW registrado com sucesso:', registration.scope)
+            
+            // Verificar se há atualizações
+            registration.addEventListener('updatefound', () => {
+              console.log('🔄 Nova versão do SW disponível')
             })
-            .catch((registrationError) => {
-              console.log('SW falhou ao registrar:', registrationError)
-            })
+          } catch (error) {
+            console.log('❌ SW falhou ao registrar:', error)
+          }
         })
       }
 
-      // PWA Install Prompt
-      let deferredPrompt
+      // PWA Install Prompt - VERSÃO MELHORADA
+      let deferredPrompt = null
       const installBanner = document.getElementById('pwa-install-banner')
       const installBtn = document.getElementById('pwa-install-btn')
       const dismissBtn = document.getElementById('pwa-dismiss-btn')
 
       // Detectar quando o app pode ser instalado
       window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('PWA pode ser instalado')
+        console.log('🎯 PWA pode ser instalado!')
         e.preventDefault()
         deferredPrompt = e
         
-        // Mostrar banner de instalação após 3 segundos
-        setTimeout(() => {
-          if (!localStorage.getItem('pwa-dismissed')) {
+        // Verificar se já foi dispensado
+        const dismissed = localStorage.getItem('pwa-dismissed')
+        const installed = localStorage.getItem('pwa-installed')
+        
+        if (!dismissed && !installed && installBanner) {
+          // Mostrar banner após 2 segundos
+          setTimeout(() => {
+            console.log('📱 Mostrando banner de instalação')
             installBanner.classList.remove('hidden')
-          }
-        }, 3000)
+          }, 2000)
+        }
       })
 
       // Botão de instalar
       if (installBtn) {
         installBtn.addEventListener('click', async () => {
+          console.log('🔽 Usuário clicou em instalar')
+          
           if (deferredPrompt) {
-            deferredPrompt.prompt()
-            const { outcome } = await deferredPrompt.userChoice
-            console.log('Resultado da instalação:', outcome)
-            deferredPrompt = null
-            installBanner.classList.add('hidden')
+            try {
+              deferredPrompt.prompt()
+              const { outcome } = await deferredPrompt.userChoice
+              console.log('📊 Resultado da instalação:', outcome)
+              
+              if (outcome === 'accepted') {
+                localStorage.setItem('pwa-installed', 'true')
+              }
+              
+              deferredPrompt = null
+              if (installBanner) {
+                installBanner.classList.add('hidden')
+              }
+            } catch (error) {
+              console.log('❌ Erro na instalação:', error)
+            }
+          } else {
+            console.log('⚠️ Prompt não disponível')
+            // Mostrar instruções manuais
+            alert('Para instalar o TEX:\n\n1. Toque no menu do navegador (⋮)\n2. Selecione "Instalar app" ou "Adicionar à tela inicial"')
           }
         })
       }
@@ -100,27 +126,73 @@
       // Botão de dispensar
       if (dismissBtn) {
         dismissBtn.addEventListener('click', () => {
-          installBanner.classList.add('hidden')
+          console.log('❌ Usuário dispensou instalação')
+          if (installBanner) {
+            installBanner.classList.add('hidden')
+          }
           localStorage.setItem('pwa-dismissed', 'true')
         })
       }
 
       // Detectar quando o app foi instalado
       window.addEventListener('appinstalled', () => {
-        console.log('PWA foi instalado')
-        installBanner.classList.add('hidden')
+        console.log('🎉 PWA foi instalado com sucesso!')
+        if (installBanner) {
+          installBanner.classList.add('hidden')
+        }
         localStorage.setItem('pwa-installed', 'true')
+        localStorage.removeItem('pwa-dismissed')
       })
 
       // Verificar se já está instalado
       if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-        console.log('App rodando em modo standalone')
+        console.log('📱 App rodando em modo standalone')
         localStorage.setItem('pwa-installed', 'true')
       }
+
+      // Verificar se é iOS Safari (que não suporta beforeinstallprompt)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      const isInStandaloneMode = window.navigator.standalone === true
+      
+      if (isIOS && !isInStandaloneMode) {
+        // Para iOS, mostrar instruções específicas
+        setTimeout(() => {
+          const dismissed = localStorage.getItem('pwa-dismissed')
+          const installed = localStorage.getItem('pwa-installed')
+          
+          if (!dismissed && !installed && installBanner) {
+            console.log('🍎 Mostrando banner para iOS')
+            
+            // Modificar texto para iOS
+            const bannerText = installBanner.querySelector('.pwa-banner-text p')
+            if (bannerText) {
+              bannerText.textContent = 'Toque em "Compartilhar" e depois "Adicionar à Tela de Início"'
+            }
+            
+            const installButton = installBanner.querySelector('.pwa-install-btn')
+            if (installButton) {
+              installButton.innerHTML = '<i class="fas fa-share"></i> Como Instalar'
+              installButton.onclick = () => {
+                alert('Para instalar o TEX no iOS:\n\n1. Toque no botão "Compartilhar" (□↗)\n2. Role para baixo e toque em "Adicionar à Tela de Início"\n3. Toque em "Adicionar"')
+              }
+            }
+            
+            installBanner.classList.remove('hidden')
+          }
+        }, 3000)
+      }
+
+      // Debug: Forçar mostrar banner para teste (remover em produção)
+      // setTimeout(() => {
+      //   if (installBanner && !localStorage.getItem('pwa-installed')) {
+      //     console.log('🔧 DEBUG: Forçando banner para teste')
+      //     installBanner.classList.remove('hidden')
+      //   }
+      // }, 1000)
     </script>
     
     <style>
-      /* PWA Install Banner Styles */
+      /* PWA Install Banner Styles - VERSÃO MELHORADA */
       .pwa-install-banner {
         position: fixed;
         bottom: 20px;
@@ -130,10 +202,11 @@
         border-radius: 16px;
         padding: 16px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
+        z-index: 10000;
         animation: slideUp 0.3s ease-out;
         max-width: 400px;
         margin: 0 auto;
+        backdrop-filter: blur(10px);
       }
 
       .pwa-install-banner.hidden {
@@ -150,27 +223,33 @@
       .pwa-banner-icon {
         font-size: 24px;
         color: #000;
+        flex-shrink: 0;
       }
 
       .pwa-banner-text {
         flex: 1;
+        min-width: 0;
       }
 
       .pwa-banner-text h3 {
         margin: 0 0 4px 0;
         font-size: 16px;
         font-weight: 600;
+        color: #000;
       }
 
       .pwa-banner-text p {
         margin: 0;
         font-size: 14px;
         opacity: 0.8;
+        color: #000;
+        line-height: 1.3;
       }
 
       .pwa-banner-actions {
         display: flex;
         gap: 8px;
+        flex-shrink: 0;
       }
 
       .pwa-install-btn {
@@ -185,10 +264,13 @@
         align-items: center;
         gap: 6px;
         transition: all 0.3s ease;
+        font-size: 14px;
+        white-space: nowrap;
       }
 
       .pwa-install-btn:hover {
         background: rgba(0, 0, 0, 0.2);
+        transform: translateY(-1px);
       }
 
       .pwa-dismiss-btn {
@@ -200,6 +282,11 @@
         cursor: pointer;
         opacity: 0.7;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .pwa-dismiss-btn:hover {
@@ -226,13 +313,17 @@
         }
         
         .pwa-banner-content {
-          flex-direction: column;
-          text-align: center;
+          flex-wrap: wrap;
           gap: 8px;
         }
         
         .pwa-banner-actions {
           width: 100%;
+          justify-content: space-between;
+        }
+
+        .pwa-install-btn {
+          flex: 1;
           justify-content: center;
         }
       }

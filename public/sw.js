@@ -1,5 +1,5 @@
-// Service Worker para PWA
-const CACHE_NAME = 'tex-v1.0.0'
+// Service Worker para PWA - Versão Otimizada
+const CACHE_NAME = 'tex-v1.0.1'
 const STATIC_CACHE_URLS = [
   '/',
   '/index.html',
@@ -10,7 +10,11 @@ const STATIC_CACHE_URLS = [
 
 // Instalar Service Worker
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Instalando...')
+  console.log('Service Worker: Instalando versão', CACHE_NAME)
+  
+  // Forçar ativação imediata
+  self.skipWaiting()
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -25,7 +29,11 @@ self.addEventListener('install', (event) => {
 
 // Ativar Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Ativando...')
+  console.log('Service Worker: Ativando versão', CACHE_NAME)
+  
+  // Tomar controle imediatamente
+  self.clients.claim()
+  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -79,7 +87,7 @@ self.addEventListener('push', (event) => {
     const options = {
       body: data.body,
       icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      badge: '/icons/icon-192x192.png',
       vibrate: [100, 50, 100],
       data: {
         dateOfArrival: Date.now(),
