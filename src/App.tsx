@@ -696,6 +696,14 @@ const App: React.FC = () => {
             </button>
           )}
         </div>
+
+        <button 
+          onClick={() => navigateTo('verify')}
+          className="whatsapp-login-btn"
+        >
+          <i className="fab fa-whatsapp"></i>
+          Entrar com WhatsApp
+        </button>
       </div>
     </div>
   )
