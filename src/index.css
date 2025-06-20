@@ -51,7 +51,7 @@ body::before {
   50% { opacity: 0.8; }
 }
 
-/* Profile Header Button - CORRIGIDO PARA CANTO SUPERIOR DIREITO */
+/* Profile Header Button - POSICIONADO ABSOLUTAMENTE NO CANTO SUPERIOR DIREITO */
 .profile-header-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -68,6 +68,11 @@ body::before {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  /* POSICIONAMENTO ABSOLUTO NO CANTO SUPERIOR DIREITO */
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
 }
 
 .profile-header-btn:hover {
@@ -82,7 +87,7 @@ body::before {
   object-fit: cover !important;
 }
 
-/* Profile Menu Dropdown - CORRIGIDO PARA ABRIR À DIREITA */
+/* Profile Menu Dropdown - POSICIONADO CORRETAMENTE ABAIXO DO BOTÃO */
 .profile-menu {
   position: fixed;
   top: 70px;
@@ -239,7 +244,7 @@ body::before {
   display: flex;
 }
 
-/* Back Button */
+/* Back Button - POSICIONADO NO CANTO SUPERIOR ESQUERDO */
 .back-button-container {
   width: 100%;
   margin-bottom: 0.5rem;
@@ -274,7 +279,7 @@ body::before {
   font-size: 0.8rem;
 }
 
-/* Home Screen - RESTAURADO LAYOUT ORIGINAL */
+/* Home Screen */
 .hero-container {
   text-align: center;
   max-width: 100%;
@@ -293,7 +298,6 @@ body::before {
   min-height: calc(100vh - 140px);
 }
 
-/* LOGO TEX DENTRO DO CONTAINER - RESTAURADO POSIÇÃO ORIGINAL */
 .tex-logo-container-inside {
   display: flex;
   align-items: center;
@@ -425,7 +429,7 @@ input:focus, textarea:focus {
   transform: none;
 }
 
-/* WhatsApp Login Button - RESTAURADO DENTRO DO CONTAINER */
+/* WhatsApp Login Button */
 .whatsapp-login-btn {
   padding: 1.2rem 1.8rem;
   font-size: 1.2rem;

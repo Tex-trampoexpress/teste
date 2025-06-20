@@ -514,115 +514,115 @@ const App: React.FC = () => {
         {/* Espaço vazio à esquerda */}
         <div className="w-12"></div>
 
-        {/* Botão de perfil à direita - CORRIGIDO POSIÇÃO */}
-        {isLoggedIn && currentUser ? (
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="profile-header-btn"
-            >
-              {currentUser.foto_url ? (
-                <img 
-                  src={currentUser.foto_url} 
-                  alt="Perfil"
-                  onError={(e) => {
-                    console.log('❌ Erro ao carregar foto do header:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
-                    e.currentTarget.style.display = 'none'
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                  }}
-                />
-              ) : null}
-              <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
-            </button>
+        {/* Espaço vazio à direita - BOTÃO DE PERFIL AGORA É POSICIONADO ABSOLUTAMENTE */}
+        <div className="w-12"></div>
+      </div>
 
-            {showProfileMenu && (
-              <>
-                <div 
-                  className="profile-menu-overlay"
-                  onClick={() => setShowProfileMenu(false)}
-                />
-                <div className="profile-menu">
-                  <div className="profile-menu-content">
-                    <div className="profile-menu-header">
-                      <div className="profile-menu-avatar">
-                        {currentUser.foto_url ? (
-                          <img 
-                            src={currentUser.foto_url} 
-                            alt="Perfil"
-                            onError={(e) => {
-                              console.log('❌ Erro ao carregar foto do menu:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
-                              e.currentTarget.style.display = 'none'
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                            }}
-                          />
-                        ) : null}
-                        <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
-                      </div>
-                      <div className="profile-menu-info">
-                        <h4>{currentUser.nome}</h4>
-                        <p>{currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}</p>
-                      </div>
+      {/* BOTÃO DE PERFIL POSICIONADO ABSOLUTAMENTE NO CANTO SUPERIOR DIREITO */}
+      {isLoggedIn && currentUser && (
+        <div>
+          <button
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="profile-header-btn"
+          >
+            {currentUser.foto_url ? (
+              <img 
+                src={currentUser.foto_url} 
+                alt="Perfil"
+                onError={(e) => {
+                  console.log('❌ Erro ao carregar foto do header:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                }}
+              />
+            ) : null}
+            <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
+          </button>
+
+          {showProfileMenu && (
+            <>
+              <div 
+                className="profile-menu-overlay"
+                onClick={() => setShowProfileMenu(false)}
+              />
+              <div className="profile-menu">
+                <div className="profile-menu-content">
+                  <div className="profile-menu-header">
+                    <div className="profile-menu-avatar">
+                      {currentUser.foto_url ? (
+                        <img 
+                          src={currentUser.foto_url} 
+                          alt="Perfil"
+                          onError={(e) => {
+                            console.log('❌ Erro ao carregar foto do menu:', currentUser.foto_url ? 'Base64 presente' : 'Sem foto')
+                            e.currentTarget.style.display = 'none'
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                          }}
+                        />
+                      ) : null}
+                      <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
                     </div>
-                    
-                    <div className="profile-menu-actions">
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          navigateTo('my-profile')
-                        }}
-                      >
-                        <i className="fas fa-user"></i>
-                        Meu Perfil
-                      </button>
-                      
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          navigateTo('feed')
-                        }}
-                      >
-                        <i className="fas fa-search"></i>
-                        Explorar
-                      </button>
-                      
-                      <div className="profile-menu-divider"></div>
-                      
-                      <button 
-                        className="profile-menu-item"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          updateUserStatus(currentUser.status === 'available' ? 'busy' : 'available')
-                        }}
-                      >
-                        <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
-                        {currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
-                      </button>
-                      
-                      <div className="profile-menu-divider"></div>
-                      
-                      <button 
-                        className="profile-menu-item logout"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          logout()
-                        }}
-                      >
-                        <i className="fas fa-sign-out-alt"></i>
-                        Sair
-                      </button>
+                    <div className="profile-menu-info">
+                      <h4>{currentUser.nome}</h4>
+                      <p>{currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}</p>
                     </div>
                   </div>
+                  
+                  <div className="profile-menu-actions">
+                    <button 
+                      className="profile-menu-item"
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        navigateTo('my-profile')
+                      }}
+                    >
+                      <i className="fas fa-user"></i>
+                      Meu Perfil
+                    </button>
+                    
+                    <button 
+                      className="profile-menu-item"
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        navigateTo('feed')
+                      }}
+                    >
+                      <i className="fas fa-search"></i>
+                      Explorar
+                    </button>
+                    
+                    <div className="profile-menu-divider"></div>
+                    
+                    <button 
+                      className="profile-menu-item"
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        updateUserStatus(currentUser.status === 'available' ? 'busy' : 'available')
+                      }}
+                    >
+                      <i className={`fas fa-circle ${currentUser.status === 'available' ? 'text-green-500' : 'text-red-500'}`}></i>
+                      {currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
+                    </button>
+                    
+                    <div className="profile-menu-divider"></div>
+                    
+                    <button 
+                      className="profile-menu-item logout"
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        logout()
+                      }}
+                    >
+                      <i className="fas fa-sign-out-alt"></i>
+                      Sair
+                    </button>
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-        ) : (
-          // Espaço vazio quando não logado - REMOVIDO BOTÃO DE LOGIN
-          <div className="w-12"></div>
-        )}
-      </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </header>
   )
 
