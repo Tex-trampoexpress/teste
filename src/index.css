@@ -51,7 +51,7 @@ body::before {
   50% { opacity: 0.8; }
 }
 
-/* Profile Header Button - CORRIGIDO PARA FICAR SEMPRE À DIREITA */
+/* Profile Header Button - CORRIGIDO PARA CANTO SUPERIOR DIREITO */
 .profile-header-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -68,16 +68,11 @@ body::before {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* CORREÇÃO CRÍTICA: Garantir que sempre fique à direita */
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .profile-header-btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-50%) scale(1.1);
+  transform: scale(1.1);
 }
 
 .profile-header-btn img {
@@ -1807,15 +1802,9 @@ footer {
     flex-direction: column;
   }
 
-  /* CORREÇÃO CRÍTICA: Profile Menu Mobile - GARANTIR QUE FIQUE À DIREITA */
   .profile-menu {
     right: 5px;
     min-width: 260px;
-  }
-
-  /* CORREÇÃO CRÍTICA: Profile Header Button Mobile - GARANTIR POSIÇÃO À DIREITA */
-  .profile-header-btn {
-    right: 0.5rem;
   }
 }
 
@@ -1945,7 +1934,6 @@ footer {
     justify-content: center;
   }
 
-  /* CORREÇÃO CRÍTICA: Profile Menu Mobile - MANTER À DIREITA */
   .profile-menu {
     right: 5px;
     min-width: 240px;
@@ -1955,11 +1943,6 @@ footer {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
-  }
-
-  /* CORREÇÃO CRÍTICA: Profile Header Button Mobile - GARANTIR POSIÇÃO À DIREITA */
-  .profile-header-btn {
-    right: 0.3rem;
   }
 }
 
@@ -1989,15 +1972,9 @@ footer {
     gap: 1rem;
   }
 
-  /* CORREÇÃO CRÍTICA: Profile Menu Desktop - GARANTIR QUE FIQUE À DIREITA */
   .profile-menu {
     right: 10px;
     min-width: 300px;
-  }
-
-  /* CORREÇÃO CRÍTICA: Profile Header Button Desktop - GARANTIR POSIÇÃO À DIREITA */
-  .profile-header-btn {
-    right: 1rem;
   }
 }
 
