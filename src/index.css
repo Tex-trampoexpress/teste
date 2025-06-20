@@ -56,11 +56,10 @@ body::before {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: var(--white);
-  padding: 0.8rem;
+  padding: 0;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 1.2rem;
   backdrop-filter: blur(10px);
   width: 48px;
   height: 48px;
@@ -68,11 +67,12 @@ body::before {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* POSICIONAMENTO ABSOLUTO NO CANTO SUPERIOR DIREITO */
   position: fixed;
   top: 1rem;
   right: 1rem;
   z-index: 1000;
+  /* IMPORTANTE: Posição relativa para controlar o z-index dos elementos filhos */
+  position: fixed;
 }
 
 .profile-header-btn:hover {
@@ -80,11 +80,37 @@ body::before {
   transform: scale(1.1);
 }
 
+/* CORREÇÃO PRINCIPAL: Imagem do botão de perfil deve ocupar todo o espaço circular */
 .profile-header-btn img {
-  width: 40px !important;
-  height: 40px !important;
+  width: 48px !important;
+  height: 48px !important;
   border-radius: 50% !important;
   object-fit: cover !important;
+  /* CORREÇÃO: Posicionamento absoluto para ocupar todo o botão */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  /* IMPORTANTE: Garantir que a imagem cubra completamente o botão */
+  border: none;
+  outline: none;
+}
+
+/* CORREÇÃO: Ícone padrão deve ficar atrás da imagem e só aparecer quando não há foto */
+.profile-header-btn i {
+  font-size: 1.2rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  /* IMPORTANTE: Ícone fica sempre presente mas atrás da imagem */
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* CORREÇÃO: Quando há imagem, esconder completamente o ícone */
+.profile-header-btn img + i {
+  display: none !important;
 }
 
 /* Profile Menu Dropdown - POSICIONADO CORRETAMENTE ABAIXO DO BOTÃO */
@@ -295,7 +321,7 @@ body::before {
   flex-direction: column;
   justify-content: space-between;
   gap: 1rem;
-  min-height: calc(100vh - 140px);
+  min-height: calc(100vh - 170px);
 }
 
 .tex-logo-container-inside {
