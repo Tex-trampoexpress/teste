@@ -703,6 +703,19 @@ const App: React.FC = () => {
           <i className="fab fa-whatsapp"></i>
           Entrar com WhatsApp
         </button>
+
+        {/* INFORMAÇÕES DO RODAPÉ DENTRO DO CONTAINER */}
+        <div className="hero-footer-info">
+          <nav className="hero-footer-nav">
+            <button onClick={() => navigateTo('home')}>Home</button>
+            <button onClick={() => navigateTo('about')}>Sobre</button>
+            <button onClick={() => navigateTo('terms')}>Termos</button>
+            <a href="#" onClick={(e) => e.preventDefault()}>Instagram</a>
+          </nav>
+          <div className="hero-copyright">
+            © 2025 TrampoExpress. Todos os direitos reservados.
+          </div>
+        </div>
       </div>
     </div>
   )
