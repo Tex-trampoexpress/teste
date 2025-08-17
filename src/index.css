@@ -1467,19 +1467,12 @@ input:focus, textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.whatsapp-btn:hover, .contact-btn:hover {
+.terms-section h2 {
   font-size: 1.4rem;
   margin-bottom: 1rem;
   color: var(--white);
   display: flex;
   align-items: center;
-}
-
-.terms-section h2 i {
-  font-size: 1.2rem;
-  margin-right: 0.5rem;
-  color: var(--cyan);
-.whatsapp-btn:active, .contact-btn:active {
 }
 
 .terms-section h2 i {
@@ -1540,6 +1533,15 @@ input:focus, textarea:focus {
 .highlight {
   color: var(--gold);
   font-weight: 600;
+}
+
+.whatsapp-btn:hover, .contact-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.whatsapp-btn:active, .contact-btn:active {
+  transform: translateY(0);
 }
 
 /* PWA Install Prompt Styles */
