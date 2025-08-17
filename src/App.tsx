@@ -458,7 +458,7 @@ const App: React.FC = () => {
   }
 
   // Handle payment success
-
+  const handleContactWithPaymentClick = (user: Usuario) => {
     // Verificar se o usuário está logado
     if (!currentUser) {
       toast.error('Você precisa estar logado para entrar em contato')
