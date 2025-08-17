@@ -1369,6 +1369,8 @@ input:focus, textarea:focus {
 .tag-clickable:hover {
   background: rgba(0, 255, 255, 0.2);
   transform: translateY(-1px);
+}
+
 .content-section {
   display: flex;
   flex-direction: column;
