@@ -79,11 +79,18 @@ const App: React.FC = () => {
       setState(prev => ({ ...prev, users }))
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      toast.error('Erro ao carregar profissionais')
-    }
-  }
-
-  const navigateTo = (screen: string, addToHistory: boolean = true) => {
+      // Show configuration help instead of error
+      toast.error('Configure o Supabase para ver dados reais', {
+        duration: 6000,
+        icon: '⚙️'
+      })
+      console.log('💡 Para configurar o Supabase:')
+      console.log('1. Crie um arquivo .env na raiz do projeto')
+      console.log('2. Adicione suas credenciais do Supabase:')
+      console.log('   VITE_SUPABASE_URL=https://seu-projeto-id.supabase.co')
+      console.log('   VITE_SUPABASE_ANON_KEY=sua_chave_anonima')
+      console.log('3. Reinicie o servidor: npm run dev')
+      console.log('4. Obtenha as credenciais em: https://app.supabase.com/project/seu-projeto/settings/api')
     setState(prev => ({ ...prev, currentScreen: screen as any }))
     
     if (addToHistory) {
