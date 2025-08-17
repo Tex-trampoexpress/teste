@@ -406,13 +406,9 @@ export class DatabaseService {
       // Apply search filter if provided
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
-        // Use more efficient search without leading wildcards when possible
-        if (searchTerm.length >= 3) {
-          query = query.or(`nome.ilike.${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.${searchTerm}%`)
-        } else {
-          // For short terms, search only in name to avoid timeout
-          query = query.ilike('nome', `${searchTerm}%`)
-        }
+        // Only search in nome field to avoid timeout from full table scans
+        // This prevents problematic ilike operations on descricao and localizacao
+        query = query.ilike('nome', `${searchTerm}%`)
       }
 
       // Apply tags filter if provided
