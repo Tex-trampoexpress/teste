@@ -943,7 +943,7 @@ input:focus, textarea:focus {
   margin-top: 2rem;
 }
 
-.edit-profile-btn {
+.whatsapp-btn, .contact-btn {
   background: var(--gradient);
   color: var(--black);
   border: none;
@@ -1467,17 +1467,17 @@ input:focus, textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.terms-section h2 {
+.whatsapp-btn:hover, .contact-btn:hover {
   font-size: 1.4rem;
   margin-bottom: 1rem;
   color: var(--white);
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+.whatsapp-btn:active, .contact-btn:active {
 }
 
 .terms-section h2 i {
-  color: var(--cyan);
+.whatsapp-btn i, .contact-btn i {
   font-size: 1.2rem;
 }
 
