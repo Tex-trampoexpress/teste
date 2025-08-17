@@ -1473,6 +1473,12 @@ input:focus, textarea:focus {
   color: var(--white);
   display: flex;
   align-items: center;
+}
+
+.terms-section h2 i {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+  color: var(--cyan);
 .whatsapp-btn:active, .contact-btn:active {
 }
 
