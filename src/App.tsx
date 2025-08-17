@@ -438,6 +438,25 @@ const App: React.FC = () => {
     setShowPagamento(true)
   }
 
+  // Handle WhatsApp contact click
+  const handleWhatsAppClick = (e: React.MouseEvent, user: Usuario) => {
+    e.preventDefault()
+    
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      showScreen('verify')
+      return
+    }
+
+    // Abrir modal de pagamento PIX
+    setShowPagamentoPix({
+      prestadorId: user.id,
+      prestadorNome: user.nome,
+      prestadorWhatsapp: user.whatsapp,
+      clienteId: currentUser.id
+    })
+  }
+
   // Handle payment success
   const handlePaymentSuccess = (whatsappUrl: string) => {
     setShowPagamento(false)
@@ -832,15 +851,7 @@ const App: React.FC = () => {
                   <p>Tente ajustar os filtros de busca ou ampliar a área de pesquisa</p>
                   <div className="no-results-actions">
                     <button 
-                      className="explore-all-btn"
-                      onClick={() => {
-                        setSearchFilters({
-                          search: '',
-                          tags: [],
-                          proximityEnabled: false,
-                          radius: 10
-                        })
-                      }}
+                      onClick={(e) => handleWhatsAppClick(e, user)}
                     >
                       Ver todos os profissionais
                     </button>
@@ -1002,22 +1013,6 @@ const App: React.FC = () => {
                     </div>
                     <div className="stat">
                       <i className="fas fa-check-circle"></i>
-                      <span>Perfil {currentUser.perfil_completo ? 'completo' : 'incompleto'}</span>
-                    </div>
-                    {currentUser.verificado && (
-                      <div className="stat">
-                        <i className="fas fa-shield-alt"></i>
-                        <span>Perfil verificado</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Ações do perfil */}
-                  <div className="profile-actions">
-                    <button className="edit-profile-btn" onClick={prepareEditProfile}>
-                      <i className="fas fa-edit"></i>
-                      Editar Perfil
-                    </button>
                     <button className="delete-profile-btn" onClick={deleteProfile}>
                       <i className="fas fa-trash"></i>
                       Excluir Perfil
