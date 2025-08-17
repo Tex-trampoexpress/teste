@@ -173,10 +173,26 @@ const App: React.FC = () => {
       (error) => {
         console.error('Erro de geolocalização:', error)
         setLocation(prev => ({ ...prev, loading: false }))
-        toast.error('Não foi possível obter sua localização')
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        toast.error('Erro ao obter localização')
+      }
     )
+  }
+
+  // Handle contact with payment
+  const handleContactWithPayment = (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      return
+    }
+
+    if (currentUser.id === user.id) {
+      toast.error('Você não pode entrar em contato consigo mesmo')
+      return
+    }
+
+    // Abrir modal de pagamento PIX
+    setPrestadorSelecionado(user)
+    setShowPagamento(true)
   }
 
   // Gerenciamento de tags
@@ -422,22 +438,6 @@ const App: React.FC = () => {
     navigateTo('edit-profile')
   }
 
-  // Handle contact with payment
-  const handleContactWithPayment = (user: Usuario) => {
-    if (!currentUser) {
-      toast.error('Faça login para entrar em contato')
-      return
-    }
-
-    if (currentUser.id === user.id) {
-      toast.error('Você não pode entrar em contato consigo mesmo')
-      return
-    }
-
-    setPrestadorSelecionado(user)
-    setShowPagamento(true)
-  }
-
   // Handle WhatsApp contact click
   const handleWhatsAppClick = (e: React.MouseEvent, user: Usuario) => {
     e.preventDefault()
@@ -449,12 +449,8 @@ const App: React.FC = () => {
     }
 
     // Abrir modal de pagamento PIX
-    setShowPagamento({
-      prestadorId: user.id,
-      prestadorNome: user.nome,
-      prestadorWhatsapp: user.whatsapp,
-      clienteId: currentUser.id
-    })
+    setPrestadorSelecionado(user)
+    setShowPagamento(true)
   }
 
   // Handle payment success
@@ -851,7 +847,7 @@ const App: React.FC = () => {
                   <p>Tente ajustar os filtros de busca ou ampliar a área de pesquisa</p>
                   <div className="no-results-actions">
                     <button 
-                      onClick={() => setSearchFilters(prev => ({ ...prev, search: '', tags: [], proximityEnabled: false }))}
+                      onClick={() => setSearchFilters({ search: '', tags: [], proximityEnabled: false, radius: 10 })}
                     >
                       Ver todos os profissionais
                     </button>
@@ -1013,7 +1009,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="stat">
                       <i className="fas fa-check-circle"></i>
-                      <span>Perfil {currentUser.verificado ? 'Verificado' : 'Não Verificado'}</span>
+                      <span>Perfil {currentUser.verificado ? 'Verificado' : 'Não verificado'}</span>
                     </div>
                   </div>
 
