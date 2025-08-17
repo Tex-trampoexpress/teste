@@ -1238,159 +1238,6 @@ const App: React.FC = () => {
                     <li>Fornecer informações verdadeiras e atualizadas</li>
                     <li>Não usar a plataforma para atividades ilegais</li>
                     <li>Respeitar outros usuários</li>
-                  </ul>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-lock"></i> Privacidade</h2>
-                  <p>
-                    Protegemos seus dados de acordo com nossa política de privacidade. 
-                    Ao usar o TEX, você concorda com nossa coleta e uso de informações conforme descrito.
-                  </p>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-edit"></i> Modificações</h2>
-                  <p>
-                    Reservamos o direito de modificar estes termos a qualquer momento. 
-                    Alterações significativas serão notificadas aos usuários.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-
-      default:
-        return (
-          <div className="screen active">
-            <div className="hero-container">
-              <h1>Página não encontrada</h1>
-              <button onClick={() => navigateTo('home')}>Voltar ao início</button>
-            </div>
-          </div>
-        )
-    }
-  }
-
-  return (
-    <div className="app">
-      {/* Botão de perfil no header (sempre visível) */}
-      {currentUser && (
-        <>
-          <button 
-            className="profile-header-btn"
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-          >
-            {currentUser.foto_url ? (
-              <img src={currentUser.foto_url} alt="Perfil" />
-            ) : (
-              <i className="fas fa-user"></i>
-            )}
-          </button>
-
-          {/* Menu dropdown do perfil */}
-          {showProfileMenu && (
-            <>
-              <div 
-                className="profile-menu-overlay"
-                onClick={() => setShowProfileMenu(false)}
-              ></div>
-              <div className="profile-menu">
-                <div className="profile-menu-content">
-                  <div className="profile-menu-header">
-                    <div className="profile-menu-avatar">
-                      {currentUser.foto_url ? (
-                        <img src={currentUser.foto_url} alt="Perfil" />
-                      ) : (
-                        <i className="fas fa-user"></i>
-                      )}
-                    </div>
-                    <div className="profile-menu-info">
-                      <h4>{currentUser.nome}</h4>
-                      <p>{currentUser.whatsapp}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="profile-menu-actions">
-                    <button 
-                      className="profile-menu-item"
-                      onClick={() => navigateTo('my-profile')}
-                    >
-                      <i className="fas fa-user"></i>
-                      Meu Perfil
-                    </button>
-                    <button 
-                      className="profile-menu-item"
-                      onClick={() => navigateTo('feed')}
-                    >
-                      <i className="fas fa-search"></i>
-                      Buscar Profissionais
-                    </button>
-                    <button 
-                      className="profile-menu-item"
-                      onClick={prepareEditProfile}
-                    >
-                      <i className="fas fa-edit"></i>
-                      Editar Perfil
-                    </button>
-                    
-                    <div className="profile-menu-divider"></div>
-                    
-                    <button 
-                      className="profile-menu-item"
-                      onClick={() => navigateTo('about')}
-                    >
-                      <i className="fas fa-info-circle"></i>
-                      Sobre
-                    </button>
-                    <button 
-                      className="profile-menu-item"
-                      onClick={() => navigateTo('terms')}
-                    >
-                      <i className="fas fa-file-contract"></i>
-                      Termos
-                    </button>
-                    
-                    <div className="profile-menu-divider"></div>
-                    
-                    <button 
-                      className="profile-menu-item logout"
-                      onClick={logout}
-                    >
-                      <i className="fas fa-sign-out-alt"></i>
-                      Sair
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {/* Renderizar tela atual */}
-      {renderScreen()}
-
-      {/* Toast notifications */}
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'rgba(0, 0, 0, 0.8)',
-            color: '#fff',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            backdropFilter: 'blur(10px)'
-          }
-        }}
-      />
-    </div>
-  )
-}
-
-export default App
                     <li>Não criar perfis falsos ou duplicados</li>
                   </ul>
                 </div>
@@ -1400,6 +1247,62 @@ export default App
                   <p>
                     O TEX é apenas uma plataforma de conexão. Não somos responsáveis por:
                   </p>
+                  <ul>
+                    <li>Qualidade dos serviços prestados</li>
+                    <li>Disputas entre usuários</li>
+                    <li>Danos ou prejuízos decorrentes do uso da plataforma</li>
+                    <li>Veracidade das informações fornecidas pelos usuários</li>
+                  </ul>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-user-shield"></i> Privacidade</h2>
+                  <p>
+                    Respeitamos sua privacidade. Coletamos apenas informações necessárias 
+                    para o funcionamento da plataforma e não compartilhamos dados pessoais 
+                    com terceiros sem consentimento.
+                  </p>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-ban"></i> Suspensão de Conta</h2>
+                  <p>
+                    Podemos suspender ou excluir contas que violem estes termos, 
+                    incluindo perfis falsos, spam ou comportamento inadequado.
+                  </p>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-edit"></i> Alterações</h2>
+                  <p>
+                    Estes termos podem ser alterados a qualquer momento. 
+                    Continuando a usar o TEX após alterações, você aceita os novos termos.
+                  </p>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-phone"></i> Contato</h2>
+                  <p>
+                    Para dúvidas sobre estes termos, entre em contato conosco pelo WhatsApp: 
+                    <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer">
+                      +55 11 99999-9999
+                    </a>
+                  </p>
+                </div>
+
+                <div className="terms-footer">
+                  <p>
+                    <strong>Última atualização:</strong> Janeiro de 2025
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return null
+    }
   }
 
   return (
@@ -1517,6 +1420,7 @@ export default App
             backdropFilter: 'blur(10px)'
           }
         }}
+      />
     </div>
   )
 }
