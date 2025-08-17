@@ -911,7 +911,7 @@ const App: React.FC = () => {
 
                       <button
                         className="whatsapp-btn"
-                        onClick={() => handleWhatsAppClick(user)}
+                       onClick={(e) => handleWhatsAppClick(e, user)}
                       >
                         <i className="fab fa-whatsapp"></i>
                         Entrar em Contato
