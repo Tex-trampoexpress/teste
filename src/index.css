@@ -1369,33 +1369,6 @@ input:focus, textarea:focus {
 .tag-clickable:hover {
   background: rgba(0, 255, 255, 0.2);
   transform: translateY(-1px);
-}
-
-.whatsapp-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 1rem;
-  background: var(--whatsapp-green);
-  color: white;
-  text-decoration: none;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  margin-top: 1rem;
-}
-
-.whatsapp-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(37, 211, 102, 0.3);
-}
-
-.whatsapp-btn:active {
-  transform: translateY(0);
-}
-
 .content-section {
   display: flex;
   flex-direction: column;

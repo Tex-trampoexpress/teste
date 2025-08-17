@@ -909,23 +909,12 @@ const App: React.FC = () => {
                         ))}
                       </div>
 
-                      <a
-                        href={`https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
                         className="whatsapp-btn"
+                        onClick={() => handleWhatsAppClick(user)}
                       >
                         <i className="fab fa-whatsapp"></i>
-                        Entrar em contato
-                      </a>
-                      
-                      <button
-                        onClick={() => handleContactWithPayment(user)}
-                        className="contact-paid-btn"
-                        disabled={!currentUser || currentUser.id === user.id}
-                      >
-                        <i className="fas fa-credit-card"></i>
-                        Contato Premium (R$ 2,02)
+                        Entrar em Contato
                       </button>
                     </div>
                   ))}
