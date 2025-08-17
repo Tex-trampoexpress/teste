@@ -1483,6 +1483,11 @@ input:focus, textarea:focus {
 }
 
 .terms-section h2 i {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+  color: var(--cyan);
+}
+
 .whatsapp-btn i, .contact-btn i {
   font-size: 1.2rem;
 }
