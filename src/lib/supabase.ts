@@ -57,6 +57,8 @@ try {
   )
 }
 
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
 // Test connection on initialization
 const testConnection = async () => {
   try {
@@ -81,5 +83,3 @@ const testConnection = async () => {
 
 // Run connection test (non-blocking)
 testConnection()
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
