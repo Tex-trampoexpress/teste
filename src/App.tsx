@@ -173,14 +173,10 @@ const App: React.FC = () => {
       (error) => {
         console.error('Erro de geolocalização:', error)
         setLocation(prev => ({ ...prev, loading: false }))
-    // Abrir modal de pagamento PIX
-    setPagamentoData({
-      prestadorId: user.id,
-      prestadorNome: user.nome,
-      prestadorWhatsapp: user.whatsapp,
-      clienteId: currentUser?.id || crypto.randomUUID()
-    })
-    setShowPagamento(true)
+        toast.error('Não foi possível obter sua localização')
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    )
   }
 
   // Gerenciamento de tags
@@ -448,12 +444,12 @@ const App: React.FC = () => {
     
     if (!currentUser) {
       toast.error('Faça login para entrar em contato')
-      showScreen('verify')
+      navigateTo('verify')
       return
     }
 
     // Abrir modal de pagamento PIX
-    setShowPagamentoPix({
+    setShowPagamento({
       prestadorId: user.id,
       prestadorNome: user.nome,
       prestadorWhatsapp: user.whatsapp,
@@ -855,7 +851,7 @@ const App: React.FC = () => {
                   <p>Tente ajustar os filtros de busca ou ampliar a área de pesquisa</p>
                   <div className="no-results-actions">
                     <button 
-                      onClick={(e) => handleWhatsAppClick(e, user)}
+                      onClick={() => setSearchFilters(prev => ({ ...prev, search: '', tags: [], proximityEnabled: false }))}
                     >
                       Ver todos os profissionais
                     </button>
@@ -1017,6 +1013,16 @@ const App: React.FC = () => {
                     </div>
                     <div className="stat">
                       <i className="fas fa-check-circle"></i>
+                      <span>Perfil {currentUser.verificado ? 'Verificado' : 'Não Verificado'}</span>
+                    </div>
+                  </div>
+
+                  {/* Ações do perfil */}
+                  <div className="profile-actions">
+                    <button className="edit-profile-btn" onClick={prepareEditProfile}>
+                      <i className="fas fa-edit"></i>
+                      Editar Perfil
+                    </button>
                     <button className="delete-profile-btn" onClick={deleteProfile}>
                       <i className="fas fa-trash"></i>
                       Excluir Perfil
