@@ -943,22 +943,19 @@ input:focus, textarea:focus {
   margin-top: 2rem;
 }
 
-.whatsapp-btn, .contact-btn {
+.edit-profile-btn {
   background: var(--gradient);
   color: var(--black);
   border: none;
-  padding: 1.2rem 2rem;
+  padding: 1rem 1.5rem;
   border-radius: 12px;
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  width: 100%;
-  min-height: 56px;
 }
 
 .edit-profile-btn:hover {
@@ -1374,6 +1371,70 @@ input:focus, textarea:focus {
   transform: translateY(-1px);
 }
 
+.whatsapp-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  background: var(--whatsapp-green);
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.whatsapp-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.3);
+}
+
+.whatsapp-btn:active {
+  transform: translateY(0);
+}
+
+/* Content Container for About and Terms */
+.content-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  margin-top: 1rem;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.page-title i {
+  font-size: 2rem;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* About Content */
+.about-content {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+}
+
 .content-section {
   display: flex;
   flex-direction: column;
@@ -1476,15 +1537,11 @@ input:focus, textarea:focus {
   color: var(--white);
   display: flex;
   align-items: center;
+  gap: 0.8rem;
 }
 
 .terms-section h2 i {
-  font-size: 1.2rem;
-  margin-right: 0.5rem;
   color: var(--cyan);
-}
-
-.whatsapp-btn i, .contact-btn i {
   font-size: 1.2rem;
 }
 
@@ -1536,15 +1593,6 @@ input:focus, textarea:focus {
 .highlight {
   color: var(--gold);
   font-weight: 600;
-}
-
-.whatsapp-btn:hover, .contact-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-}
-
-.whatsapp-btn:active, .contact-btn:active {
-  transform: translateY(0);
 }
 
 /* PWA Install Prompt Styles */
