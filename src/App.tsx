@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { DatabaseService, type Usuario, type CreateUsuarioData, type UpdateUsuarioData } from './lib/database'
+import { MercadoPagoService } from './lib/mercadopago'
+import PagamentoPix from './components/PagamentoPix'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 // Tipos para o estado da aplicação
@@ -60,6 +62,10 @@ const App: React.FC = () => {
 
   // Estados do menu de perfil
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+  // Estados de pagamento
+  const [showPagamento, setShowPagamento] = useState(false)
+  const [prestadorSelecionado, setPrestadorSelecionado] = useState<Usuario | null>(null)
 
   // Navegação
   const navigateTo = (screen: Screen) => {
@@ -414,6 +420,38 @@ const App: React.FC = () => {
       }
     }
     navigateTo('edit-profile')
+  }
+
+  // Handle contact with payment
+  const handleContactWithPayment = (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      return
+    }
+
+    if (currentUser.id === user.id) {
+      toast.error('Você não pode entrar em contato consigo mesmo')
+      return
+    }
+
+    setPrestadorSelecionado(user)
+    setShowPagamento(true)
+  }
+
+  // Handle payment success
+  const handlePaymentSuccess = (whatsappUrl: string) => {
+    setShowPagamento(false)
+    setPrestadorSelecionado(null)
+    
+    // Redirect to WhatsApp
+    window.open(whatsappUrl, '_blank')
+    toast.success('Redirecionando para WhatsApp...')
+  }
+
+  // Close payment modal
+  const closePaymentModal = () => {
+    setShowPagamento(false)
+    setPrestadorSelecionado(null)
   }
 
   // Renderização das telas
@@ -873,6 +911,15 @@ const App: React.FC = () => {
                         <i className="fab fa-whatsapp"></i>
                         Entrar em contato
                       </a>
+                      
+                      <button
+                        onClick={() => handleContactWithPayment(user)}
+                        className="contact-paid-btn"
+                        disabled={!currentUser || currentUser.id === user.id}
+                      >
+                        <i className="fas fa-credit-card"></i>
+                        Contato Premium (R$ 2,02)
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -1385,6 +1432,18 @@ const App: React.FC = () => {
       {/* Renderizar tela atual */}
       {renderScreen()}
 
+      {/* Payment Modal */}
+      {showPagamento && prestadorSelecionado && currentUser && (
+        <PagamentoPix
+          prestadorId={prestadorSelecionado.id}
+          prestadorNome={prestadorSelecionado.nome}
+          prestadorWhatsapp={prestadorSelecionado.whatsapp}
+          clienteId={currentUser.id}
+          onClose={closePaymentModal}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
 
@@ -1402,6 +1461,31 @@ const App: React.FC = () => {
           }
         }}
       />
+
+      <style jsx>{`
+        .contact-paid-btn {
+          width: 100%;
+          background: linear-gradient(135deg, #FFD700, #00FFFF);
+          color: #000;
+          border: none;
+          padding: 1rem;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+        }
+
+        .contact-paid-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+      `}</style>
+
     </div>
   )
 }
