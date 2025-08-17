@@ -173,10 +173,14 @@ const App: React.FC = () => {
       (error) => {
         console.error('Erro de geolocalização:', error)
         setLocation(prev => ({ ...prev, loading: false }))
-        toast.error('Não foi possível obter sua localização')
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-    )
+    // Abrir modal de pagamento PIX
+    setPagamentoData({
+      prestadorId: user.id,
+      prestadorNome: user.nome,
+      prestadorWhatsapp: user.whatsapp,
+      clienteId: currentUser?.id || crypto.randomUUID()
+    })
+    setShowPagamento(true)
   }
 
   // Gerenciamento de tags
