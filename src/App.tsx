@@ -1234,62 +1234,6 @@ const App: React.FC = () => {
                 <div className="terms-section">
                   <h2><i className="fas fa-user-check"></i> Uso da Plataforma</h2>
                   <p>O TEX conecta prestadores de serviços e clientes. Você concorda em:</p>
-                  <ul>
-                    <li>Fornecer informações verdadeiras e atualizadas</li>
-                    <li>Usar a plataforma de forma legal e ética</li>
-                    <li>Respeitar outros usuários</li>
-                    <li>Não criar perfis falsos ou enganosos</li>
-                  </ul>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-shield-alt"></i> Responsabilidades</h2>
-                  <p>O TEX não se responsabiliza por:</p>
-                  <ul>
-                    <li>Qualidade dos serviços prestados</li>
-                    <li>Disputas entre usuários</li>
-                    <li>Danos ou prejuízos decorrentes do uso</li>
-                    <li>Veracidade das informações dos perfis</li>
-                  </ul>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-user-secret"></i> Privacidade</h2>
-                  <p>
-                    Respeitamos sua privacidade. Coletamos apenas informações necessárias 
-                    para o funcionamento da plataforma. Não compartilhamos dados pessoais 
-                    com terceiros sem consentimento.
-                  </p>
-                </div>
-
-                <div className="terms-section coming-soon">
-                  <h2>
-                    <i className="fas fa-star"></i> 
-                    Recursos Premium 
-                    <span className="badge">Em Breve</span>
-                  </h2>
-                  <p>
-                    Funcionalidades premium como <span className="highlight">perfis em destaque</span>, 
-                    <span className="highlight">estatísticas avançadas</span> e 
-                    <span className="highlight">suporte prioritário</span> estarão disponíveis em breve.
-                  </p>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-edit"></i> Modificações</h2>
-                  <p>
-                    Podemos alterar estes termos a qualquer momento. Mudanças importantes 
-                    serão comunicadas aos usuários.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-
-      default:
-        return <div>Tela não encontrada</div>
-    }
   }
 
   return (
@@ -1407,7 +1351,6 @@ const App: React.FC = () => {
             backdropFilter: 'blur(10px)'
           }
         }}
-      />
     </div>
   )
 }
