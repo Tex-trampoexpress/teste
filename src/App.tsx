@@ -1249,50 +1249,24 @@ const App: React.FC = () => {
                   </p>
                   <ul>
                     <li>Qualidade dos serviços prestados</li>
-                    <li>Disputas entre usuários</li>
-                    <li>Danos ou prejuízos decorrentes do uso da plataforma</li>
-                    <li>Veracidade das informações fornecidas pelos usuários</li>
+                    <li>Negociações entre usuários</li>
+                    <li>Problemas decorrentes dos serviços contratados</li>
                   </ul>
                 </div>
 
                 <div className="terms-section">
-                  <h2><i className="fas fa-user-shield"></i> Privacidade</h2>
+                  <h2><i className="fas fa-lock"></i> Privacidade</h2>
                   <p>
-                    Respeitamos sua privacidade. Coletamos apenas informações necessárias 
-                    para o funcionamento da plataforma e não compartilhamos dados pessoais 
-                    com terceiros sem consentimento.
+                    Protegemos seus dados de acordo com nossa política de privacidade. 
+                    Ao usar o TEX, você concorda com nossa coleta e uso de informações conforme descrito.
                   </p>
                 </div>
 
                 <div className="terms-section">
-                  <h2><i className="fas fa-ban"></i> Suspensão de Conta</h2>
+                  <h2><i className="fas fa-edit"></i> Modificações</h2>
                   <p>
-                    Podemos suspender ou excluir contas que violem estes termos, 
-                    incluindo perfis falsos, spam ou comportamento inadequado.
-                  </p>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-edit"></i> Alterações</h2>
-                  <p>
-                    Estes termos podem ser alterados a qualquer momento. 
-                    Continuando a usar o TEX após alterações, você aceita os novos termos.
-                  </p>
-                </div>
-
-                <div className="terms-section">
-                  <h2><i className="fas fa-phone"></i> Contato</h2>
-                  <p>
-                    Para dúvidas sobre estes termos, entre em contato conosco pelo WhatsApp: 
-                    <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer">
-                      +55 11 99999-9999
-                    </a>
-                  </p>
-                </div>
-
-                <div className="terms-footer">
-                  <p>
-                    <strong>Última atualização:</strong> Janeiro de 2025
+                    Reservamos o direito de modificar estes termos a qualquer momento. 
+                    Alterações significativas serão notificadas aos usuários.
                   </p>
                 </div>
               </div>
@@ -1301,7 +1275,14 @@ const App: React.FC = () => {
         )
 
       default:
-        return null
+        return (
+          <div className="screen active">
+            <div className="hero-container">
+              <h1>Página não encontrada</h1>
+              <button onClick={() => navigateTo('home')}>Voltar ao início</button>
+            </div>
+          </div>
+        )
     }
   }
 
