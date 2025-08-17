@@ -1396,45 +1396,6 @@ input:focus, textarea:focus {
   transform: translateY(0);
 }
 
-/* Content Container for About and Terms */
-.content-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  margin-top: 1rem;
-}
-
-.page-title {
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
-  text-align: center;
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.page-title i {
-  font-size: 2rem;
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* About Content */
-.about-content {
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 20px;
-  padding: 2rem;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
-}
-
 .content-section {
   display: flex;
   flex-direction: column;

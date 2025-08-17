@@ -67,11 +67,6 @@ const App: React.FC = () => {
   const [showPagamento, setShowPagamento] = useState(false)
   const [prestadorSelecionado, setPrestadorSelecionado] = useState<Usuario | null>(null)
 
-  const [showPagamentoPix, setShowPagamentoPix] = useState(false)
-  const [selectedPrestador, setSelectedPrestador] = useState(null)
-
-  // Navigation history
-
   // Navegação
   const navigateTo = (screen: Screen) => {
     setNavigationHistory(prev => [...prev, screen])
@@ -199,37 +194,6 @@ const App: React.FC = () => {
     setPrestadorSelecionado(user)
     setShowPagamento(true)
   }
-
-  // Handle WhatsApp click - AGORA ABRE PAGAMENTO PIX
-  const handleWhatsAppClick = (user) => {
-    console.log('🔄 Clique em Entrar em Contato - abrindo PIX:', user.nome)
-    
-    if (!currentUser) {
-      toast.error('Faça login para continuar')
-      return
-    }
-    
-    // Abrir modal de pagamento PIX
-    setSelectedPrestador(user)
-    setShowPagamentoPix(true)
-  }
-
-  // Handle PIX payment success - redireciona para WhatsApp
-  const handlePagamentoSuccess = (whatsappUrl) => {
-    console.log('✅ Pagamento aprovado, redirecionando para WhatsApp:', whatsappUrl)
-    setShowPagamentoPix(false)
-    setSelectedPrestador(null)
-    toast.success('Pagamento aprovado! Redirecionando para WhatsApp...')
-    window.open(whatsappUrl, '_blank')
-  }
-
-  // Handle PIX modal close
-  const handlePagamentoClose = () => {
-    setShowPagamentoPix(false)
-    setSelectedPrestador(null)
-  }
-
-  // Handle tag click for filtering
 
   // Gerenciamento de tags
   const addTag = () => {
@@ -929,29 +893,40 @@ const App: React.FC = () => {
                       </div>
 
                       <div className="hashtags">
-                        {user.tags.map((tag, tagIndex) => (
+                        {user.tags.map((tag, index) => (
                           <span 
-                            key={tagIndex} 
+                            key={index} 
                             className="tag-clickable"
-                            onClick={() => handleTagClick(tag)}
+                            onClick={() => {
+                              setSearchFilters(prev => ({ 
+                                ...prev, 
+                                tags: prev.tags.includes(tag) ? prev.tags : [...prev.tags, tag]
+                              }))
+                            }}
                           >
                             #{tag}
                           </span>
                         ))}
                       </div>
-                      
-                      {/* Botão de contato - ABRE PIX */}
+
                       <a
-                        href="#"
+                        href={`https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="whatsapp-btn"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          handleWhatsAppClick(user)
-                        }}
                       >
                         <i className="fab fa-whatsapp"></i>
-                        Entrar em Contato
+                        Entrar em contato
                       </a>
+                      
+                      <button
+                        onClick={() => handleContactWithPayment(user)}
+                        className="contact-paid-btn"
+                        disabled={!currentUser || currentUser.id === user.id}
+                      >
+                        <i className="fas fa-credit-card"></i>
+                        Contato Premium (R$ 2,02)
+                      </button>
                     </div>
                   ))}
                 </div>
