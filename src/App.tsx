@@ -459,16 +459,9 @@ const App: React.FC = () => {
 
   // Handle payment success
   const handleContactWithPaymentClick = (user: Usuario) => {
-    // Verificar se o usuário está logado
-    if (!currentUser) {
-      toast.error('Você precisa estar logado para entrar em contato')
-      setCurrentScreen('verify')
-      return
-    }
-
     // Verificar se não está tentando contatar a si mesmo
     if (currentUser.id === user.id) {
-      toast.error('Você não pode entrar em contato consigo mesmo')
+      const clienteId = currentUser?.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       return
     }
 
