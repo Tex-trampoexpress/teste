@@ -1435,11 +1435,6 @@ const App: React.FC = () => {
       {/* Payment Modal */}
       {showPagamento && prestadorSelecionado && currentUser && (
         <PagamentoPix
-          prestadorId={prestadorSelecionado.id}
-          prestadorNome={prestadorSelecionado.nome}
-          prestadorWhatsapp={prestadorSelecionado.whatsapp}
-          clienteId={currentUser.id}
-          onClose={closePaymentModal}
           onSuccess={handlePaymentSuccess}
         />
       )}
