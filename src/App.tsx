@@ -1234,6 +1234,75 @@ const App: React.FC = () => {
                 <div className="terms-section">
                   <h2><i className="fas fa-user-check"></i> Uso da Plataforma</h2>
                   <p>O TEX conecta prestadores de serviços e clientes. Você concorda em:</p>
+                  <ul>
+                    <li>Fornecer informações verdadeiras e atualizadas</li>
+                    <li>Não usar a plataforma para atividades ilegais</li>
+                    <li>Respeitar outros usuários</li>
+                    <li>Não criar perfis falsos ou duplicados</li>
+                  </ul>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-shield-alt"></i> Responsabilidades</h2>
+                  <p>
+                    O TEX é apenas uma plataforma de conexão. Não somos responsáveis por:
+                  </p>
+                  <ul>
+                    <li>Qualidade dos serviços prestados</li>
+                    <li>Disputas entre usuários</li>
+                    <li>Danos ou prejuízos decorrentes do uso da plataforma</li>
+                    <li>Veracidade das informações dos perfis</li>
+                  </ul>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-user-shield"></i> Privacidade</h2>
+                  <p>
+                    Respeitamos sua privacidade. Coletamos apenas informações necessárias 
+                    para o funcionamento da plataforma e não compartilhamos dados pessoais 
+                    com terceiros sem autorização.
+                  </p>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-ban"></i> Suspensão de Conta</h2>
+                  <p>
+                    Podemos suspender ou excluir contas que violem estes termos, 
+                    incluindo perfis falsos, spam ou comportamento inadequado.
+                  </p>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-edit"></i> Alterações</h2>
+                  <p>
+                    Estes termos podem ser atualizados. Continuando a usar o TEX 
+                    após alterações, você aceita os novos termos.
+                  </p>
+                </div>
+
+                <div className="terms-section">
+                  <h2><i className="fas fa-phone"></i> Contato</h2>
+                  <p>
+                    Dúvidas sobre estes termos? Entre em contato conosco pelo WhatsApp: 
+                    <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer">
+                      +55 11 99999-9999
+                    </a>
+                  </p>
+                </div>
+
+                <div className="terms-footer">
+                  <p>
+                    <strong>Última atualização:</strong> Janeiro de 2025
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return null
+    }
   }
 
   return (
@@ -1351,6 +1420,7 @@ const App: React.FC = () => {
             backdropFilter: 'blur(10px)'
           }
         }}
+      />
     </div>
   )
 }
