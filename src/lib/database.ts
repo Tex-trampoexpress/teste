@@ -377,16 +377,6 @@ export class DatabaseService {
     try {
       console.log('🔍 Executando busca otimizada...')
       
-      // Check if Supabase is properly configured
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      if (!supabaseUrl || 
-          supabaseUrl.includes('localhost') || 
-          supabaseUrl.includes('your-project-id') ||
-          supabaseUrl === 'your_supabase_project_url') {
-        console.warn('⚠️ Supabase não configurado corretamente, retornando dados de exemplo')
-        return this.getMockUsers(filters)
-      }
-
       let query = supabase
         .from('usuarios')
         .select('*')
@@ -436,94 +426,8 @@ export class DatabaseService {
       return data || []
     } catch (error) {
       console.error('❌ Erro na busca otimizada:', error)
-      if (error.message.includes('Failed to fetch')) {
-        console.warn('⚠️ Erro de conexão com Supabase, usando dados de exemplo')
-        return this.getMockUsers(filters)
-      }
       throw error
     }
-  }
-
-  // Mock users for when Supabase is not configured
-  private static getMockUsers(filters?: {
-    status?: 'available' | 'busy'
-    tags?: string[]
-    search?: string
-    limit?: number
-  }): Usuario[] {
-    const mockUsers: Usuario[] = [
-      {
-        id: 'mock-1',
-        nome: 'João Silva',
-        whatsapp: '+5511999887766',
-        descricao: 'Desenvolvedor Full Stack especializado em React e Node.js',
-        tags: ['programação', 'react', 'nodejs'],
-        foto_url: null,
-        localizacao: 'São Paulo, SP',
-        status: 'available',
-        latitude: -23.5505,
-        longitude: -46.6333,
-        criado_em: '2025-01-01T00:00:00Z',
-        atualizado_em: '2025-01-01T00:00:00Z',
-        ultimo_acesso: '2025-01-01T00:00:00Z',
-        perfil_completo: true,
-        verificado: true
-      },
-      {
-        id: 'mock-2',
-        nome: 'Maria Santos',
-        whatsapp: '+5511888776655',
-        descricao: 'Designer UX/UI com foco em experiência do usuário',
-        tags: ['design', 'ux', 'ui'],
-        foto_url: null,
-        localizacao: 'Rio de Janeiro, RJ',
-        status: 'available',
-        latitude: -22.9068,
-        longitude: -43.1729,
-        criado_em: '2025-01-01T00:00:00Z',
-        atualizado_em: '2025-01-01T00:00:00Z',
-        ultimo_acesso: '2025-01-01T00:00:00Z',
-        perfil_completo: true,
-        verificado: false
-      },
-      {
-        id: 'mock-3',
-        nome: 'Pedro Costa',
-        whatsapp: '+5511777665544',
-        descricao: 'Consultor de marketing digital e redes sociais',
-        tags: ['marketing', 'digital', 'redes-sociais'],
-        foto_url: null,
-        localizacao: 'Belo Horizonte, MG',
-        status: 'available',
-        latitude: -19.9167,
-        longitude: -43.9345,
-        criado_em: '2025-01-01T00:00:00Z',
-        atualizado_em: '2025-01-01T00:00:00Z',
-        ultimo_acesso: '2025-01-01T00:00:00Z',
-        perfil_completo: true,
-        verificado: true
-      }
-    ]
-
-    // Apply filters to mock data
-    let filteredUsers = mockUsers.filter(user => user.status === (filters?.status || 'available'))
-
-    if (filters?.search) {
-      const searchTerm = filters.search.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.nome.toLowerCase().includes(searchTerm) ||
-        user.descricao?.toLowerCase().includes(searchTerm) ||
-        user.localizacao?.toLowerCase().includes(searchTerm)
-      )
-    }
-
-    if (filters?.tags && filters.tags.length > 0) {
-      filteredUsers = filteredUsers.filter(user =>
-        filters.tags!.some(tag => user.tags.includes(tag))
-      )
-    }
-
-    return filteredUsers.slice(0, filters?.limit || 50)
   }
 
   // Get users by proximity
@@ -558,8 +462,7 @@ export class DatabaseService {
       return users
     } catch (error) {
       console.error('❌ Erro na busca por proximidade:', error)
-      // Fallback para busca simples
-      return this.getUsuarios({ status: 'available', limit: 20 })
+      throw error
     }
   }
 
