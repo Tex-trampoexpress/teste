@@ -415,14 +415,22 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro na busca otimizada:', error)
-        throw error
+        // More specific error handling
+        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
+          throw new Error('Erro de conexão com o banco de dados. Verifique sua configuração do Supabase e conexão com a internet.')
+        }
+        throw new Error(`Erro na busca: ${error.message}`)
       }
 
       console.log(`✅ Busca otimizada concluída: ${data?.length || 0} usuários encontrados`)
       return data || []
     } catch (error) {
       console.error('❌ Erro na busca otimizada:', error)
-      return []
+      // Return empty array but also show user-friendly error
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Erro de conexão. Verifique sua configuração do Supabase.')
+      }
+      throw error
     }
   }
 
