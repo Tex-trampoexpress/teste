@@ -3,8 +3,6 @@ import toast, { Toaster } from 'react-hot-toast'
 import { MercadoPagoService } from './lib/mercadopago'
 import PagamentoPix from './components/PagamentoPix'
 import { DatabaseService, type Usuario, type CreateUsuarioData, type UpdateUsuarioData } from './lib/database'
-import { MercadoPagoService } from './lib/mercadopago'
-import PagamentoPix from './components/PagamentoPix'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 // Tipos para o estado da aplicação
