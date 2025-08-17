@@ -1,5 +1,4 @@
 import { supabase } from './supabase'
-import { EnhancedDatabaseService } from './database-enhanced'
 
 export interface Usuario {
   id: string
@@ -349,100 +348,73 @@ export class DatabaseService {
     tags?: string[]
     search?: string
     limit?: number
-    latitude?: number
-    longitude?: number
-    radius?: number
   }): Promise<Usuario[]> {
     try {
-      console.log('🔍 Buscando usuários com filtros:', filters)
+      const searchTerm = filters?.search?.trim() || ''
+      const filterTags = filters?.tags || []
+      const filterStatus = filters?.status || 'available'
+      const limitResults = filters?.limit || 50
 
-      // Use enhanced database service with optimized RPC functions
-      if (filters?.latitude && filters?.longitude && filters?.radius) {
-        // Use proximity search
-        console.log('📍 Usando busca por proximidade...')
-        return await EnhancedDatabaseService.searchUsuariosEnhanced({
-          searchTerm: filters.search || '',
-          tags: filters.tags || [],
-          status: filters.status || 'available',
-          latitude: filters.latitude,
-          longitude: filters.longitude,
-          radiusKm: filters.radius,
-          limit: filters.limit || 50
+      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults })
+
+      const { data, error } = await supabase
+        .rpc('search_usuarios', {
+          search_term: searchTerm,
+          filter_tags: filterTags,
+          filter_status: filterStatus,
+          limit_results: limitResults
         })
-      } else {
-        // Use regular enhanced search
-        console.log('🔍 Usando busca otimizada...')
-        return await EnhancedDatabaseService.searchUsuariosEnhanced({
-          searchTerm: filters?.search || '',
-          tags: filters?.tags || [],
-          status: filters?.status || 'available',
-          limit: filters?.limit || 50
-        })
+
+      if (error) {
+        console.error('❌ Erro na busca de usuários:', error)
+        // Fallback para busca simples se a função RPC falhar
+        console.log('🔄 Tentando busca simples como fallback...')
+        return this.getUsuariosSimple(filters)
       }
+
+      console.log(`✅ Encontrados ${data?.length || 0} usuários`)
+      return data || []
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      // Fallback to simple optimized search if enhanced fails
-      console.log('🔄 Tentando busca de fallback...')
-      return this.getUsuariosOptimized(filters)
+      // Fallback para busca simples
+      return this.getUsuariosSimple(filters)
     }
   }
 
-  // Optimized search without RPC
-  private static async getUsuariosOptimized(filters?: {
+  // Fallback simple search
+  private static async getUsuariosSimple(filters?: {
     status?: 'available' | 'busy'
-    tags?: string[]
     search?: string
     limit?: number
   }): Promise<Usuario[]> {
     try {
-      console.log('🔍 Executando busca otimizada...')
-      
       let query = supabase
         .from('usuarios')
         .select('*')
         .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
+        .order('ultimo_acesso', { ascending: false })
 
-      // Apply search filter if provided
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
-        // Only search in nome field to avoid timeout from full table scans
-        // This prevents problematic ilike operations on descricao and localizacao
-        query = query.ilike('nome', `${searchTerm}%`)
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
       }
 
-      // Apply tags filter if provided
-      if (filters?.tags && filters.tags.length > 0) {
-        // Use overlaps operator for array search (more efficient than contains)
-        query = query.overlaps('tags', filters.tags)
-      }
-
-      // Apply ordering and limit
-      query = query
-        .order('ultimo_acesso', { ascending: false })
-        
       if (filters?.limit) {
         query = query.limit(filters.limit)
-      } else {
-        query = query.limit(50) // Default limit to prevent large result sets
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('❌ Erro na busca otimizada:', error)
-        // More specific error handling
-        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-          throw new Error('Erro de conexão com o banco de dados. Verifique sua configuração do Supabase e conexão com a internet.')
-        }
-        throw new Error(`Erro na busca: ${error.message}`)
+        console.error('❌ Erro na busca simples:', error)
+        throw error
       }
 
-      console.log(`✅ Busca otimizada concluída: ${data?.length || 0} usuários encontrados`)
       return data || []
     } catch (error) {
-      console.error('❌ Erro na busca otimizada:', error)
-      throw error
+      console.error('❌ Erro na busca simples:', error)
+      return []
     }
   }
 
@@ -478,7 +450,8 @@ export class DatabaseService {
       return users
     } catch (error) {
       console.error('❌ Erro na busca por proximidade:', error)
-      throw error
+      // Fallback para busca simples
+      return this.getUsuarios({ status: 'available', limit: 20 })
     }
   }
 
