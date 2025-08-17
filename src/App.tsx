@@ -392,13 +392,25 @@ const App: React.FC = () => {
       setNavigationHistory(['home'])
       toast.success('Perfil excluído com sucesso')
     } catch (error) {
+      console.error('Erro ao excluir perfil:', error)
+      toast.error('Erro ao excluir perfil')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    // Generate a temporary client ID for anonymous users
-    const clienteId = currentUser?.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-    // Open payment modal directly
+  // Logout function
+  const logout = () => {
+    setCurrentUser(null)
+    setCurrentScreen('home')
+    setNavigationHistory(['home'])
+    setShowProfileMenu(false)
+    
+    // Reset profile data
+    setProfileData({
+      nome: '',
       descricao: '',
-      clienteId: clienteId,
+      tags: [] as string[],
       foto_url: '',
       localizacao: '',
       status: 'available'
@@ -1448,6 +1460,11 @@ const App: React.FC = () => {
       {/* Payment Modal */}
       {showPagamento && prestadorSelecionado && currentUser && (
         <PagamentoPix
+          prestadorId={prestadorSelecionado.id}
+          prestadorNome={prestadorSelecionado.nome}
+          prestadorWhatsapp={prestadorSelecionado.whatsapp}
+          clienteId={currentUser.id}
+          onClose={closePaymentModal}
           onSuccess={handlePaymentSuccess}
         />
       )}
