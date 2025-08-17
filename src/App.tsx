@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import { MercadoPagoService } from './lib/mercadopago'
+import PagamentoPix from './components/PagamentoPix'
 import { DatabaseService, type Usuario, type CreateUsuarioData, type UpdateUsuarioData } from './lib/database'
 import { MercadoPagoService } from './lib/mercadopago'
 import PagamentoPix from './components/PagamentoPix'
@@ -27,6 +29,8 @@ const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home')
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showPayment, setShowPayment] = useState(false)
+  const [selectedPrestador, setSelectedPrestador] = useState<Usuario | null>(null)
   const [navigationHistory, setNavigationHistory] = useState<Screen[]>(['home'])
 
   // Estados do formulário de verificação
@@ -454,13 +458,44 @@ const App: React.FC = () => {
   }
 
   // Handle payment success
+
+    // Verificar se o usuário está logado
+    if (!currentUser) {
+      toast.error('Você precisa estar logado para entrar em contato')
+      setCurrentScreen('verify')
+      return
+    }
+
+    // Verificar se não está tentando contatar a si mesmo
+    if (currentUser.id === user.id) {
+      toast.error('Você não pode entrar em contato consigo mesmo')
+      return
+    }
+
+    // Abrir modal de pagamento
+    setSelectedPrestador(user)
+    setShowPayment(true)
+    toast.loading('Preparando pagamento...')
+  }
+
+  // Handle payment success
   const handlePaymentSuccess = (whatsappUrl: string) => {
-    setShowPagamento(false)
-    setPrestadorSelecionado(null)
+    setShowPayment(false)
+    setSelectedPrestador(null)
+    toast.dismiss()
+    toast.success('Pagamento confirmado! Redirecionando para WhatsApp...')
     
-    // Redirect to WhatsApp
-    window.open(whatsappUrl, '_blank')
-    toast.success('Redirecionando para WhatsApp...')
+    // Redirecionar para WhatsApp após um pequeno delay
+    setTimeout(() => {
+      window.open(whatsappUrl, '_blank')
+    }, 1000)
+  }
+
+  // Handle payment close
+  const handlePaymentClose = () => {
+    setShowPayment(false)
+    setSelectedPrestador(null)
+    toast.dismiss()
   }
 
   // Close payment modal
@@ -1446,6 +1481,18 @@ const App: React.FC = () => {
           }
         }}
       />
+
+      {/* Payment Modal */}
+      {showPayment && selectedPrestador && currentUser && (
+        <PagamentoPix
+          prestadorId={selectedPrestador.id}
+          prestadorNome={selectedPrestador.nome}
+          prestadorWhatsapp={selectedPrestador.whatsapp}
+          clienteId={currentUser.id}
+          onClose={handlePaymentClose}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
 
       <style jsx>{`
         .contact-paid-btn {
