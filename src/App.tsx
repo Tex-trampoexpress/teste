@@ -178,6 +178,23 @@ const App: React.FC = () => {
     )
   }
 
+  // Handle contact with payment
+  const handleContactWithPayment = (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      return
+    }
+
+    if (currentUser.id === user.id) {
+      toast.error('Você não pode entrar em contato consigo mesmo')
+      return
+    }
+
+    // Abrir modal de pagamento PIX
+    setPrestadorSelecionado(user)
+    setShowPagamento(true)
+  }
+
   // Gerenciamento de tags
   const addTag = () => {
     if (currentTag.trim() && !profileData.tags.includes(currentTag.trim())) {
@@ -419,22 +436,6 @@ const App: React.FC = () => {
       }
     }
     navigateTo('edit-profile')
-  }
-
-  // Handle contact with payment
-  const handleContactWithPayment = (user: Usuario) => {
-    if (!currentUser) {
-      toast.error('Faça login para entrar em contato')
-      return
-    }
-
-    if (currentUser.id === user.id) {
-      toast.error('Você não pode entrar em contato consigo mesmo')
-      return
-    }
-
-    setPrestadorSelecionado(user)
-    setShowPagamento(true)
   }
 
   // Handle WhatsApp contact click
