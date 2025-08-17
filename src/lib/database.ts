@@ -357,63 +357,71 @@ export class DatabaseService {
 
       console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults })
 
-      const { data, error } = await supabase
-        .rpc('search_usuarios', {
-          search_term: searchTerm,
-          filter_tags: filterTags,
-          filter_status: filterStatus,
-          limit_results: limitResults
-        })
-
-      if (error) {
-        console.error('❌ Erro na busca de usuários:', error)
-        // Fallback para busca simples se a função RPC falhar
-        console.log('🔄 Tentando busca simples como fallback...')
-        return this.getUsuariosSimple(filters)
-      }
-
-      console.log(`✅ Encontrados ${data?.length || 0} usuários`)
-      return data || []
+      // Use optimized simple search directly to avoid RPC timeout
+      console.log('🔄 Usando busca otimizada direta...')
+      return this.getUsuariosOptimized(filters)
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
       // Fallback para busca simples
-      return this.getUsuariosSimple(filters)
+      return this.getUsuariosOptimized(filters)
     }
   }
 
-  // Fallback simple search
-  private static async getUsuariosSimple(filters?: {
+  // Optimized search without RPC
+  private static async getUsuariosOptimized(filters?: {
     status?: 'available' | 'busy'
+    tags?: string[]
     search?: string
     limit?: number
   }): Promise<Usuario[]> {
     try {
+      console.log('🔍 Executando busca otimizada...')
+      
       let query = supabase
         .from('usuarios')
         .select('*')
         .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
-        .order('ultimo_acesso', { ascending: false })
 
+      // Apply search filter if provided
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
+        // Use more efficient search without leading wildcards when possible
+        if (searchTerm.length >= 3) {
+          query = query.or(`nome.ilike.${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.${searchTerm}%`)
+        } else {
+          // For short terms, search only in name to avoid timeout
+          query = query.ilike('nome', `${searchTerm}%`)
+        }
       }
 
+      // Apply tags filter if provided
+      if (filters?.tags && filters.tags.length > 0) {
+        // Use overlaps operator for array search (more efficient than contains)
+        query = query.overlaps('tags', filters.tags)
+      }
+
+      // Apply ordering and limit
+      query = query
+        .order('ultimo_acesso', { ascending: false })
+        
       if (filters?.limit) {
         query = query.limit(filters.limit)
+      } else {
+        query = query.limit(50) // Default limit to prevent large result sets
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('❌ Erro na busca simples:', error)
+        console.error('❌ Erro na busca otimizada:', error)
         throw error
       }
 
+      console.log(`✅ Busca otimizada concluída: ${data?.length || 0} usuários encontrados`)
       return data || []
     } catch (error) {
-      console.error('❌ Erro na busca simples:', error)
+      console.error('❌ Erro na busca otimizada:', error)
       return []
     }
   }
