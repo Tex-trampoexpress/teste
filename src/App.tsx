@@ -441,24 +441,15 @@ const App: React.FC = () => {
   const handleWhatsAppClick = (e: React.MouseEvent, user: Usuario) => {
     e.preventDefault()
     
-    console.log('🔍 Clique no WhatsApp detectado:', user)
-    console.log('🔍 Usuário atual:', currentUser)
-    
     if (!currentUser) {
       toast.error('Faça login para entrar em contato')
-      showScreen('verify')
+      navigateTo('verify')
       return
     }
-    
-    console.log('🔍 Abrindo modal de pagamento...')
-    setPagamentoData({
-      prestadorId: user.id,
-      prestadorNome: user.nome,
-      prestadorWhatsapp: user.whatsapp,
-      clienteId: currentUser.id
-    })
-    setShowPagamentoPix(true)
-    console.log('🔍 Modal deveria estar aberto agora')
+
+    // Abrir modal de pagamento PIX
+    setPrestadorSelecionado(user)
+    setShowPagamento(true)
   }
 
   // Handle payment success
@@ -1017,7 +1008,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="stat">
                       <i className="fas fa-check-circle"></i>
-                      <span>Perfil {currentUser.verificado ? 'Verificado' : 'Não verificado'}</span>
+                      <span>Perfil {currentUser.verificado ? 'Verificado' : 'Não Verificado'}</span>
                     </div>
                   </div>
 
