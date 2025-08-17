@@ -70,16 +70,31 @@ const App: React.FC = () => {
 
   const loadUsers = async () => {
     try {
-      const users = await DatabaseService.getUsuarios({
+      const filters: any = {
         search: state.searchTerm,
         tags: state.selectedTags,
         status: 'available',
         limit: 50
-      })
+      }
+
+      // Add proximity filters if enabled and location available
+      if (state.proximityEnabled && state.userLocation) {
+        filters.latitude = state.userLocation.latitude
+        filters.longitude = state.userLocation.longitude
+        filters.radius = state.proximityRadius
+      }
+
+      const users = await DatabaseService.getUsuarios(filters)
       setState(prev => ({ ...prev, users }))
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      toast.error('Erro ao carregar dados. Verifique sua conexão com o banco de dados.')
+      if (error instanceof Error && error.message.includes('timeout')) {
+        toast.error('Busca demorou muito. Tente refinar sua pesquisa.')
+      } else if (error instanceof Error && error.message.includes('fetch')) {
+        toast.error('Erro de conexão. Verifique sua internet e configuração do Supabase.')
+      } else {
+        toast.error('Erro ao carregar dados. Tente novamente.')
+      }
     }
   }
 

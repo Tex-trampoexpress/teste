@@ -348,21 +348,40 @@ export class DatabaseService {
     tags?: string[]
     search?: string
     limit?: number
+    latitude?: number
+    longitude?: number
+    radius?: number
   }): Promise<Usuario[]> {
     try {
-      const searchTerm = filters?.search?.trim() || ''
-      const filterTags = filters?.tags || []
-      const filterStatus = filters?.status || 'available'
-      const limitResults = filters?.limit || 50
+      console.log('🔍 Buscando usuários com filtros:', filters)
 
-      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults })
-
-      // Use optimized simple search directly to avoid RPC timeout
-      console.log('🔄 Usando busca otimizada direta...')
-      return this.getUsuariosOptimized(filters)
+      // Use enhanced database service with optimized RPC functions
+      if (filters?.latitude && filters?.longitude && filters?.radius) {
+        // Use proximity search
+        console.log('📍 Usando busca por proximidade...')
+        return await EnhancedDatabaseService.searchUsuariosEnhanced({
+          searchTerm: filters.search || '',
+          tags: filters.tags || [],
+          status: filters.status || 'available',
+          latitude: filters.latitude,
+          longitude: filters.longitude,
+          radiusKm: filters.radius,
+          limit: filters.limit || 50
+        })
+      } else {
+        // Use regular enhanced search
+        console.log('🔍 Usando busca otimizada...')
+        return await EnhancedDatabaseService.searchUsuariosEnhanced({
+          searchTerm: filters?.search || '',
+          tags: filters?.tags || [],
+          status: filters?.status || 'available',
+          limit: filters?.limit || 50
+        })
+      }
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      // Fallback para busca simples
+      // Fallback to simple optimized search if enhanced fails
+      console.log('🔄 Tentando busca de fallback...')
       return this.getUsuariosOptimized(filters)
     }
   }
