@@ -392,23 +392,13 @@ const App: React.FC = () => {
       setNavigationHistory(['home'])
       toast.success('Perfil excluído com sucesso')
     } catch (error) {
-      console.error('Erro ao deletar perfil:', error)
-      toast.error('Erro ao excluir perfil')
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  // Logout
-  const logout = () => {
-    setCurrentUser(null)
-    setCurrentScreen('home')
-    setNavigationHistory(['home'])
-    setWhatsappNumber('')
-    setProfileData({
-      nome: '',
+    // Generate a temporary client ID for anonymous users
+    const clienteId = currentUser?.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    // Open payment modal directly
       descricao: '',
-      tags: [],
+      clienteId: clienteId,
       foto_url: '',
       localizacao: '',
       status: 'available'
