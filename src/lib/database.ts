@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { EnhancedDatabaseService } from './database-enhanced'
 
 export interface Usuario {
   id: string
