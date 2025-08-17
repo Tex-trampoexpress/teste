@@ -91,6 +91,10 @@ const App: React.FC = () => {
       console.log('   VITE_SUPABASE_ANON_KEY=sua_chave_anonima')
       console.log('3. Reinicie o servidor: npm run dev')
       console.log('4. Obtenha as credenciais em: https://app.supabase.com/project/seu-projeto/settings/api')
+    }
+  }
+
+  const navigateTo = (screen: string, addToHistory: boolean = true) => {
     setState(prev => ({ ...prev, currentScreen: screen as any }))
     
     if (addToHistory) {
