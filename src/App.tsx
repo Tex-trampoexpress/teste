@@ -178,23 +178,6 @@ const App: React.FC = () => {
     )
   }
 
-  // Handle contact with payment
-  const handleContactWithPayment = (user: Usuario) => {
-    if (!currentUser) {
-      toast.error('Faça login para entrar em contato')
-      return
-    }
-
-    if (currentUser.id === user.id) {
-      toast.error('Você não pode entrar em contato consigo mesmo')
-      return
-    }
-
-    // Abrir modal de pagamento PIX
-    setPrestadorSelecionado(user)
-    setShowPagamento(true)
-  }
-
   // Gerenciamento de tags
   const addTag = () => {
     if (currentTag.trim() && !profileData.tags.includes(currentTag.trim())) {
@@ -438,19 +421,44 @@ const App: React.FC = () => {
     navigateTo('edit-profile')
   }
 
+  // Handle contact with payment
+  const handleContactWithPayment = (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      return
+    }
+
+    if (currentUser.id === user.id) {
+      toast.error('Você não pode entrar em contato consigo mesmo')
+      return
+    }
+
+    setPrestadorSelecionado(user)
+    setShowPagamento(true)
+  }
+
   // Handle WhatsApp contact click
   const handleWhatsAppClick = (e: React.MouseEvent, user: Usuario) => {
     e.preventDefault()
     
+    console.log('🔍 Clique no WhatsApp detectado:', user)
+    console.log('🔍 Usuário atual:', currentUser)
+    
     if (!currentUser) {
       toast.error('Faça login para entrar em contato')
-      navigateTo('verify')
+      showScreen('verify')
       return
     }
-
-    // Abrir modal de pagamento PIX
-    setPrestadorSelecionado(user)
-    setShowPagamento(true)
+    
+    console.log('🔍 Abrindo modal de pagamento...')
+    setPagamentoData({
+      prestadorId: user.id,
+      prestadorNome: user.nome,
+      prestadorWhatsapp: user.whatsapp,
+      clienteId: currentUser.id
+    })
+    setShowPagamentoPix(true)
+    console.log('🔍 Modal deveria estar aberto agora')
   }
 
   // Handle payment success
