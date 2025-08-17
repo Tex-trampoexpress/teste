@@ -271,15 +271,13 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
           <button onClick={onClose} className="btn-secondary">
             Cancelar
           </button>
-          {status?.status === 'approved' && (
-            <button 
-              onClick={handlePagamentoAprovado}
-              className="btn-primary"
-            >
-              <i className="fab fa-whatsapp"></i>
-              Ir para WhatsApp
-            </button>
-          )}
+          <button 
+            onClick={handlePagamentoAprovado}
+            className="btn-primary"
+          >
+            <i className="fas fa-check"></i>
+            Já Paguei
+          </button>
         </div>
 
         <style jsx>{`
