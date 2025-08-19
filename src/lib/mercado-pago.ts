@@ -24,6 +24,11 @@ export class MercadoPagoService {
     try {
       console.log('💳 Criando pagamento PIX:', request)
 
+      // Validar dados de entrada
+      if (!request.cliente_id || !request.prestador_id || !request.amount) {
+        throw new Error('Dados obrigatórios faltando para criar pagamento')
+      }
+
       const paymentPayload = {
         transaction_amount: request.amount,
         description: `TEX - Conexão com prestador de serviço`,
@@ -33,11 +38,16 @@ export class MercadoPagoService {
           first_name: 'Cliente',
           last_name: 'TEX'
         },
-        notification_url: `${window.location.origin}/api/mercado-pago-webhook`,
+        notification_url: 'https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook',
         external_reference: `${request.cliente_id}-${request.prestador_id}-${Date.now()}`
       }
 
       console.log('📦 Payload para Mercado Pago:', paymentPayload)
+
+      // Verificar se as chaves estão configuradas
+      if (!this.ACCESS_TOKEN) {
+        throw new Error('Token de acesso do Mercado Pago não configurado')
+      }
 
       const response = await fetch(`${this.API_URL}/v1/payments`, {
         method: 'POST',
@@ -54,14 +64,65 @@ export class MercadoPagoService {
 
       if (!response.ok) {
         console.error('❌ Erro do Mercado Pago:', response.status, responseText)
-        throw new Error(`Erro ao criar pagamento: ${response.status} - ${responseText}`)
+        
+        let errorMessage = `Erro ${response.status}`
+        try {
+          const errorData = JSON.parse(responseText)
+          if (errorData.message) {
+            errorMessage = errorData.message
+          } else if (errorData.cause && errorData.cause.length > 0) {
+            errorMessage = errorData.cause[0].description || errorMessage
+          }
+        } catch (e) {
+          errorMessage = responseText || errorMessage
+        }
+        
+        throw new Error(`Erro do Mercado Pago: ${errorMessage}`)
       }
 
       const paymentData = JSON.parse(responseText)
       console.log('✅ Pagamento criado:', paymentData)
 
       // Salvar transação no banco
-      await this.saveTransaction({
+      try {
+        await this.saveTransaction({
+          cliente_id: request.cliente_id,
+          prestador_id: request.prestador_id,
+          mp_payment_id: paymentData.id.toString(),
+          status: paymentData.status,
+          amount: request.amount
+        })
+      } catch (dbError) {
+        console.error('⚠️ Erro ao salvar no banco (continuando):', dbError)
+        // Não falhar o pagamento por erro de banco
+      }
+
+      // Verificar se os dados necessários estão presentes
+      const qrCodeBase64 = paymentData.point_of_interaction?.transaction_data?.qr_code_base64
+      const qrCode = paymentData.point_of_interaction?.transaction_data?.qr_code
+      
+      if (!qrCode) {
+        console.warn('⚠️ QR Code não gerado pelo Mercado Pago')
+      }
+
+      return {
+        id: paymentData.id.toString(),
+        status: paymentData.status,
+        qr_code_base64: qrCodeBase64 || '',
+        qr_code: qrCode || '',
+        ticket_url: paymentData.point_of_interaction?.transaction_data?.ticket_url || ''
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar pagamento PIX:', error)
+      
+      // Se for erro de rede, dar uma mensagem mais amigável
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Erro de conexão. Verifique sua internet e tente novamente.')
+      }
+      
+      throw error
+    }
+  }
         cliente_id: request.cliente_id,
         prestador_id: request.prestador_id,
         mp_payment_id: paymentData.id.toString(),
@@ -91,6 +152,8 @@ export class MercadoPagoService {
     amount: number
   }) {
     try {
+      console.log('💾 Salvando transação no banco:', transaction)
+      
       const { data, error } = await supabase
         .from('transacoes')
         .insert(transaction)

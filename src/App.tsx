@@ -313,7 +313,15 @@ function App() {
       toast.success('Pagamento PIX gerado! Complete o pagamento para acessar o WhatsApp')
     } catch (error) {
       console.error('❌ Erro ao criar pagamento:', error)
-      toast.error(`Erro ao processar pagamento: ${error.message}`)
+      toast.error(`Erro ao processar pagamento: ${error?.message || 'Erro desconhecido'}`)
+      
+      // Debug: mostrar erro completo no console
+      console.log('🔍 Erro completo:', JSON.stringify(error, null, 2))
+      
+      // Fallback: permitir contato direto em caso de erro
+      if (confirm('Erro no sistema de pagamento. Deseja ir direto para o WhatsApp?')) {
+        handleDirectContact(user)
+      }
     } finally {
       setLoading(false)
     }
