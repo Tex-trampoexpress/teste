@@ -16,17 +16,21 @@ export interface CreatePaymentRequest {
 
 export class MercadoPagoService {
   private static readonly ACCESS_TOKEN = 'APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050'
-  private static readonly PUBLIC_KEY = 'APP_USR-c5e81aaf-7a2a-4452-93ab-2a16dd420bc5'
   private static readonly API_URL = 'https://api.mercadopago.com'
 
   // Criar pagamento PIX
   static async createPixPayment(request: CreatePaymentRequest): Promise<PaymentData> {
     try {
-      console.log('💳 Criando pagamento PIX:', request)
+      console.log('💳 Iniciando criação de pagamento PIX:', request)
 
       // Validar dados de entrada
       if (!request.cliente_id || !request.prestador_id || !request.amount) {
         throw new Error('Dados obrigatórios faltando para criar pagamento')
+      }
+
+      // Verificar se as chaves estão configuradas
+      if (!this.ACCESS_TOKEN || this.ACCESS_TOKEN.includes('your_token')) {
+        throw new Error('Token de acesso do Mercado Pago não configurado')
       }
 
       const paymentPayload = {
@@ -44,11 +48,6 @@ export class MercadoPagoService {
 
       console.log('📦 Payload para Mercado Pago:', paymentPayload)
 
-      // Verificar se as chaves estão configuradas
-      if (!this.ACCESS_TOKEN) {
-        throw new Error('Token de acesso do Mercado Pago não configurado')
-      }
-
       const response = await fetch(`${this.API_URL}/v1/payments`, {
         method: 'POST',
         headers: {
@@ -60,7 +59,7 @@ export class MercadoPagoService {
       })
 
       const responseText = await response.text()
-      console.log('📥 Resposta do Mercado Pago:', responseText)
+      console.log('📥 Resposta do Mercado Pago:', response.status, responseText)
 
       if (!response.ok) {
         console.error('❌ Erro do Mercado Pago:', response.status, responseText)
@@ -99,6 +98,7 @@ export class MercadoPagoService {
           status: paymentData.status,
           amount: request.amount
         })
+        console.log('💾 Transação salva no banco')
       } catch (dbError) {
         console.error('⚠️ Erro ao salvar no banco (continuando):', dbError)
         // Não falhar o pagamento por erro de banco
@@ -123,7 +123,7 @@ export class MercadoPagoService {
       console.error('❌ Erro ao criar pagamento PIX:', error)
       
       // Se for erro de rede, dar uma mensagem mais amigável
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('Erro de conexão. Verifique sua internet e tente novamente.')
       }
       
@@ -175,14 +175,61 @@ export class MercadoPagoService {
 
       if (error) {
         console.error('❌ Erro ao buscar transação:', error)
-        throw error
+        // Se não encontrar no banco, consultar diretamente no MP
+        return this.checkPaymentStatusDirect(paymentId)
       }
 
-      console.log('📊 Status atual:', transaction.status)
+      console.log('📊 Status atual no banco:', transaction.status)
+      
+      // Se ainda está pendente, verificar no MP
+      if (transaction.status === 'pending') {
+        return this.checkPaymentStatusDirect(paymentId)
+      }
+      
       return transaction.status
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
-      throw error
+      return 'pending'
+    }
+  }
+
+  // Verificar status diretamente no Mercado Pago
+  private static async checkPaymentStatusDirect(paymentId: string): Promise<string> {
+    try {
+      console.log('🔍 Consultando status diretamente no MP:', paymentId)
+
+      const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        console.error('❌ Erro ao consultar MP:', response.status)
+        return 'pending'
+      }
+
+      const paymentData = await response.json()
+      console.log('📊 Status do MP:', paymentData.status)
+
+      // Atualizar status no banco se mudou
+      if (paymentData.status !== 'pending') {
+        try {
+          await supabase
+            .from('transacoes')
+            .update({ status: paymentData.status })
+            .eq('mp_payment_id', paymentId)
+          console.log('✅ Status atualizado no banco')
+        } catch (updateError) {
+          console.error('⚠️ Erro ao atualizar status no banco:', updateError)
+        }
+      }
+
+      return paymentData.status
+    } catch (error) {
+      console.error('❌ Erro na consulta direta ao MP:', error)
+      return 'pending'
     }
   }
 
@@ -190,5 +237,21 @@ export class MercadoPagoService {
   static async isPaymentApproved(paymentId: string): Promise<boolean> {
     const status = await this.checkPaymentStatus(paymentId)
     return status === 'approved'
+  }
+
+  // Simular pagamento aprovado (para testes)
+  static async simulateApprovedPayment(paymentId: string): Promise<void> {
+    try {
+      console.log('🧪 Simulando pagamento aprovado para teste:', paymentId)
+      
+      await supabase
+        .from('transacoes')
+        .update({ status: 'approved' })
+        .eq('mp_payment_id', paymentId)
+      
+      console.log('✅ Pagamento simulado como aprovado')
+    } catch (error) {
+      console.error('❌ Erro ao simular pagamento:', error)
+    }
   }
 }

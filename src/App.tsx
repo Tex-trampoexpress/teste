@@ -303,7 +303,7 @@ function App() {
       
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: `anonimo_${Date.now()}`, // Cliente anônimo
+        cliente_id: currentUser?.id || `anonimo_${Date.now()}`,
         prestador_id: user.id,
         amount: 2.02
       })
@@ -315,9 +315,6 @@ function App() {
       console.error('❌ Erro ao criar pagamento:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
       toast.error(`Erro ao processar pagamento: ${errorMessage}`)
-      
-      // Debug: mostrar erro completo no console
-      console.log('🔍 Erro completo:', JSON.stringify(error, null, 2))
       
       // Fallback: permitir contato direto em caso de erro
       if (confirm('Erro no sistema de pagamento. Deseja ir direto para o WhatsApp?')) {
@@ -1269,6 +1266,31 @@ function App() {
                   <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
                   {checkingPayment ? 'Verificando...' : 'Já Paguei'}
                 </button>
+                
+                {/* Botão de teste para desenvolvimento */}
+                {import.meta.env.DEV && (
+                  <button
+                    className="payment-test-btn"
+                    onClick={async () => {
+                      if (paymentData) {
+                        await MercadoPagoService.simulateApprovedPayment(paymentData.id)
+                        toast.success('Pagamento simulado como aprovado!')
+                        setTimeout(() => handlePaymentCheck(), 1000)
+                      }
+                    }}
+                    style={{
+                      background: '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.8rem 1rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    🧪 Simular Pagamento (Teste)
+                  </button>
+                )}
                 
                 <button
                   className="payment-cancel-btn"
