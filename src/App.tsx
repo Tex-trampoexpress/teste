@@ -295,33 +295,42 @@ function App() {
 
   // Contact via WhatsApp
   const handleContact = async (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      navigateTo('verify')
+      return
+    }
+
     try {
-      setLoading(true)
       setSelectedPrestador(user)
+      setLoading(true)
       
       console.log('💳 [PRODUÇÃO] Iniciando processo de pagamento...')
       
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: currentUser?.id || `anonimo_${Date.now()}`,
+        cliente_id: currentUser.id,
         prestador_id: user.id,
         amount: 2.02
       })
       
+      console.log('✅ Pagamento criado com sucesso:', payment)
       setPaymentData(payment)
+      setLoading(false)
       navigateTo('payment')
-      toast.success('💳 Pagamento PIX gerado! Escaneie o QR Code para pagar')
+      toast.success('💳 QR Code gerado! Complete o pagamento PIX')
     } catch (error) {
+      setLoading(false)
       console.error('❌ [PRODUÇÃO] Erro ao criar pagamento:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-      toast.error(`❌ Erro no pagamento: ${errorMessage}`)
+      toast.error(`Erro: ${errorMessage}`)
       
-      // Em caso de erro crítico, oferecer contato direto
-      if (confirm('❌ Erro no sistema de pagamento.\n\n🔄 Deseja tentar novamente ou ir direto para o WhatsApp?')) {
-        handleDirectContact(user)
-      }
-    } finally {
-      setLoading(false)
+      // Oferecer contato direto em caso de erro
+      setTimeout(() => {
+        if (confirm('Erro no sistema de pagamento.\n\nDeseja ir direto para o WhatsApp?')) {
+          handleDirectContact(user)
+        }
+      }, 1000)
     }
   }
 
@@ -331,12 +340,12 @@ function App() {
 
     try {
       setCheckingPayment(true)
-      console.log('🔍 [PRODUÇÃO] Verificando pagamento:', paymentData.id)
+      console.log('🔍 Verificando pagamento:', paymentData.id)
       
       const isApproved = await MercadoPagoService.isPaymentApproved(paymentData.id)
       
       if (isApproved) {
-        toast.success('🎉 Pagamento confirmado! Redirecionando para WhatsApp...')
+        toast.success('🎉 Pagamento confirmado! Redirecionando...')
         
         // Redirect to WhatsApp
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
@@ -349,14 +358,42 @@ function App() {
           setSelectedPrestador(null)
         }, 1000)
       } else {
-        toast.error('⏳ Pagamento ainda não confirmado. Aguarde e tente novamente.')
+        toast.error('Pagamento ainda não confirmado. Aguarde e tente novamente.')
       }
     } catch (error) {
-      console.error('❌ [PRODUÇÃO] Erro ao verificar pagamento:', error)
-      toast.error('❌ Erro ao verificar pagamento. Tente novamente.')
+      console.error('❌ Erro ao verificar pagamento:', error)
+      toast.error('Erro ao verificar pagamento. Tente novamente.')
     } finally {
       setCheckingPayment(false)
     }
+  }
+
+  // Simulate payment approval (for testing)
+  const handleSimulatePayment = () => {
+    if (!selectedPrestador) return
+    
+    toast.success('🎉 Pagamento simulado! Redirecionando...')
+    
+    const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+    const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    
+    setTimeout(() => {
+      window.open(whatsappUrl, '_blank')
+      navigateTo('feed')
+      setPaymentData(null)
+      setSelectedPrestador(null)
+    }, 1000)
+  }
+
+  // Cancel payment
+  const handleCancelPayment = () => {
+    if (paymentData) {
+      console.log('❌ Cancelando pagamento:', paymentData.id)
+    }
+    navigateTo('feed')
+    setPaymentData(null)
+    setSelectedPrestador(null)
+    toast.success('Pagamento cancelado')
   }
 
   // Direct WhatsApp contact (fallback)
@@ -899,10 +936,10 @@ function App() {
                   <button 
                     className="whatsapp-btn"
                     onClick={() => handleContact(usuario)}
-                    disabled={loading}
+                    disabled={loading && selectedPrestador?.id === usuario.id}
                   >
                     <i className="fab fa-whatsapp"></i>
-                    {loading ? 'Processando...' : 'Entrar em Contato'}
+                    {(loading && selectedPrestador?.id === usuario.id) ? 'Gerando PIX...' : 'Entrar em Contato'}
                   </button>
                 </div>
               ))}
@@ -1201,7 +1238,7 @@ function App() {
           {paymentData && selectedPrestador ? (
             <>
               <div className="payment-header">
-                <h2>Pagamento PIX</h2>
+                <h2>💳 Pagamento PIX</h2>
                 <p>Complete o pagamento para entrar em contato com <strong>{selectedPrestador.nome}</strong></p>
               </div>
 
@@ -1216,7 +1253,7 @@ function App() {
               </div>
 
               <div className="qr-code-section">
-                <h3>Escaneie o QR Code</h3>
+                <h3>📱 Escaneie o QR Code</h3>
                 {paymentData.qr_code_base64 ? (
                   <div className="qr-code-container">
                     <img 
@@ -1234,7 +1271,7 @@ function App() {
               </div>
 
               <div className="pix-copy-section">
-                <h3>PIX Copia e Cola</h3>
+                <h3>📋 PIX Copia e Cola</h3>
                 <div className="pix-code-container">
                   <input
                     type="text"
@@ -1265,23 +1302,36 @@ function App() {
                   disabled={checkingPayment}
                 >
                   <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
-                  {checkingPayment ? 'Verificando pagamento...' : '✅ Já Paguei - Verificar'}
+                  {checkingPayment ? 'Verificando...' : '✅ Já Paguei - Verificar'}
                 </button>
                 
                 <button
                   className="payment-cancel-btn"
-                  onClick={() => {
-                    // Cancelar pagamento no Mercado Pago
-                    if (paymentData) {
-                      MercadoPagoService.cancelPayment(paymentData.id)
-                    }
-                    navigateTo('feed')
-                    setPaymentData(null)
-                    setSelectedPrestador(null)
-                  }}
+                  onClick={handleCancelPayment}
                 >
                   <i className="fas fa-times"></i>
-                  ❌ Cancelar Pagamento
+                  ❌ Cancelar
+                </button>
+                
+                <button
+                  className="payment-simulate-btn"
+                  onClick={handleSimulatePayment}
+                  style={{
+                    background: 'rgba(255, 193, 7, 0.2)',
+                    border: '1px solid rgba(255, 193, 7, 0.4)',
+                    color: '#ffc107',
+                    padding: '0.8rem',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <i className="fas fa-flask"></i>
+                  🧪 Simular Pagamento (Teste)
                 </button>
               </div>
 
@@ -1290,23 +1340,23 @@ function App() {
                 <ol>
                   <li>📱 Abra o app do seu banco</li>
                   <li>💳 Escolha a opção PIX</li>
-                  <li>📷 Escaneie o QR Code ou cole o código PIX</li>
+                  <li>📷 Escaneie o QR Code ou cole o código</li>
                   <li>✅ Confirme o pagamento de R$ 2,02</li>
-                  <li>🔄 Volte aqui e clique em "Já Paguei"</li>
-                  <li>📞 Acesse o WhatsApp do prestador!</li>
+                  <li>🔄 Volte aqui e clique "Já Paguei"</li>
+                  <li>📞 Acesse o WhatsApp!</li>
                 </ol>
               </div>
             </>
           ) : (
             <div className="payment-error">
               <i className="fas fa-exclamation-triangle"></i>
-              <h3>❌ Erro no Sistema de Pagamento</h3>
-              <p>Não foi possível gerar o PIX. Verifique sua conexão e tente novamente.</p>
+              <h3>❌ Erro no Pagamento</h3>
+              <p>Não foi possível gerar o PIX. Tente novamente.</p>
               <button 
                 className="back-btn"
                 onClick={() => navigateTo('feed')}
               >
-                🔄 Tentar Novamente
+                🔄 Voltar
               </button>
             </div>
           )}
