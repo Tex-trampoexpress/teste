@@ -133,6 +133,8 @@ export class MercadoPagoService {
     amount: number
   }) {
     try {
+      console.log('💾 Salvando transação no banco:', transaction)
+      
       const { data, error } = await supabase
         .from('transacoes')
         .insert(transaction)
