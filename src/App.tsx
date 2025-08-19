@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { DatabaseService, type Usuario } from './lib/database'
+import { MercadoPagoService, type PaymentData } from './lib/mercado-pago'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 // Navigation history management
@@ -19,6 +20,11 @@ function App() {
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+  // Payment states
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
+  const [selectedPrestador, setSelectedPrestador] = useState<Usuario | null>(null)
+  const [checkingPayment, setCheckingPayment] = useState(false)
 
   // Form states
   const [whatsappNumber, setWhatsappNumber] = useState('')
@@ -288,7 +294,77 @@ function App() {
   }
 
   // Contact via WhatsApp
-  const handleContact = (user: Usuario) => {
+  const handleContact = async (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      navigateTo('verify')
+      return
+    }
+
+    if (currentUser.id === user.id) {
+      toast.error('Você não pode entrar em contato consigo mesmo')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setSelectedPrestador(user)
+      
+      console.log('💳 Iniciando processo de pagamento...')
+      
+      // Criar pagamento PIX
+      const payment = await MercadoPagoService.createPixPayment({
+        cliente_id: currentUser.id,
+        prestador_id: user.id,
+        amount: 2.02
+      })
+      
+      setPaymentData(payment)
+      navigateTo('payment')
+      toast.success('Pagamento PIX gerado! Complete o pagamento para acessar o WhatsApp')
+    } catch (error) {
+      console.error('❌ Erro ao criar pagamento:', error)
+      toast.error('Erro ao processar pagamento. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Check payment and redirect to WhatsApp
+  const handlePaymentCheck = async () => {
+    if (!paymentData || !selectedPrestador) return
+
+    try {
+      setCheckingPayment(true)
+      
+      const isApproved = await MercadoPagoService.isPaymentApproved(paymentData.id)
+      
+      if (isApproved) {
+        toast.success('Pagamento confirmado! Redirecionando para WhatsApp...')
+        
+        // Redirect to WhatsApp
+        const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+        const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+        
+        setTimeout(() => {
+          window.open(whatsappUrl, '_blank')
+          navigateTo('feed')
+          setPaymentData(null)
+          setSelectedPrestador(null)
+        }, 1000)
+      } else {
+        toast.error('Pagamento ainda não foi confirmado. Aguarde alguns instantes e tente novamente.')
+      }
+    } catch (error) {
+      console.error('❌ Erro ao verificar pagamento:', error)
+      toast.error('Erro ao verificar pagamento. Tente novamente.')
+    } finally {
+      setCheckingPayment(false)
+    }
+  }
+
+  // Direct WhatsApp contact (fallback)
+  const handleDirectContact = (user: Usuario) => {
     const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
     const whatsappUrl = `https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
@@ -827,9 +903,10 @@ function App() {
                   <button 
                     className="whatsapp-btn"
                     onClick={() => handleContact(usuario)}
+                    disabled={loading}
                   >
                     <i className="fab fa-whatsapp"></i>
-                    Entrar em Contato
+                    {loading ? 'Processando...' : 'Entrar em Contato'}
                   </button>
                 </div>
               ))}
@@ -1119,6 +1196,119 @@ function App() {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Payment Screen */}
+      <div className={`screen ${currentScreen === 'payment' ? 'active' : ''}`}>
+        <div className="payment-container">
+          {paymentData && selectedPrestador ? (
+            <>
+              <div className="payment-header">
+                <h2>Pagamento PIX</h2>
+                <p>Complete o pagamento para entrar em contato com <strong>{selectedPrestador.nome}</strong></p>
+              </div>
+
+              <div className="payment-info">
+                <div className="payment-amount">
+                  <span className="amount-label">Valor:</span>
+                  <span className="amount-value">R$ 2,02</span>
+                </div>
+                <p className="payment-description">
+                  Taxa única para conexão com prestador de serviço
+                </p>
+              </div>
+
+              <div className="qr-code-section">
+                <h3>Escaneie o QR Code</h3>
+                {paymentData.qr_code_base64 ? (
+                  <div className="qr-code-container">
+                    <img 
+                      src={`data:image/png;base64,${paymentData.qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="qr-code-image"
+                    />
+                  </div>
+                ) : (
+                  <div className="qr-code-placeholder">
+                    <i className="fas fa-qrcode"></i>
+                    <p>QR Code não disponível</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pix-copy-section">
+                <h3>PIX Copia e Cola</h3>
+                <div className="pix-code-container">
+                  <input
+                    type="text"
+                    value={paymentData.qr_code}
+                    readOnly
+                    className="pix-code-input"
+                  />
+                  <button
+                    className="copy-btn"
+                    onClick={() => {
+                      navigator.clipboard.writeText(paymentData.qr_code)
+                      toast.success('Código PIX copiado!')
+                    }}
+                  >
+                    <i className="fas fa-copy"></i>
+                    Copiar
+                  </button>
+                </div>
+                <p className="pix-instructions">
+                  Cole este código no seu app do banco para fazer o pagamento
+                </p>
+              </div>
+
+              <div className="payment-actions">
+                <button
+                  className="payment-check-btn"
+                  onClick={handlePaymentCheck}
+                  disabled={checkingPayment}
+                >
+                  <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
+                  {checkingPayment ? 'Verificando...' : 'Já Paguei'}
+                </button>
+                
+                <button
+                  className="payment-cancel-btn"
+                  onClick={() => {
+                    navigateTo('feed')
+                    setPaymentData(null)
+                    setSelectedPrestador(null)
+                  }}
+                >
+                  <i className="fas fa-times"></i>
+                  Cancelar
+                </button>
+              </div>
+
+              <div className="payment-help">
+                <h4>Como pagar:</h4>
+                <ol>
+                  <li>Abra o app do seu banco</li>
+                  <li>Escolha a opção PIX</li>
+                  <li>Escaneie o QR Code ou cole o código</li>
+                  <li>Confirme o pagamento de R$ 2,02</li>
+                  <li>Volte aqui e clique em "Já Paguei"</li>
+                </ol>
+              </div>
+            </>
+          ) : (
+            <div className="payment-error">
+              <i className="fas fa-exclamation-triangle"></i>
+              <h3>Erro no Pagamento</h3>
+              <p>Não foi possível processar o pagamento. Tente novamente.</p>
+              <button 
+                className="back-btn"
+                onClick={() => navigateTo('feed')}
+              >
+                Voltar
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
