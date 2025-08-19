@@ -299,7 +299,7 @@ function App() {
       setLoading(true)
       setSelectedPrestador(user)
       
-      console.log('💳 Iniciando processo de pagamento...')
+      console.log('💳 [PRODUÇÃO] Iniciando processo de pagamento...')
       
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
@@ -310,14 +310,14 @@ function App() {
       
       setPaymentData(payment)
       navigateTo('payment')
-      toast.success('Pagamento PIX gerado! Complete o pagamento para acessar o WhatsApp')
+      toast.success('💳 Pagamento PIX gerado! Escaneie o QR Code para pagar')
     } catch (error) {
-      console.error('❌ Erro ao criar pagamento:', error)
+      console.error('❌ [PRODUÇÃO] Erro ao criar pagamento:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-      toast.error(`Erro ao processar pagamento: ${errorMessage}`)
+      toast.error(`❌ Erro no pagamento: ${errorMessage}`)
       
-      // Fallback: permitir contato direto em caso de erro
-      if (confirm('Erro no sistema de pagamento. Deseja ir direto para o WhatsApp?')) {
+      // Em caso de erro crítico, oferecer contato direto
+      if (confirm('❌ Erro no sistema de pagamento.\n\n🔄 Deseja tentar novamente ou ir direto para o WhatsApp?')) {
         handleDirectContact(user)
       }
     } finally {
@@ -331,11 +331,12 @@ function App() {
 
     try {
       setCheckingPayment(true)
+      console.log('🔍 [PRODUÇÃO] Verificando pagamento:', paymentData.id)
       
       const isApproved = await MercadoPagoService.isPaymentApproved(paymentData.id)
       
       if (isApproved) {
-        toast.success('Pagamento confirmado! Redirecionando para WhatsApp...')
+        toast.success('🎉 Pagamento confirmado! Redirecionando para WhatsApp...')
         
         // Redirect to WhatsApp
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
@@ -348,11 +349,11 @@ function App() {
           setSelectedPrestador(null)
         }, 1000)
       } else {
-        toast.error('Pagamento ainda não foi confirmado. Aguarde alguns instantes e tente novamente.')
+        toast.error('⏳ Pagamento ainda não confirmado. Aguarde e tente novamente.')
       }
     } catch (error) {
-      console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('Erro ao verificar pagamento. Tente novamente.')
+      console.error('❌ [PRODUÇÃO] Erro ao verificar pagamento:', error)
+      toast.error('❌ Erro ao verificar pagamento. Tente novamente.')
     } finally {
       setCheckingPayment(false)
     }
@@ -1264,68 +1265,48 @@ function App() {
                   disabled={checkingPayment}
                 >
                   <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
-                  {checkingPayment ? 'Verificando...' : 'Já Paguei'}
+                  {checkingPayment ? 'Verificando pagamento...' : '✅ Já Paguei - Verificar'}
                 </button>
-                
-                {/* Botão de teste para desenvolvimento */}
-                {import.meta.env.DEV && (
-                  <button
-                    className="payment-test-btn"
-                    onClick={async () => {
-                      if (paymentData) {
-                        await MercadoPagoService.simulateApprovedPayment(paymentData.id)
-                        toast.success('Pagamento simulado como aprovado!')
-                        setTimeout(() => handlePaymentCheck(), 1000)
-                      }
-                    }}
-                    style={{
-                      background: '#4CAF50',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.8rem 1rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    🧪 Simular Pagamento (Teste)
-                  </button>
-                )}
                 
                 <button
                   className="payment-cancel-btn"
                   onClick={() => {
+                    // Cancelar pagamento no Mercado Pago
+                    if (paymentData) {
+                      MercadoPagoService.cancelPayment(paymentData.id)
+                    }
                     navigateTo('feed')
                     setPaymentData(null)
                     setSelectedPrestador(null)
                   }}
                 >
                   <i className="fas fa-times"></i>
-                  Cancelar
+                  ❌ Cancelar Pagamento
                 </button>
               </div>
 
               <div className="payment-help">
-                <h4>Como pagar:</h4>
+                <h4>💡 Como pagar com PIX:</h4>
                 <ol>
-                  <li>Abra o app do seu banco</li>
-                  <li>Escolha a opção PIX</li>
-                  <li>Escaneie o QR Code ou cole o código</li>
-                  <li>Confirme o pagamento de R$ 2,02</li>
-                  <li>Volte aqui e clique em "Já Paguei"</li>
+                  <li>📱 Abra o app do seu banco</li>
+                  <li>💳 Escolha a opção PIX</li>
+                  <li>📷 Escaneie o QR Code ou cole o código PIX</li>
+                  <li>✅ Confirme o pagamento de R$ 2,02</li>
+                  <li>🔄 Volte aqui e clique em "Já Paguei"</li>
+                  <li>📞 Acesse o WhatsApp do prestador!</li>
                 </ol>
               </div>
             </>
           ) : (
             <div className="payment-error">
               <i className="fas fa-exclamation-triangle"></i>
-              <h3>Erro no Pagamento</h3>
-              <p>Não foi possível processar o pagamento. Tente novamente.</p>
+              <h3>❌ Erro no Sistema de Pagamento</h3>
+              <p>Não foi possível gerar o PIX. Verifique sua conexão e tente novamente.</p>
               <button 
                 className="back-btn"
                 onClick={() => navigateTo('feed')}
               >
-                Voltar
+                🔄 Tentar Novamente
               </button>
             </div>
           )}
