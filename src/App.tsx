@@ -300,26 +300,92 @@ function App() {
       setSelectedPrestador(user)
       
       console.log('💳 Iniciando processo de pagamento...')
+      console.log('👤 Prestador selecionado:', user.nome)
+      console.log('🔗 URL do proxy:', 'https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/create-pix-payment')
       
       // Criar pagamento PIX
-      const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: `cliente_${Date.now()}`, // Cliente anônimo
+      console.log('📤 Enviando dados para o proxy...')
+      const paymentData = {
+        cliente_id: `cliente_${Date.now()}`,
         prestador_id: user.id,
         amount: 2.02
-      })
+      }
+      console.log('📋 Dados do pagamento:', paymentData)
+      
+      const payment = await MercadoPagoService.createPixPayment(paymentData)
+      console.log('✅ Resposta do pagamento:', payment)
       
       setPaymentData(payment)
       navigateTo('payment')
       toast.success('Pagamento PIX gerado! Complete o pagamento para acessar o WhatsApp')
     } catch (error) {
       console.error('❌ Erro ao criar pagamento:', error)
-      toast.error(`Erro ao processar pagamento: ${error?.message || 'Erro desconhecido'}`)
+      console.error('🔍 Detalhes do erro:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      })
       
-      // Debug: mostrar erro completo no console
-      console.log('🔍 Erro completo:', JSON.stringify(error, null, 2))
+      // Mostrar erro mais amigável
+      const errorMessage = error?.message || 'Erro desconhecido no pagamento'
+      toast.error(`Erro: ${errorMessage}`)
       
       // Fallback: permitir contato direto em caso de erro
-      if (confirm('Erro no sistema de pagamento. Deseja ir direto para o WhatsApp?')) {
+      console.log('🔄 Oferecendo fallback para WhatsApp direto...')
+      setTimeout(() => {
+        if (confirm('Erro no sistema de pagamento. Deseja ir direto para o WhatsApp?')) {
+          console.log('✅ Usuário escolheu ir direto ao WhatsApp')
+          handleDirectContact(user)
+        }
+      }, 2000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Test function to check if Edge Functions are working
+  const testEdgeFunction = async () => {
+    try {
+      console.log('🧪 Testando Edge Function...')
+      const response = await fetch('https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/create-pix-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cliente_id: 'test_client',
+          prestador_id: 'test_provider',
+          amount: 2.02
+        })
+      })
+      
+      console.log('📡 Status da resposta:', response.status)
+      console.log('📡 Headers:', Object.fromEntries(response.headers.entries()))
+      
+      const text = await response.text()
+      console.log('📡 Resposta raw:', text)
+      
+      if (response.ok) {
+        console.log('✅ Edge Function está funcionando!')
+        toast.success('Edge Function está funcionando!')
+      } else {
+        console.log('❌ Edge Function com erro:', response.status)
+        toast.error(`Edge Function erro: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao testar Edge Function:', error)
+      toast.error('Erro ao conectar com Edge Function')
+    }
+  }
+
+  // Add test button in development
+  useEffect(() => {
+    // Add test button to window for debugging
+    if (typeof window !== 'undefined') {
+      window.testEdgeFunction = testEdgeFunction
+      console.log('🔧 Para testar Edge Function, digite: window.testEdgeFunction()')
+    }
+  }, [])</parameter>
         handleDirectContact(user)
       }
     } finally {

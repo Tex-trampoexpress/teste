@@ -21,44 +21,53 @@ export class MercadoPagoService {
   static async createPixPayment(request: CreatePaymentRequest): Promise<PaymentData> {
     try {
       console.log('💳 Criando pagamento PIX:', request)
+      console.log('🔗 URL do proxy:', this.PROXY_URL)
 
       // Validar dados de entrada
       if (!request.cliente_id || !request.prestador_id || !request.amount) {
         throw new Error('Dados obrigatórios faltando para criar pagamento')
       }
 
+      console.log('📤 Fazendo requisição para o proxy...')
+      
       // Usar proxy do Supabase para evitar CORS
       const response = await fetch(this.PROXY_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(request)
       })
 
+      console.log('📡 Status da resposta:', response.status)
+      console.log('📡 Headers da resposta:', Object.fromEntries(response.headers.entries()))
+      
       const responseText = await response.text()
       console.log('📥 Resposta do proxy:', responseText)
 
       if (!response.ok) {
         console.error('❌ Erro do proxy:', response.status, responseText)
         
-        let errorMessage = `Erro ${response.status}`
+        let errorMessage = `Erro HTTP ${response.status}`
         try {
           const errorData = JSON.parse(responseText)
-          errorMessage = errorData.message || errorMessage
+          errorMessage = errorData.message || errorData.error || errorMessage
         } catch (e) {
-          errorMessage = responseText || errorMessage
+          errorMessage = responseText.substring(0, 100) || errorMessage
         }
         
         throw new Error(`Erro no pagamento: ${errorMessage}`)
       }
 
+      console.log('📋 Tentando fazer parse da resposta...')
       const paymentData = JSON.parse(responseText)
       console.log('✅ Pagamento criado:', paymentData)
 
       // Verificar se o QR Code foi gerado
       if (!paymentData.qr_code) {
-        console.warn('⚠️ QR Code não gerado pelo Mercado Pago')
+        console.warn('⚠️ QR Code não foi gerado')
+        console.warn('📋 Dados recebidos:', paymentData)
       }
 
       return paymentData
@@ -66,8 +75,13 @@ export class MercadoPagoService {
       console.error('❌ Erro ao criar pagamento PIX:', error)
       
       // Se for erro de rede, dar uma mensagem mais amigável
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('Erro de conexão. Verifique sua internet e tente novamente.')
+      }
+      
+      // Se for erro de parsing JSON
+      if (error instanceof SyntaxError) {
+        throw new Error('Erro na resposta do servidor. Tente novamente.')
       }
       
       throw error

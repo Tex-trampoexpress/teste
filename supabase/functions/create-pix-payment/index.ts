@@ -15,10 +15,12 @@ interface CreatePaymentRequest {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('🔧 Handling CORS preflight request')
     return new Response('ok', { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
+    console.log('❌ Method not allowed:', req.method)
     return new Response('Method not allowed', { 
       status: 405, 
       headers: corsHeaders 
@@ -27,15 +29,20 @@ serve(async (req) => {
 
   try {
     console.log('💳 Criando pagamento PIX via proxy...')
+    console.log('🌐 Request URL:', req.url)
+    console.log('📋 Request headers:', Object.fromEntries(req.headers.entries()))
     
     const requestData: CreatePaymentRequest = await req.json()
     console.log('📦 Dados recebidos:', requestData)
 
     // Validar dados
     if (!requestData.cliente_id || !requestData.prestador_id || !requestData.amount) {
+      console.error('❌ Dados obrigatórios faltando:', requestData)
       throw new Error('Dados obrigatórios faltando')
     }
 
+    console.log('✅ Dados validados com sucesso')
+    
     // Preparar payload para Mercado Pago
     const paymentPayload = {
       transaction_amount: requestData.amount,
@@ -52,25 +59,48 @@ serve(async (req) => {
 
     console.log('📤 Enviando para Mercado Pago:', paymentPayload)
 
+    // Verificar se temos a chave do Mercado Pago
+    const mpToken = 'APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050'
+    if (!mpToken) {
+      throw new Error('Token do Mercado Pago não configurado')
+    }
+    
     // Fazer requisição para Mercado Pago
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050',
+        'Authorization': `Bearer ${mpToken}`,
         'Content-Type': 'application/json',
         'X-Idempotency-Key': crypto.randomUUID()
       },
       body: JSON.stringify(paymentPayload)
     })
 
+    console.log('📡 Status do Mercado Pago:', mpResponse.status)
+    console.log('📡 Headers do Mercado Pago:', Object.fromEntries(mpResponse.headers.entries()))
+    
     const responseText = await mpResponse.text()
     console.log('📥 Resposta do Mercado Pago:', responseText)
 
     if (!mpResponse.ok) {
       console.error('❌ Erro do Mercado Pago:', mpResponse.status, responseText)
-      throw new Error(`Erro do Mercado Pago: ${mpResponse.status}`)
+      
+      let errorMessage = `Erro do Mercado Pago: ${mpResponse.status}`
+      try {
+        const errorData = JSON.parse(responseText)
+        if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (errorData.cause && errorData.cause.length > 0) {
+          errorMessage = errorData.cause[0].description || errorMessage
+        }
+      } catch (e) {
+        // Usar mensagem padrão se não conseguir fazer parse
+      }
+      
+      throw new Error(errorMessage)
     }
 
+    console.log('📋 Fazendo parse da resposta do Mercado Pago...')
     const paymentData = JSON.parse(responseText)
     console.log('✅ Pagamento criado:', paymentData.id)
 
