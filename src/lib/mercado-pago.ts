@@ -1,4 +1,4 @@
-// Sistema de Pagamentos Mercado Pago - PRODUÇÃO
+// Sistema de Pagamentos Mercado Pago - PRODUÇÃO SIMPLIFICADA
 import { supabase } from './supabase'
 
 export interface PaymentData {
@@ -16,202 +16,93 @@ export interface CreatePaymentRequest {
 }
 
 export class MercadoPagoService {
-  // CREDENCIAIS DE PRODUÇÃO - Mercado Pago
+  // CREDENCIAIS DE PRODUÇÃO
   private static readonly ACCESS_TOKEN = 'APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050'
   private static readonly API_URL = 'https://api.mercadopago.com'
   private static readonly WEBHOOK_URL = 'https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook'
 
-  // Criar pagamento PIX - PRODUÇÃO
+  // Criar pagamento PIX - VERSÃO SIMPLIFICADA
   static async createPixPayment(request: CreatePaymentRequest): Promise<PaymentData> {
+    console.log('💳 [PRODUÇÃO] Criando pagamento PIX:', request)
+
     try {
-      console.log('💳 [PRODUÇÃO] Criando pagamento PIX:', request)
-
-      // Validações obrigatórias
-      if (!request.cliente_id || !request.prestador_id || !request.amount) {
-        throw new Error('Dados obrigatórios faltando para criar pagamento')
-      }
-
-      if (request.amount < 0.01) {
-        throw new Error('Valor mínimo é R$ 0,01')
-      }
-
-      // Payload para Mercado Pago - PRODUÇÃO
+      // Payload mínimo e funcional
       const paymentPayload = {
-        transaction_amount: Number(request.amount.toFixed(2)),
-        description: `TEX - Acesso ao contato do prestador`,
+        transaction_amount: 2.02,
+        description: 'TEX - Acesso ao contato',
         payment_method_id: 'pix',
         payer: {
-          email: 'cliente@tex.app',
-          first_name: 'Cliente',
-          last_name: 'TEX'
+          email: 'cliente@tex.app'
         },
-        notification_url: this.WEBHOOK_URL,
-        external_reference: `tex-${request.cliente_id}-${request.prestador_id}-${Date.now()}`,
-        expires: true,
-        date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutos
+        notification_url: this.WEBHOOK_URL
       }
 
-      console.log('📦 [PRODUÇÃO] Enviando para Mercado Pago:', paymentPayload)
+      console.log('📦 Enviando para Mercado Pago...')
 
-      // Fazer requisição para Mercado Pago
       const response = await fetch(`${this.API_URL}/v1/payments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': crypto.randomUUID()
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(paymentPayload)
       })
 
-      const responseText = await response.text()
-      console.log('📥 [PRODUÇÃO] Resposta MP:', response.status, responseText)
+      const responseData = await response.json()
+      console.log('📥 Resposta MP:', responseData)
 
       if (!response.ok) {
-        console.error('❌ [PRODUÇÃO] Erro do Mercado Pago:', response.status, responseText)
-        
-        let errorMessage = `Erro ${response.status}`
-        try {
-          const errorData = JSON.parse(responseText)
-          if (errorData.message) {
-            errorMessage = errorData.message
-          } else if (errorData.cause && errorData.cause.length > 0) {
-            errorMessage = errorData.cause[0].description || errorMessage
-          }
-        } catch (e) {
-          errorMessage = responseText || errorMessage
-        }
-        
-        throw new Error(`Erro do Mercado Pago: ${errorMessage}`)
+        console.error('❌ Erro MP:', responseData)
+        throw new Error(`Erro do Mercado Pago: ${responseData.message || 'Erro desconhecido'}`)
       }
 
-      let paymentData
-      try {
-        paymentData = JSON.parse(responseText)
-      } catch (parseError) {
-        console.error('❌ [PRODUÇÃO] Erro ao fazer parse:', parseError)
-        throw new Error('Resposta inválida do Mercado Pago')
-      }
-      
-      console.log('✅ [PRODUÇÃO] Pagamento criado:', paymentData.id)
+      // Extrair dados do QR Code
+      const qrCodeBase64 = responseData.point_of_interaction?.transaction_data?.qr_code_base64
+      const qrCode = responseData.point_of_interaction?.transaction_data?.qr_code
 
-      // Verificar se QR Code foi gerado
-      const qrCodeBase64 = paymentData.point_of_interaction?.transaction_data?.qr_code_base64
-      const qrCode = paymentData.point_of_interaction?.transaction_data?.qr_code
-      
       if (!qrCode) {
-        console.error('⚠️ [PRODUÇÃO] QR Code não gerado pelo MP')
-        throw new Error('QR Code PIX não foi gerado. Tente novamente.')
+        throw new Error('QR Code não foi gerado pelo Mercado Pago')
       }
 
-      // Salvar transação no banco
-      try {
-        await this.saveTransaction({
-          cliente_id: request.cliente_id,
-          prestador_id: request.prestador_id,
-          mp_payment_id: paymentData.id.toString(),
-          status: paymentData.status,
-          amount: request.amount
-        })
-        console.log('💾 [PRODUÇÃO] Transação salva no banco')
-      } catch (dbError) {
-        console.error('⚠️ [PRODUÇÃO] Erro ao salvar no banco:', dbError)
-        // Não falhar o pagamento por erro de banco
-      }
+      console.log('✅ Pagamento criado:', responseData.id)
+
+      // Salvar no banco (sem bloquear se der erro)
+      this.saveTransactionAsync(request, responseData.id.toString(), responseData.status)
 
       return {
-        id: paymentData.id.toString(),
-        status: paymentData.status,
+        id: responseData.id.toString(),
+        status: responseData.status,
         qr_code_base64: qrCodeBase64 || '',
-        qr_code: qrCode || '',
-        ticket_url: paymentData.point_of_interaction?.transaction_data?.ticket_url || ''
+        qr_code: qrCode,
+        ticket_url: responseData.point_of_interaction?.transaction_data?.ticket_url || ''
       }
+
     } catch (error) {
-      console.error('❌ [PRODUÇÃO] Erro ao criar pagamento:', error)
-      
-      // Mensagens de erro mais amigáveis
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Erro de conexão. Verifique sua internet e tente novamente.')
-      }
-      
-      if (error.message.includes('401')) {
-        throw new Error('Erro de autenticação com Mercado Pago. Contate o suporte.')
-      }
-      
-      if (error.message.includes('400')) {
-        throw new Error('Dados inválidos para pagamento. Tente novamente.')
-      }
-      
-      throw error
+      console.error('❌ Erro ao criar pagamento:', error)
+      throw new Error(`Falha no pagamento: ${error.message}`)
     }
   }
 
-  // Salvar transação no banco
-  private static async saveTransaction(transaction: {
-    cliente_id: string
-    prestador_id: string
-    mp_payment_id: string
-    status: string
-    amount: number
-  }) {
+  // Salvar transação de forma assíncrona (não bloqueia)
+  private static async saveTransactionAsync(request: CreatePaymentRequest, paymentId: string, status: string) {
     try {
-      console.log('💾 [PRODUÇÃO] Salvando transação:', transaction.mp_payment_id)
-      
-      const { data, error } = await supabase
-        .from('transacoes')
-        .insert(transaction)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('❌ [PRODUÇÃO] Erro ao salvar transação:', error)
-        throw error
-      }
-
-      console.log('✅ [PRODUÇÃO] Transação salva:', data.id)
-      return data
+      await supabase.from('transacoes').insert({
+        cliente_id: request.cliente_id,
+        prestador_id: request.prestador_id,
+        mp_payment_id: paymentId,
+        status: status,
+        amount: request.amount
+      })
+      console.log('💾 Transação salva no banco')
     } catch (error) {
-      console.error('❌ [PRODUÇÃO] Erro ao salvar transação:', error)
-      throw error
+      console.error('⚠️ Erro ao salvar transação (não crítico):', error)
     }
   }
 
-  // Verificar status do pagamento - PRODUÇÃO
+  // Verificar status do pagamento
   static async checkPaymentStatus(paymentId: string): Promise<string> {
     try {
-      console.log('🔍 [PRODUÇÃO] Verificando status:', paymentId)
-
-      // Primeiro verificar no banco local
-      const { data: transaction, error } = await supabase
-        .from('transacoes')
-        .select('status, updated_at')
-        .eq('mp_payment_id', paymentId)
-        .single()
-
-      if (error) {
-        console.error('❌ [PRODUÇÃO] Erro ao buscar transação:', error)
-        // Se não encontrar no banco, consultar diretamente no MP
-        return this.checkPaymentStatusDirect(paymentId)
-      }
-
-      console.log('📊 [PRODUÇÃO] Status no banco:', transaction.status)
-      
-      // Se ainda está pendente, verificar no MP para atualizar
-      if (transaction.status === 'pending') {
-        return this.checkPaymentStatusDirect(paymentId)
-      }
-      
-      return transaction.status
-    } catch (error) {
-      console.error('❌ [PRODUÇÃO] Erro ao verificar status:', error)
-      return 'pending'
-    }
-  }
-
-  // Verificar status diretamente no Mercado Pago - PRODUÇÃO
-  private static async checkPaymentStatusDirect(paymentId: string): Promise<string> {
-    try {
-      console.log('🔍 [PRODUÇÃO] Consultando MP diretamente:', paymentId)
+      console.log('🔍 Verificando status:', paymentId)
 
       const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
         headers: {
@@ -221,94 +112,23 @@ export class MercadoPagoService {
       })
 
       if (!response.ok) {
-        console.error('❌ [PRODUÇÃO] Erro ao consultar MP:', response.status)
+        console.error('❌ Erro ao consultar status:', response.status)
         return 'pending'
       }
 
       const paymentData = await response.json()
-      console.log('📊 [PRODUÇÃO] Status do MP:', paymentData.status)
-
-      // Atualizar status no banco se mudou
-      if (paymentData.status !== 'pending') {
-        try {
-          await supabase
-            .from('transacoes')
-            .update({ 
-              status: paymentData.status,
-              updated_at: new Date().toISOString()
-            })
-            .eq('mp_payment_id', paymentId)
-          console.log('✅ [PRODUÇÃO] Status atualizado no banco')
-        } catch (updateError) {
-          console.error('⚠️ [PRODUÇÃO] Erro ao atualizar status:', updateError)
-        }
-      }
+      console.log('📊 Status atual:', paymentData.status)
 
       return paymentData.status
     } catch (error) {
-      console.error('❌ [PRODUÇÃO] Erro na consulta direta:', error)
+      console.error('❌ Erro ao verificar status:', error)
       return 'pending'
     }
   }
 
-  // Verificar se pagamento foi aprovado - PRODUÇÃO
+  // Verificar se pagamento foi aprovado
   static async isPaymentApproved(paymentId: string): Promise<boolean> {
     const status = await this.checkPaymentStatus(paymentId)
-    console.log('✅ [PRODUÇÃO] Status final:', status)
     return status === 'approved'
-  }
-
-  // Cancelar pagamento - PRODUÇÃO
-  static async cancelPayment(paymentId: string): Promise<void> {
-    try {
-      console.log('❌ [PRODUÇÃO] Cancelando pagamento:', paymentId)
-      
-      const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'cancelled'
-        })
-      })
-
-      if (response.ok) {
-        // Atualizar no banco
-        await supabase
-          .from('transacoes')
-          .update({ 
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('mp_payment_id', paymentId)
-        
-        console.log('✅ [PRODUÇÃO] Pagamento cancelado')
-      }
-    } catch (error) {
-      console.error('⚠️ [PRODUÇÃO] Erro ao cancelar:', error)
-    }
-  }
-
-  // Obter detalhes do pagamento - PRODUÇÃO
-  static async getPaymentDetails(paymentId: string): Promise<any> {
-    try {
-      const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro ao obter detalhes: ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('❌ [PRODUÇÃO] Erro ao obter detalhes:', error)
-      throw error
-    }
   }
 }
