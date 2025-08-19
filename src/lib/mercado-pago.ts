@@ -123,25 +123,6 @@ export class MercadoPagoService {
       throw error
     }
   }
-        cliente_id: request.cliente_id,
-        prestador_id: request.prestador_id,
-        mp_payment_id: paymentData.id.toString(),
-        status: paymentData.status,
-        amount: request.amount
-      })
-
-      return {
-        id: paymentData.id.toString(),
-        status: paymentData.status,
-        qr_code_base64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
-        qr_code: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
-        ticket_url: paymentData.point_of_interaction?.transaction_data?.ticket_url || ''
-      }
-    } catch (error) {
-      console.error('❌ Erro ao criar pagamento PIX:', error)
-      throw error
-    }
-  }
 
   // Salvar transação no banco
   private static async saveTransaction(transaction: {
@@ -152,8 +133,6 @@ export class MercadoPagoService {
     amount: number
   }) {
     try {
-      console.log('💾 Salvando transação no banco:', transaction)
-      
       const { data, error } = await supabase
         .from('transacoes')
         .insert(transaction)
