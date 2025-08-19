@@ -295,17 +295,6 @@ function App() {
 
   // Contact via WhatsApp
   const handleContact = async (user: Usuario) => {
-    if (!currentUser) {
-      toast.error('Faça login para entrar em contato')
-      navigateTo('verify')
-      return
-    }
-
-    if (currentUser.id === user.id) {
-      toast.error('Você não pode entrar em contato consigo mesmo')
-      return
-    }
-
     try {
       setLoading(true)
       setSelectedPrestador(user)
@@ -314,7 +303,7 @@ function App() {
       
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: currentUser.id,
+        cliente_id: 'cliente_anonimo_' + Date.now(), // Cliente anônimo
         prestador_id: user.id,
         amount: 2.02
       })
