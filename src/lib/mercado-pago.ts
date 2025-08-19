@@ -80,7 +80,14 @@ export class MercadoPagoService {
         throw new Error(`Erro do Mercado Pago: ${errorMessage}`)
       }
 
-      const paymentData = JSON.parse(responseText)
+      let paymentData
+      try {
+        paymentData = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('❌ Erro ao fazer parse da resposta:', parseError)
+        throw new Error('Resposta inválida do Mercado Pago')
+      }
+      
       console.log('✅ Pagamento criado:', paymentData)
 
       // Salvar transação no banco

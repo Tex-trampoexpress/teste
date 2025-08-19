@@ -303,7 +303,7 @@ function App() {
       
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: `cliente_${Date.now()}`, // Cliente anônimo
+        cliente_id: `anonimo_${Date.now()}`, // Cliente anônimo
         prestador_id: user.id,
         amount: 2.02
       })
@@ -313,7 +313,8 @@ function App() {
       toast.success('Pagamento PIX gerado! Complete o pagamento para acessar o WhatsApp')
     } catch (error) {
       console.error('❌ Erro ao criar pagamento:', error)
-      toast.error(`Erro ao processar pagamento: ${error?.message || 'Erro desconhecido'}`)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      toast.error(`Erro ao processar pagamento: ${errorMessage}`)
       
       // Debug: mostrar erro completo no console
       console.log('🔍 Erro completo:', JSON.stringify(error, null, 2))

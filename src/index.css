@@ -71,8 +71,6 @@ body::before {
   top: 1rem;
   right: 1rem;
   z-index: 1000;
-  /* IMPORTANTE: Posição relativa para controlar o z-index dos elementos filhos */
-  position: fixed;
 }
 
 .profile-header-btn:hover {
