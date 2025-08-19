@@ -1313,27 +1313,6 @@ function App() {
                   <i className="fas fa-times"></i>
                   ❌ Cancelar
                 </button>
-                
-                <button
-                  className="payment-simulate-btn"
-                  onClick={handleSimulatePayment}
-                  style={{
-                    background: 'rgba(255, 193, 7, 0.2)',
-                    border: '1px solid rgba(255, 193, 7, 0.4)',
-                    color: '#ffc107',
-                    padding: '0.8rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.9rem'
-                  }}
-                >
-                  <i className="fas fa-flask"></i>
-                  🧪 Simular Pagamento (Teste)
-                </button>
               </div>
 
               <div className="payment-help">
