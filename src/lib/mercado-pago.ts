@@ -49,13 +49,15 @@ export class MercadoPagoService {
         body: JSON.stringify(paymentPayload)
       })
 
+      const responseText = await response.text()
+      console.log('📥 Resposta do Mercado Pago:', responseText)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('❌ Erro do Mercado Pago:', errorData)
-        throw new Error(`Erro ao criar pagamento: ${response.status}`)
+        console.error('❌ Erro do Mercado Pago:', response.status, responseText)
+        throw new Error(`Erro ao criar pagamento: ${response.status} - ${responseText}`)
       }
 
-      const paymentData = await response.json()
+      const paymentData = JSON.parse(responseText)
       console.log('✅ Pagamento criado:', paymentData)
 
       // Salvar transação no banco
