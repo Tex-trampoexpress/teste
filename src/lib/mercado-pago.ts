@@ -15,9 +15,7 @@ export interface CreatePaymentRequest {
 }
 
 export class MercadoPagoService {
-  private static readonly ACCESS_TOKEN = 'APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050'
-  private static readonly PUBLIC_KEY = 'APP_USR-c5e81aaf-7a2a-4452-93ab-2a16dd420bc5'
-  private static readonly API_URL = 'https://api.mercadopago.com'
+  private static readonly PROXY_URL = 'https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/create-pix-payment'
 
   // Criar pagamento PIX
   static async createPixPayment(request: CreatePaymentRequest): Promise<PaymentData> {
@@ -29,89 +27,41 @@ export class MercadoPagoService {
         throw new Error('Dados obrigatórios faltando para criar pagamento')
       }
 
-      const paymentPayload = {
-        transaction_amount: request.amount,
-        description: `TEX - Conexão com prestador de serviço`,
-        payment_method_id: 'pix',
-        payer: {
-          email: 'cliente@tex.com',
-          first_name: 'Cliente',
-          last_name: 'TEX'
-        },
-        notification_url: 'https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook',
-        external_reference: `${request.cliente_id}-${request.prestador_id}-${Date.now()}`
-      }
-
-      console.log('📦 Payload para Mercado Pago:', paymentPayload)
-
-      // Verificar se as chaves estão configuradas
-      if (!this.ACCESS_TOKEN) {
-        throw new Error('Token de acesso do Mercado Pago não configurado')
-      }
-
-      const response = await fetch(`${this.API_URL}/v1/payments`, {
+      // Usar proxy do Supabase para evitar CORS
+      const response = await fetch(this.PROXY_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': crypto.randomUUID()
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(paymentPayload)
+        body: JSON.stringify(request)
       })
 
       const responseText = await response.text()
-      console.log('📥 Resposta do Mercado Pago:', responseText)
+      console.log('📥 Resposta do proxy:', responseText)
 
       if (!response.ok) {
-        console.error('❌ Erro do Mercado Pago:', response.status, responseText)
+        console.error('❌ Erro do proxy:', response.status, responseText)
         
         let errorMessage = `Erro ${response.status}`
         try {
           const errorData = JSON.parse(responseText)
-          if (errorData.message) {
-            errorMessage = errorData.message
-          } else if (errorData.cause && errorData.cause.length > 0) {
-            errorMessage = errorData.cause[0].description || errorMessage
-          }
+          errorMessage = errorData.message || errorMessage
         } catch (e) {
           errorMessage = responseText || errorMessage
         }
         
-        throw new Error(`Erro do Mercado Pago: ${errorMessage}`)
+        throw new Error(`Erro no pagamento: ${errorMessage}`)
       }
 
       const paymentData = JSON.parse(responseText)
       console.log('✅ Pagamento criado:', paymentData)
 
-      // Salvar transação no banco
-      try {
-        await this.saveTransaction({
-          cliente_id: request.cliente_id,
-          prestador_id: request.prestador_id,
-          mp_payment_id: paymentData.id.toString(),
-          status: paymentData.status,
-          amount: request.amount
-        })
-      } catch (dbError) {
-        console.error('⚠️ Erro ao salvar no banco (continuando):', dbError)
-        // Não falhar o pagamento por erro de banco
-      }
-
-      // Verificar se os dados necessários estão presentes
-      const qrCodeBase64 = paymentData.point_of_interaction?.transaction_data?.qr_code_base64
-      const qrCode = paymentData.point_of_interaction?.transaction_data?.qr_code
-      
-      if (!qrCode) {
+      // Verificar se o QR Code foi gerado
+      if (!paymentData.qr_code) {
         console.warn('⚠️ QR Code não gerado pelo Mercado Pago')
       }
 
-      return {
-        id: paymentData.id.toString(),
-        status: paymentData.status,
-        qr_code_base64: qrCodeBase64 || '',
-        qr_code: qrCode || '',
-        ticket_url: paymentData.point_of_interaction?.transaction_data?.ticket_url || ''
-      }
+      return paymentData
     } catch (error) {
       console.error('❌ Erro ao criar pagamento PIX:', error)
       
