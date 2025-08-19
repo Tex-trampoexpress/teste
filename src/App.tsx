@@ -385,12 +385,13 @@ function App() {
       window.testEdgeFunction = testEdgeFunction
       console.log('🔧 Para testar Edge Function, digite: window.testEdgeFunction()')
     }
-  }, [])</parameter>
-        handleDirectContact(user)
-      }
-    } finally {
-      setLoading(false)
-    }
+  }, [])
+
+  // Direct WhatsApp contact (fallback)
+  const handleDirectContact = (user: Usuario) => {
+    const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+    const whatsappUrl = `https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
   }
 
   // Check payment and redirect to WhatsApp
@@ -424,13 +425,6 @@ function App() {
     } finally {
       setCheckingPayment(false)
     }
-  }
-
-  // Direct WhatsApp contact (fallback)
-  const handleDirectContact = (user: Usuario) => {
-    const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-    const whatsappUrl = `https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
   }
 
   // Add tag
@@ -482,8 +476,9 @@ function App() {
           >
             {currentUser.foto_url ? (
               <img src={currentUser.foto_url} alt={currentUser.nome} />
-            ) : null}
-            <i className="fas fa-user"></i>
+            ) : (
+              <i className="fas fa-user"></i>
+            )}
           </button>
 
           {showProfileMenu && (
