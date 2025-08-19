@@ -124,4 +124,4 @@ serve(async (req) => {
 })
 
 console.log('🚀 Webhook do Mercado Pago iniciado!')
-console.log('📍 URL: https://your-project.supabase.co/functions/v1/mercado-pago-webhook')
+console.log('📍 URL: https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook')
