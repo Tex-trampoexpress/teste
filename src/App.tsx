@@ -295,21 +295,18 @@ function App() {
 
   // Contact via WhatsApp
   const handleContact = async (user: Usuario) => {
-    if (!currentUser) {
-      toast.error('Faça login para entrar em contato')
-      navigateTo('verify')
-      return
-    }
-
     try {
       setSelectedPrestador(user)
       setLoading(true)
       
       console.log('💳 [PRODUÇÃO] Iniciando processo de pagamento...')
       
+      // Gerar ID único para cliente anônimo se não estiver logado
+      const clienteId = currentUser?.id || crypto.randomUUID()
+      
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: currentUser.id,
+        cliente_id: clienteId,
         prestador_id: user.id,
         amount: 2.02
       })
@@ -936,10 +933,10 @@ function App() {
                   <button 
                     className="whatsapp-btn"
                     onClick={() => handleContact(usuario)}
-                    disabled={loading && selectedPrestador?.id === usuario.id}
+                    disabled={selectedPrestador?.id === usuario.id && loading}
                   >
                     <i className="fab fa-whatsapp"></i>
-                    {(loading && selectedPrestador?.id === usuario.id) ? 'Gerando PIX...' : 'Entrar em Contato'}
+                    {(selectedPrestador?.id === usuario.id && loading) ? 'Gerando PIX...' : 'Entrar em Contato - R$ 2,02'}
                   </button>
                 </div>
               ))}

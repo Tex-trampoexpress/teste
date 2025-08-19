@@ -1383,6 +1383,9 @@ input:focus, textarea:focus {
   font-weight: 600;
   transition: all 0.3s ease;
   margin-top: 1rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
 }
 
 .whatsapp-btn:hover {
@@ -1394,6 +1397,11 @@ input:focus, textarea:focus {
   transform: translateY(0);
 }
 
+.whatsapp-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
 /* Content Container for About and Terms */
 .content-container {
   width: 100%;

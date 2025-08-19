@@ -86,14 +86,19 @@ export class MercadoPagoService {
   // Salvar transação de forma assíncrona (não bloqueia)
   private static async saveTransactionAsync(request: CreatePaymentRequest, paymentId: string, status: string) {
     try {
-      await supabase.from('transacoes').insert({
+      const { error } = await supabase.from('transacoes').insert({
         cliente_id: request.cliente_id,
         prestador_id: request.prestador_id,
         mp_payment_id: paymentId,
         status: status,
         amount: request.amount
       })
-      console.log('💾 Transação salva no banco')
+      
+      if (error) {
+        console.error('⚠️ Erro ao salvar transação:', error)
+      } else {
+        console.log('💾 Transação salva no banco')
+      }
     } catch (error) {
       console.error('⚠️ Erro ao salvar transação (não crítico):', error)
     }
