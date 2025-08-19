@@ -296,13 +296,16 @@ function App() {
   // Contact via WhatsApp
   const handleContact = async (user: Usuario) => {
     try {
+      console.log('💳 [PRODUÇÃO] Iniciando pagamento para:', user.nome)
+      
       setSelectedPrestador(user)
       setLoading(true)
       
-      console.log('💳 [PRODUÇÃO] Iniciando processo de pagamento...')
-      
       // Gerar ID único para cliente anônimo se não estiver logado
       const clienteId = currentUser?.id || crypto.randomUUID()
+      
+      console.log('🔑 Cliente ID:', clienteId)
+      console.log('🔑 Prestador ID:', user.id)
       
       // Criar pagamento PIX
       const payment = await MercadoPagoService.createPixPayment({
@@ -313,11 +316,10 @@ function App() {
       
       console.log('✅ Pagamento criado com sucesso:', payment)
       setPaymentData(payment)
-      setLoading(false)
       navigateTo('payment')
       toast.success('💳 QR Code gerado! Complete o pagamento PIX')
+      
     } catch (error) {
-      setLoading(false)
       console.error('❌ [PRODUÇÃO] Erro ao criar pagamento:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
       toast.error(`Erro: ${errorMessage}`)
@@ -328,6 +330,8 @@ function App() {
           handleDirectContact(user)
         }
       }, 1000)
+    } finally {
+      setLoading(false)
     }
   }
 

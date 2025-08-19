@@ -1,4 +1,4 @@
-// Sistema de Pagamentos Mercado Pago - PRODUÇÃO SIMPLIFICADA
+// Sistema de Pagamentos Mercado Pago - PRODUÇÃO VIA EDGE FUNCTION
 import { supabase } from './supabase'
 
 export interface PaymentData {
@@ -7,6 +7,7 @@ export interface PaymentData {
   qr_code_base64: string
   qr_code: string
   ticket_url: string
+  expires_at?: string
 }
 
 export interface CreatePaymentRequest {
@@ -19,63 +20,39 @@ export class MercadoPagoService {
   // CREDENCIAIS DE PRODUÇÃO
   private static readonly ACCESS_TOKEN = 'APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050'
   private static readonly API_URL = 'https://api.mercadopago.com'
-  private static readonly WEBHOOK_URL = 'https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook'
 
-  // Criar pagamento PIX - VERSÃO SIMPLIFICADA
+  // Criar pagamento PIX via Edge Function (resolve CORS)
   static async createPixPayment(request: CreatePaymentRequest): Promise<PaymentData> {
-    console.log('💳 [PRODUÇÃO] Criando pagamento PIX:', request)
+    console.log('💳 [PRODUÇÃO] Criando pagamento via Edge Function:', request)
 
     try {
-      // Payload mínimo e funcional
-      const paymentPayload = {
-        transaction_amount: 2.02,
-        description: 'TEX - Acesso ao contato',
-        payment_method_id: 'pix',
-        payer: {
-          email: 'cliente@tex.app'
-        },
-        notification_url: this.WEBHOOK_URL
-      }
-
-      console.log('📦 Enviando para Mercado Pago...')
-
-      const response = await fetch(`${this.API_URL}/v1/payments`, {
+      // Usar Edge Function para evitar CORS
+      const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`
+      
+      console.log('📤 Enviando para Edge Function...')
+      
+      const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(paymentPayload)
+        body: JSON.stringify(request)
       })
 
-      const responseData = await response.json()
-      console.log('📥 Resposta MP:', responseData)
-
       if (!response.ok) {
-        console.error('❌ Erro MP:', responseData)
-        throw new Error(`Erro do Mercado Pago: ${responseData.message || 'Erro desconhecido'}`)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ Erro da Edge Function:', errorData)
+        throw new Error(errorData.message || `HTTP ${response.status}`)
       }
 
-      // Extrair dados do QR Code
-      const qrCodeBase64 = responseData.point_of_interaction?.transaction_data?.qr_code_base64
-      const qrCode = responseData.point_of_interaction?.transaction_data?.qr_code
+      const paymentData = await response.json()
+      console.log('✅ Pagamento criado via Edge Function:', paymentData)
 
-      if (!qrCode) {
-        throw new Error('QR Code não foi gerado pelo Mercado Pago')
-      }
+      // Salvar transação no banco (não bloqueia se der erro)
+      this.saveTransactionAsync(request, paymentData.id, paymentData.status)
 
-      console.log('✅ Pagamento criado:', responseData.id)
-
-      // Salvar no banco (sem bloquear se der erro)
-      this.saveTransactionAsync(request, responseData.id.toString(), responseData.status)
-
-      return {
-        id: responseData.id.toString(),
-        status: responseData.status,
-        qr_code_base64: qrCodeBase64 || '',
-        qr_code: qrCode,
-        ticket_url: responseData.point_of_interaction?.transaction_data?.ticket_url || ''
-      }
+      return paymentData
 
     } catch (error) {
       console.error('❌ Erro ao criar pagamento:', error)
@@ -83,7 +60,7 @@ export class MercadoPagoService {
     }
   }
 
-  // Salvar transação de forma assíncrona (não bloqueia)
+  // Salvar transação de forma assíncrona
   private static async saveTransactionAsync(request: CreatePaymentRequest, paymentId: string, status: string) {
     try {
       const { error } = await supabase.from('transacoes').insert({
@@ -107,7 +84,7 @@ export class MercadoPagoService {
   // Verificar status do pagamento
   static async checkPaymentStatus(paymentId: string): Promise<string> {
     try {
-      console.log('🔍 Verificando status:', paymentId)
+      console.log('🔍 Verificando status via API direta:', paymentId)
 
       const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
         headers: {
