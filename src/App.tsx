@@ -683,6 +683,15 @@ function App() {
 
           <div className="hero-footer-info">
             <nav className="hero-footer-nav">
+              <button 
+                onClick={() => {
+                  setCurrentScreen('home')
+                  setNavigationHistory(['home'])
+                }}
+                className={currentScreen === 'home' ? 'active' : ''}
+              >
+                Home
+              </button>
               <button onClick={() => navigateTo('about')}>Sobre</button>
               <button onClick={() => navigateTo('terms')}>Termos</button>
               <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
