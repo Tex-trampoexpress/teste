@@ -144,6 +144,17 @@ function App() {
 
     setLoading(true)
     try {
+      // Verificação dupla para evitar duplicatas
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formData.whatsapp)
+      if (existingUser) {
+        console.log('⚠️ Usuário já existe, redirecionando para perfil')
+        setCurrentUser(existingUser)
+        localStorage.setItem('currentUser', JSON.stringify(existingUser))
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+        setCurrentScreen('userProfile')
+        return
+      }
+
       const cleanNumber = whatsappNumber.replace(/\D/g, '')
       if (cleanNumber.length < 10) {
         toast.error('Número de WhatsApp inválido')
