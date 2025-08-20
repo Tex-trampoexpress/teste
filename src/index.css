@@ -311,7 +311,7 @@ body::before {
   padding: 0.8rem 1rem 1.5rem 1rem;
   margin-top: -1rem;
   background: rgba(0, 0, 0, 0.6);
-  border-radius: 16px;
+  border-radius: 16px 16px 16px 16px;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2098,7 +2098,7 @@ footer {
     gap: 0.6rem;
     max-width: 100%;
     min-height: calc(100vh - 120px);
-    border-radius: 12px;
+    border-radius: 12px 12px 12px 12px;
   }
 
   .tex-logo-text-inside {
