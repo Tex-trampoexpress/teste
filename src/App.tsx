@@ -144,9 +144,10 @@ function App() {
 
     setLoading(true)
     try {
-      // Verificação dupla para evitar duplicatas
+      // Limpar o número (manter apenas dígitos)
+      const cleanNumber = whatsappNumber.replace(/\D/g, '')
+      console.log('📱 Verificando WhatsApp:', cleanNumber)
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      if (existingUser) {
         console.log('⚠️ Usuário já existe, redirecionando para perfil')
         setCurrentUser(existingUser)
         localStorage.setItem('currentUser', JSON.stringify(existingUser))
@@ -155,45 +156,31 @@ function App() {
         return
       }
 
-      const cleanNumber = whatsappNumber.replace(/\D/g, '')
+      // Buscar usuário existente
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
+      
       if (cleanNumber.length < 10) {
-        toast.error('Número de WhatsApp inválido')
+        console.log('✅ Usuário existente encontrado:', existingUser.nome)
         return
-      }
-
-      const formattedNumber = `+55${cleanNumber}`
-      const foundUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
-
-      if (foundUser) {
-        setCurrentUser(foundUser)
-        setIsLoggedIn(true)
-        console.log('💾 Sessão encontrada:', foundUser)
-        
-        if (foundUser.perfil_completo) {
-          toast.success(`Bem-vindo de volta, ${foundUser.nome}!`)
-          navigateTo('feed')
-          loadUsuarios()
-        } else {
-          toast.success('Complete seu perfil para continuar')
           setProfileData({
-            nome: foundUser.nome || '',
             descricao: foundUser.descricao || '',
+          console.log('📋 Perfil completo - indo para perfil')
             tags: foundUser.tags || [],
             foto_url: foundUser.foto_url || '',
             localizacao: foundUser.localizacao || '',
+          console.log('📝 Perfil incompleto - indo para edição')
             status: foundUser.status || 'available',
             latitude: foundUser.latitude,
             longitude: foundUser.longitude
           })
           navigateTo('profile-setup')
         }
-      } else {
-        // New user - create basic profile
+        console.log('🆕 Usuário novo - indo para criação')
         const newUserId = crypto.randomUUID()
         setCurrentUser({
           id: newUserId,
           nome: '',
-          whatsapp: formattedNumber,
+          whatsapp: cleanNumber, // Salvar número limpo
           descricao: '',
           tags: [],
           foto_url: '',
@@ -208,7 +195,7 @@ function App() {
           verificado: false
         })
         setIsLoggedIn(true)
-        setProfileData({
+        setNavigationHistory(['home', 'whatsapp-login', 'create-profile'])
           nome: '',
           descricao: '',
           tags: [],

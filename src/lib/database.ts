@@ -241,65 +241,35 @@ export class DatabaseService {
   static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
     try {
       if (!whatsapp?.trim()) {
-        throw new Error('WhatsApp é obrigatório')
+        return null
       }
 
-      console.log('🔍 [DB] Buscando usuário por WhatsApp:', whatsapp)
+      // Limpar e formatar o número
+      const cleanNumber = whatsapp.replace(/\D/g, '')
+      console.log('🔍 Buscando usuário por WhatsApp:', cleanNumber)
 
-      // Busca direta primeiro
+      // Buscar diretamente no banco
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
-        .eq('whatsapp', whatsapp.trim())
+        .eq('whatsapp', cleanNumber)
         .maybeSingle()
       
       if (error) {
-        console.error('❌ [DB] Erro na busca:', error)
+        console.error('❌ Erro na busca por WhatsApp:', error)
         return null
       }
       
       if (data) {
-        console.log('✅ [DB] Usuário encontrado:', data.nome)
-        // Atualizar último acesso
+        console.log('✅ Usuário encontrado:', data.nome)
         this.updateLastAccess(data.id)
         return data
       }
       
-      console.log('ℹ️ [DB] Usuário não encontrado para:', whatsapp)
+      console.log('ℹ️ Usuário não encontrado para:', cleanNumber)
       return null
     } catch (error) {
-      console.error('❌ [DB] Erro ao buscar usuário por WhatsApp:', error)
-      return null
-    }
-  }
-
-  // Fallback para busca direta por WhatsApp
-  private static async getUsuarioByWhatsAppDirect(whatsapp: string): Promise<Usuario | null> {
-    try {
-      console.log('🔄 Tentando busca direta por WhatsApp:', whatsapp)
-
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('whatsapp', whatsapp.trim())
-        .maybeSingle()
-
-      if (error) {
-        console.error('❌ Erro na busca direta por WhatsApp:', error)
-        return null
-      }
-
-      if (data) {
-        console.log('✅ Usuário encontrado na busca direta:', data.nome)
-        // Atualizar último acesso
-        this.updateLastAccess(data.id)
-        return data
-      }
-
-      console.log('ℹ️ Usuário não encontrado para WhatsApp:', whatsapp)
-      return null
-    } catch (error) {
-      console.error('❌ Erro na busca direta por WhatsApp:', error)
+      console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
       return null
     }
   }
@@ -465,15 +435,8 @@ export class DatabaseService {
   // Check if WhatsApp number is already registered (CORRIGIDO)
   static async isWhatsAppRegistered(whatsapp: string): Promise<boolean> {
     try {
-      if (!whatsapp?.trim()) return false
-
-      console.log('🔍 Verificando se WhatsApp está registrado:', whatsapp)
-
-      // Verificação direta (mais confiável)
-      const user = await this.getUsuarioByWhatsAppDirect(whatsapp)
-      const exists = !!user
-      console.log('✅ Verificação de WhatsApp concluída:', exists)
-      return exists
+      const user = await this.getUsuarioByWhatsApp(whatsapp)
+      return !!user
     } catch (error) {
       console.error('❌ Erro ao verificar WhatsApp:', error)
       return false
