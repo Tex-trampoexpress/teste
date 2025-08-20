@@ -144,53 +144,78 @@ function App() {
 
     setLoading(true)
     try {
-      // Limpar número (apenas dígitos)
-      const cleanWhatsApp = whatsappNumber.replace(/\D/g, '')
-      console.log('📱 Verificando WhatsApp:', cleanWhatsApp)
-      
-      if (cleanWhatsApp.length < 10) {
-        toast.error('Número de WhatsApp inválido')
-        setLoading(false)
+      // Limpar o número (manter apenas dígitos)
+      const cleanNumber = whatsappNumber.replace(/\D/g, '')
+      console.log('📱 Verificando WhatsApp:', cleanNumber)
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+      if (existingUser) {
+        console.log('⚠️ Usuário já existe, redirecionando para perfil')
+        setCurrentUser(existingUser)
+        localStorage.setItem('currentUser', JSON.stringify(existingUser))
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+        setCurrentScreen('userProfile')
         return
       }
 
       // Buscar usuário existente
-      console.log('🔍 Buscando usuário existente...')
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(cleanWhatsApp)
+      const existingUser2 = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
       
-      if (existingUser) {
-        console.log('✅ Login realizado com sucesso!')
-        console.log('👤 Usuário:', existingUser.nome)
-        console.log('📋 Perfil completo:', existingUser.perfil_completo)
-        
-        // Definir usuário logado
-        setCurrentUser(existingUser)
-
-        // Navegar para tela apropriada
-        if (existingUser.perfil_completo) {
-          console.log('📍 Redirecionando para perfil')
-          setCurrentScreen('profile')
-        } else {
-          console.log('📍 Redirecionando para edição de perfil')
-          setCurrentScreen('edit-profile')
-        }
-        
-        // Atualizar histórico de navegação
-        setNavigationHistory(['home', existingUser.perfil_completo ? 'profile' : 'edit-profile'])
-        
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-      } else {
-        console.log('🆕 Usuário novo - iniciando cadastro')
-        // Usuário novo
-        setTempWhatsApp(cleanWhatsApp)
-        setCurrentScreen('create-profile')
-        setNavigationHistory(['home', 'whatsapp-login', 'create-profile'])
-        toast.success('Vamos criar seu perfil!')
+      if (cleanNumber.length < 10) {
+        console.log('✅ Usuário existente encontrado:', existingUser2.nome)
+        return
       }
       
+      if (existingUser2) {
+        setProfileData({
+          nome: existingUser2.nome,
+          descricao: existingUser2.descricao || '',
+          console.log('📋 Perfil completo - indo para perfil')
+          tags: existingUser2.tags || [],
+          foto_url: existingUser2.foto_url || '',
+          localizacao: existingUser2.localizacao || '',
+          console.log('📝 Perfil incompleto - indo para edição')
+          status: existingUser2.status || 'available',
+          latitude: existingUser2.latitude,
+          longitude: existingUser2.longitude
+        })
+        navigateTo('profile-setup')
+      } else {
+        console.log('🆕 Usuário novo - indo para criação')
+        const newUserId = crypto.randomUUID()
+        setCurrentUser({
+          id: newUserId,
+          nome: '',
+          whatsapp: cleanNumber, // Salvar número limpo
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available',
+          latitude: null,
+          longitude: null,
+          criado_em: new Date().toISOString(),
+          atualizado_em: new Date().toISOString(),
+          ultimo_acesso: new Date().toISOString(),
+          perfil_completo: false,
+          verificado: false
+        })
+        setIsLoggedIn(true)
+        setProfileData({
+          nome: '',
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available',
+          latitude: null,
+          longitude: null
+        })
+        navigateTo('profile-setup')
+        toast.success('Vamos criar seu perfil profissional!')
+      }
     } catch (error) {
       console.error('❌ Erro no login:', error)
-      toast.error('Erro ao verificar número. Tente novamente.')
+      toast.error('Erro ao fazer login. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -466,6 +491,27 @@ function App() {
     setSelectedTags([])
     setProximityEnabled(false)
     loadUsuarios()
+  }
+
+  // Status toggle handler
+  const [statusLoading, setStatusLoading] = useState(false)
+  
+  const handleStatusToggle = async () => {
+    if (!currentUser) return
+    
+    setStatusLoading(true)
+    try {
+      const newStatus = currentUser.status === 'available' ? 'busy' : 'available'
+      const updatedUser = await DatabaseService.updateUsuario(currentUser.id, { status: newStatus })
+      setCurrentUser(updatedUser)
+      localStorage.setItem('tex-user', JSON.stringify(updatedUser))
+      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
+    } catch (error) {
+      console.error('Erro ao alterar status:', error)
+      toast.error('Erro ao alterar status')
+    } finally {
+      setStatusLoading(false)
+    }
   }
 
   return (
