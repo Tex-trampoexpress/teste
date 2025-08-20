@@ -348,7 +348,11 @@ function App() {
       setLoading(true)
       
       // Gerar ID único para cliente anônimo se não estiver logado
-      // Verificar se usuário já existe
+      // Limpar dados anteriores
+      setCurrentUser(null)
+      setSelectedUser(null)
+      
+      // Verificar se usuário já existe no banco
       const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
@@ -383,32 +387,9 @@ function App() {
   }
 
   // Check payment and redirect to WhatsApp
-  const handlePaymentCheck = async () => {
+        // USUÁRIO NÃO EXISTE - IR PARA CRIAR PERFIL
     if (!paymentData || !selectedPrestador) return
-
-    try {
-      setCheckingPayment(true)
-      console.log('🔍 Verificando pagamento:', paymentData.id)
-      
-      const isApproved = await MercadoPagoService.isPaymentApproved(paymentData.id)
-      
-      if (isApproved) {
-        toast.success('🎉 Pagamento confirmado! Redirecionando...')
-        
-        // Redirect to WhatsApp
-        const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-        const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-        
-        window.open(whatsappUrl, '_blank')
-        navigateTo('feed')
-        setPaymentData(null)
-        
-        // Atualizar último acesso
-        if (currentUser) {
-          await DatabaseService.updateLastAccess(currentUser.id)
-        }
-      } else {
-        toast.error('Pagamento ainda não foi confirmado. Tente novamente em alguns segundos.')
+        await redirectToCreateProfile()
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
@@ -416,6 +397,60 @@ function App() {
     } finally {
       setCheckingPayment(false)
     }
+  }
+
+  // Função para fazer login de usuário existente
+  const loginExistingUser = async (user: Usuario) => {
+    console.log('🎯 Fazendo login do usuário existente:', user.nome)
+    
+    // Definir usuário atual
+    setCurrentUser(user)
+    setSelectedUser(user)
+    
+    // Salvar sessão no localStorage
+    const sessionData = {
+      id: user.id,
+      whatsapp: user.whatsapp,
+      nome: user.nome,
+      loginTime: new Date().toISOString()
+    }
+    localStorage.setItem('tex_user_session', JSON.stringify(sessionData))
+    console.log('💾 Sessão salva:', sessionData)
+    
+    // Atualizar último acesso no banco
+    try {
+      await DatabaseService.updateLastAccess(user.id)
+      console.log('📅 Último acesso atualizado')
+    } catch (error) {
+      console.error('⚠️ Erro ao atualizar último acesso:', error)
+    }
+    
+    // Mostrar mensagem de boas-vindas
+    toast.success(`Bem-vindo de volta, ${user.nome}!`)
+    
+    // Ir para o perfil do usuário após delay
+    setTimeout(() => {
+      console.log('🎯 Redirecionando para perfil do usuário')
+      setCurrentScreen('userProfile')
+    }, 1500)
+  }
+
+  // Função para redirecionar para criação de perfil
+  const redirectToCreateProfile = async () => {
+    console.log('📝 Redirecionando para criação de perfil')
+    
+    // Limpar dados de usuário
+    setCurrentUser(null)
+    setSelectedUser(null)
+    
+    // Mostrar mensagem
+    toast.success('Vamos criar seu perfil!')
+    
+    // Ir para criação de perfil após delay
+    setTimeout(() => {
+      console.log('📝 Abrindo tela de criação de perfil')
+      setCurrentScreen('createProfile')
+    }, 1500)
   }
 
   // Simulate payment approval (for testing)
