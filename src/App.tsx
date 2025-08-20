@@ -77,6 +77,7 @@ function App() {
     if (currentUser) {
       localStorage.setItem('tex_user_whatsapp', currentUser.whatsapp)
       console.log('💾 Sessão salva para:', currentUser.nome)
+      console.log('💾 Sessão salva para:', currentUser.nome)
     }
   }, [currentUser])
 
