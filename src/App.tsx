@@ -553,6 +553,65 @@ function App() {
         </>
       )}
 
+      {/* Terms Acceptance Modal */}
+      {showTermsModal && (
+        <div className="terms-modal-overlay">
+          <div className="terms-modal">
+            <div className="terms-modal-header">
+              <h3>📋 Termos de Uso</h3>
+              <p>Leia e aceite os termos para continuar</p>
+            </div>
+            
+            <div className="terms-modal-content">
+              <div className="terms-text">
+                <h4>🔗 Sobre o TEX - TrampoExpress</h4>
+                <p>
+                  O TEX é uma plataforma de <strong>conexão</strong> que facilita o encontro 
+                  entre prestadores de serviços e clientes.
+                </p>
+                
+                <h4>⚠️ Importante - Nossa Responsabilidade</h4>
+                <ul>
+                  <li>✅ <strong>Conectamos</strong> você com profissionais qualificados</li>
+                  <li>❌ <strong>NÃO nos responsabilizamos</strong> pela qualidade dos serviços</li>
+                  <li>❌ <strong>NÃO executamos</strong> nem intermediamos os serviços</li>
+                  <li>❌ <strong>NÃO temos responsabilidade</strong> sobre acordos entre as partes</li>
+                </ul>
+                
+                <h4>💬 Como Funciona</h4>
+                <p>
+                  Toda negociação, acordo de preços, prazos e execução do serviço 
+                  acontece <strong>diretamente entre você e o prestador via WhatsApp</strong>.
+                </p>
+                
+                <div className="terms-highlight">
+                  <i className="fas fa-info-circle"></i>
+                  <p>
+                    <strong>Resumo:</strong> O TEX apenas conecta. Tudo é resolvido 
+                    diretamente entre as partes no WhatsApp.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="terms-modal-actions">
+              <button 
+                className="terms-reject-btn"
+                onClick={handleRejectTerms}
+              >
+                ❌ Não Aceito
+              </button>
+              <button 
+                className="terms-accept-btn"
+                onClick={handleAcceptTerms}
+              >
+                ✅ Aceito e Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Back Button */}
       {currentScreen !== 'home' && (
         <div className="back-button-container">
