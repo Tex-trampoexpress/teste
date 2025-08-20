@@ -145,7 +145,7 @@ function App() {
     setLoading(true)
     try {
       // Verificação dupla para evitar duplicatas
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formData.whatsapp)
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
       if (existingUser) {
         console.log('⚠️ Usuário já existe, redirecionando para perfil')
         setCurrentUser(existingUser)
@@ -164,26 +164,26 @@ function App() {
       const formattedNumber = `+55${cleanNumber}`
       const foundUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
 
-      if (existingUser) {
-        setCurrentUser(existingUser)
+      if (foundUser) {
+        setCurrentUser(foundUser)
         setIsLoggedIn(true)
-        console.log('💾 Sessão encontrada:', existingUser)
+        console.log('💾 Sessão encontrada:', foundUser)
         
-        if (existingUser.perfil_completo) {
-          toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+        if (foundUser.perfil_completo) {
+          toast.success(`Bem-vindo de volta, ${foundUser.nome}!`)
           navigateTo('feed')
           loadUsuarios()
         } else {
           toast.success('Complete seu perfil para continuar')
           setProfileData({
-            nome: existingUser.nome || '',
-            descricao: existingUser.descricao || '',
-            tags: existingUser.tags || [],
-            foto_url: existingUser.foto_url || '',
-            localizacao: existingUser.localizacao || '',
-            status: existingUser.status || 'available',
-            latitude: existingUser.latitude,
-            longitude: existingUser.longitude
+            nome: foundUser.nome || '',
+            descricao: foundUser.descricao || '',
+            tags: foundUser.tags || [],
+            foto_url: foundUser.foto_url || '',
+            localizacao: foundUser.localizacao || '',
+            status: foundUser.status || 'available',
+            latitude: foundUser.latitude,
+            longitude: foundUser.longitude
           })
           navigateTo('profile-setup')
         }
@@ -289,37 +289,8 @@ function App() {
 
   // Save profile
   const handleSaveProfile = async () => {
-    // Verificar novamente se o usuário já existe (prevenção de duplicata)
-    try {
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      if (existingUser) {
-      // Verificar se usuário já existe no banco
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
-        setCurrentUser(existingUser)
-      if (existingUser) {
-        // USUÁRIO EXISTENTE - Login direto para o perfil
-      if (foundUser) {
-        setCurrentUser(foundUser)
-        localStorage.setItem('currentUser', JSON.stringify(foundUser))
-        toast.success(`Bem-vindo de volta, ${foundUser.nome}!`)
-        setCurrentScreen('userProfile')
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        return
-      }
-      }
-    } catch (error) {
-      // USUÁRIO NOVO - Preparar para criação de perfil
-      console.log('📝 USUÁRIO NOVO - Preparando criação de perfil')
-      setFormData({
-        nome: '',
-        descricao: '',
-        tags: [],
-        localizacao: '',
-        status: 'available',
-        whatsapp: formattedNumber
-      })
-      toast.success('Olá! Vamos criar seu perfil profissional!')
-      setCurrentScreen('createProfile')
+    if (!profileData.nome.trim()) {
+      toast.error('Nome é obrigatório')
       return
     }
     if (!profileData.descricao.trim()) {
