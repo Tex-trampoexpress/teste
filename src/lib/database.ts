@@ -241,6 +241,7 @@ export class DatabaseService {
   static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
     try {
       if (!whatsapp?.trim()) {
+        console.log('⚠️ WhatsApp vazio ou inválido')
         return null
       }
 
@@ -253,31 +254,81 @@ export class DatabaseService {
         return null
       }
 
+      // Tentar diferentes formatos do número
+      const possibleFormats = [
+        cleanWhatsApp,
+        cleanWhatsApp.startsWith('55') ? cleanWhatsApp.substring(2) : `55${cleanWhatsApp}`,
+        cleanWhatsApp.startsWith('0') ? cleanWhatsApp.substring(1) : `0${cleanWhatsApp}`
+      ]
+
+      console.log('📱 Testando formatos:', possibleFormats)
+
       // Buscar no banco de dados
-      const { data, error } = await supabase
+      let data = null
+      let error = null
+
+      // Tentar cada formato até encontrar
+      for (const format of possibleFormats) {
+        const result = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('whatsapp', format)
+          .maybeSingle()
+        
+        if (result.error) {
+          console.log(`⚠️ Erro ao buscar formato ${format}:`, result.error.message)
+          continue
+        }
+        
+        if (result.data) {
+          data = result.data
+          console.log(`✅ Usuário encontrado com formato ${format}:`, data.nome)
+          break
+        }
+      }
+
+      // Se não encontrou com nenhum formato, fazer busca LIKE mais flexível
+      if (!data) {
+        console.log('🔍 Tentando busca flexível...')
+        const { data: flexData, error: flexError } = await supabase
         .from('usuarios')
         .select('*')
-        .eq('whatsapp', cleanWhatsApp)
+        .or(`whatsapp.like.%${cleanWhatsApp.slice(-8)}%,whatsapp.like.%${cleanWhatsApp.slice(-9)}%`)
         .maybeSingle()
       
-      if (error) {
-        console.error('❌ Erro ao buscar por WhatsApp:', error)
-        throw error
+        if (flexError) {
+          console.error('❌ Erro na busca flexível:', flexError)
+          error = flexError
+        } else {
+          data = flexData
+          if (data) {
+            console.log('✅ Usuário encontrado com busca flexível:', data.nome)
+          }
+        }
       }
       
       if (data) {
-        console.log('✅ Usuário encontrado por WhatsApp:', data.nome)
+        console.log('🎉 Login bem-sucedido para:', data.nome)
+        console.log('📊 Dados do usuário:', {
+          id: data.id,
+          nome: data.nome,
+          whatsapp: data.whatsapp,
+          perfil_completo: data.perfil_completo,
+          status: data.status
+        })
+        
         // Atualizar último acesso
         await this.updateLastAccess(data.id)
         return data
       }
       
       console.log('ℹ️ Nenhum usuário encontrado para WhatsApp:', cleanWhatsApp)
+      console.log('💡 Formatos testados:', possibleFormats)
       return null
       
     } catch (error) {
       console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
-      throw error
+      return null
     }
   }
 

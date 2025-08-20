@@ -290,7 +290,10 @@ function App() {
       }
     } catch (error) {
       console.error('❌ Erro no login:', error)
-      toast.error('Erro ao fazer login. Tente novamente.')
+      toast.error('Erro ao fazer login. Verifique sua conexão e tente novamente.', {
+        duration: 4000,
+        icon: '❌'
+      })
     } finally {
       setLoading(false)
     }
@@ -464,6 +467,7 @@ function App() {
       
       setSelectedPrestador(user)
       setLoading(true)
+      console.log('🔐 Iniciando login com WhatsApp:', whatsapp)
       
       // Gerar ID único para cliente anônimo se não estiver logado
       const clienteId = currentUser?.id || crypto.randomUUID()
@@ -510,19 +514,39 @@ function App() {
       const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentData.id)
       console.log('📊 Status do pagamento:', paymentStatus)
       
+      console.log('🔍 Verificando se usuário existe...')
       if (paymentStatus.status === 'approved') {
         console.log('✅ Pagamento aprovado! Redirecionando para WhatsApp...')
         toast.success('🎉 Pagamento aprovado! Redirecionando para WhatsApp...')
+        console.log('🎉 Usuário existente encontrado!')
+        console.log('📊 Dados:', {
+          nome: existingUser.nome,
+          perfil_completo: existingUser.perfil_completo,
+          status: existingUser.status
+        })
         
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
         const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
         
+        // Mostrar notificação de boas-vindas
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}! 👋`, {
+          duration: 3000,
+          icon: '🎉'
+        })
+        
         setTimeout(() => {
           window.open(whatsappUrl, '_blank')
+          console.log('✅ Perfil completo, indo para feed...')
           navigateTo('feed')
           setPaymentData(null)
+          console.log('⚠️ Perfil incompleto, indo para criação...')
           setSelectedPrestador(null)
-        }, 2000)
+        console.log('🆕 Usuário não encontrado, criando novo perfil...')
+        toast.success('Vamos criar seu perfil! 🚀', {
+          duration: 2000,
+          icon: '✨'
+        })
+        
       } else {
         console.log('⏳ Pagamento ainda pendente')
         toast.error('Pagamento ainda não foi processado. Aguarde alguns instantes e tente novamente.')
