@@ -283,14 +283,14 @@ body::before {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: var(--white);
-  padding: 0.7rem 1rem;
+  padding: 0.9rem 1.2rem;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 1rem;
   backdrop-filter: blur(10px);
 }
 
@@ -300,7 +300,7 @@ body::before {
 }
 
 .back-button i {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
 }
 
 /* Home Screen */
