@@ -545,7 +545,7 @@ function App() {
           <div className="search-box">
             <input
               type="text"
-              placeholder="Buscar profissionais, serviços ou localização..."
+              placeholder="Buscar serviços ou acompanhantes"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
