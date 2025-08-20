@@ -500,8 +500,9 @@ function App() {
           >
             {currentUser.foto_url ? (
               <img src={currentUser.foto_url} alt={currentUser.nome} />
-            ) : null}
-            <i className="fas fa-user"></i>
+            ) : (
+              <i className="fas fa-user"></i>
+            )}
           </button>
 
           {showProfileMenu && (
