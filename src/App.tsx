@@ -197,11 +197,10 @@ function App() {
           nome: '',
           descricao: '',
           tags: [],
-        // Ir direto para o perfil do usuário existente
-        setTimeout(() => {
-          setCurrentScreen('userProfile')
-          setSelectedUser(existingUser)
-        }, 1000)
+          foto_url: '',
+          localizacao: '',
+          status: 'available',
+          latitude: null,
           longitude: null
         })
         toast.success('Vamos criar seu perfil!')
@@ -400,14 +399,14 @@ function App() {
       }
 
       // Verificar novamente se usuário não foi criado enquanto isso
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      if (existingUser) {
+      const existingUser2 = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+      if (existingUser2) {
         console.log('⚠️ Usuário já existe, redirecionando para perfil')
-        setCurrentUser(existingUser)
-        localStorage.setItem('currentUser', JSON.stringify(existingUser))
-        toast.success(`Bem-vindo, ${existingUser.nome}!`)
+        setCurrentUser(existingUser2)
+        localStorage.setItem('currentUser', JSON.stringify(existingUser2))
+        toast.success(`Bem-vindo, ${existingUser2.nome}!`)
         setCurrentScreen('userProfile')
-        // setSelectedUser(existingUser)
+        setSelectedUser(existingUser2)
         return
       }
 
@@ -447,40 +446,42 @@ function App() {
         // Se WhatsApp já cadastrado, tentar fazer login automático
         console.log('🔄 WhatsApp duplicado, tentando login automático...')
         try {
-          const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-          if (existingUser) {
-            setCurrentUser(existingUser)
-            localStorage.setItem('currentUser', JSON.stringify(existingUser))
-            toast.success(`Bem-vindo, ${existingUser.nome}!`)
+          const existingUser3 = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+          if (existingUser3) {
+            setCurrentUser(existingUser3)
+            localStorage.setItem('currentUser', JSON.stringify(existingUser3))
+            toast.success(`Bem-vindo, ${existingUser3.nome}!`)
             setCurrentScreen('userProfile')
-            // setSelectedUser(existingUser)
+            setSelectedUser(existingUser3)
           } else {
             toast.error('Este WhatsApp já está cadastrado. Tente fazer login.')
             setCurrentScreen('home')
           }
         } catch (loginError) {
-        // Se WhatsApp já cadastrado, tentar buscar o usuário
-        console.log('🔄 WhatsApp já cadastrado, buscando usuário...')
-        try {
-          const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-          if (existingUser) {
-            setCurrentUser(existingUser)
-            localStorage.setItem('currentUser', JSON.stringify(existingUser))
-            toast.success(`Bem-vindo, ${existingUser.nome}!`)
-            setCurrentScreen('userProfile')
-            setSelectedUser(existingUser)
-          } else {
-            toast.error('Erro na verificação do usuário. Tente novamente.')
-            setCurrentScreen('home')
+          // Se WhatsApp já cadastrado, tentar buscar o usuário
+          console.log('🔄 WhatsApp já cadastrado, buscando usuário...')
+          try {
+            const existingUser4 = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+            if (existingUser4) {
+              setCurrentUser(existingUser4)
+              localStorage.setItem('currentUser', JSON.stringify(existingUser4))
+              toast.success(`Bem-vindo, ${existingUser4.nome}!`)
+              setCurrentScreen('userProfile')
+              setSelectedUser(existingUser4)
+            } else {
+              toast.error('Erro na verificação do usuário. Tente novamente.')
+              setCurrentScreen('home')
+            }
+          } catch (searchError) {
+            console.error('❌ Erro ao buscar usuário existente:', searchError)
+            toast.error('Este WhatsApp já está cadastrado. Tente fazer login.')
+            setTimeout(() => {
+              setCurrentScreen('home')
+            }, 2000)
           }
-        } catch (searchError) {
-          console.error('❌ Erro ao buscar usuário existente:', searchError)
-          toast.error('Este WhatsApp já está cadastrado. Tente fazer login.')
-          setTimeout(() => {
-            setCurrentScreen('home')
-          }, 2000)
         }
       } else {
+        // Ir direto para o perfil do usuário existente
         // Usuário não existe - ir para criar perfil
         setTimeout(() => {
           setCurrentScreen('createProfile')
@@ -777,7 +778,7 @@ function App() {
               <button 
                 onClick={() => {
                   setCurrentScreen('home')
-                  // setNavigationHistory(['home'])
+                  setNavigationHistory(['home'])
                 }}
                 className={currentScreen === 'home' ? 'active' : ''}
               >
