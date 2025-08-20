@@ -210,7 +210,6 @@ function App() {
         navigateTo('profile-setup')
         toast.success('Vamos criar seu perfil profissional!')
       }
-      
       // Limpar dados anteriores
       setCurrentUser(null)
       setSelectedUser(null)
