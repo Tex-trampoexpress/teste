@@ -175,9 +175,16 @@ function App() {
           foto_url: existingUser2.foto_url || '',
           localizacao: existingUser2.localizacao || '',
           console.log('📝 Perfil incompleto - indo para edição')
-          status: existingUser2.status || 'available',
-          latitude: existingUser2.latitude,
-          longitude: existingUser2.longitude
+          setCurrentUser({
+            id: existingUser2.id,
+            nome: existingUser2.nome,
+            descricao: existingUser2.descricao || '',
+            tags: existingUser2.tags || [],
+            foto_url: existingUser2.foto_url || '',
+            localizacao: existingUser2.localizacao || '',
+            status: existingUser2.status || 'available',
+            latitude: existingUser2.latitude,
+            longitude: existingUser2.longitude
         })
         navigateTo('profile-setup')
       } else {
