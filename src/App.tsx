@@ -212,48 +212,43 @@ function App() {
       }
       // Limpar dados anteriores
       setCurrentUser(null)
-      setSelectedUser(null)
-      setFormData({
-        nome: '',
-        descricao: '',
-        tags: [],
-        foto_url: '',
-        localizacao: '',
-        status: 'available',
-        latitude: null,
-        longitude: null
-      })
-
-      // Verificar se usuário já existe no banco
-      console.log('🔍 Buscando usuário no banco de dados...')
-      const foundUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+      // Verificar se usuário já existe
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
       
-      if (foundUser) {
-        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', foundUser.nome)
-        console.log('📋 Dados do usuário:', {
-          id: existingUser.id,
-          nome: existingUser.nome,
-          perfil_completo: existingUser.perfil_completo
-        })
+      if (existingUser) {
+        // USUÁRIO EXISTENTE - Login direto
+        console.log('✅ Usuário existente encontrado:', existingUser.nome)
         
-        // Login direto para usuário existente
-        await loginExistingUser(foundUser)
+        setCurrentUser(existingUser)
         setSelectedUser(existingUser)
-        
-        // Salvar sessão
-        localStorage.setItem('tex_user_session', JSON.stringify({
-          whatsapp: whatsappNumber,
-          user_id: existingUser.id,
-          logged_in: true
-        }))
+        localStorage.setItem('currentUserId', existingUser.id)
+        localStorage.setItem('userWhatsApp', whatsappNumber)
         
         // Atualizar último acesso
         await DatabaseService.updateLastAccess(existingUser.id)
         
-        // Ir para o perfil do usuário
+        // Ir direto para o perfil
         setCurrentScreen('userProfile')
         toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+      } else {
+        // USUÁRIO NOVO - Ir para criação
+        console.log('ℹ️ Usuário novo, indo para criação de perfil')
         
+        // Limpar dados anteriores
+        setCurrentUser(null)
+        setSelectedUser(null)
+        setFormData({
+          nome: '',
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available'
+        })
+        
+        setCurrentScreen('createProfile')
+        toast.info('Vamos criar seu perfil profissional!')
+      }
       } else {
         console.log('📝 USUÁRIO NÃO ENCONTRADO - Redirecionando para criação')
         
