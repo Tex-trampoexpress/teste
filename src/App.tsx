@@ -519,7 +519,6 @@ function App() {
         console.log('✅ Pagamento aprovado! Redirecionando para WhatsApp...')
         toast.success('🎉 Pagamento aprovado! Redirecionando para WhatsApp...')
         console.log('🎉 Usuário existente encontrado!')
-        const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
         console.log('📊 Dados:', {
           nome: existingUser.nome,
           perfil_completo: existingUser.perfil_completo,
@@ -555,7 +554,7 @@ function App() {
         
       } else {
         console.log('⏳ Pagamento ainda pendente')
-        toast.error('Pagamento ainda não foi aprovado. Tente novamente.')
+        navigateTo('create-profile')
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
