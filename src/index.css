@@ -309,7 +309,7 @@ body::before {
   max-width: 100%;
   width: 100%;
   padding: 0.8rem 1rem 1.5rem 1rem;
-  margin-top: -1rem;
+  margin-top: 0.5rem;
   background: rgba(0, 0, 0, 0.6);
   border-radius: 16px 16px 16px 16px;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
@@ -2094,7 +2094,7 @@ footer {
   .hero-container {
     padding: 0.6rem 0.8rem 1.2rem 0.8rem;
     margin: 0.1rem;
-    margin-top: -1rem;
+    margin-top: 0.3rem;
     gap: 0.6rem;
     max-width: 100%;
     min-height: calc(100vh - 120px);
@@ -2305,7 +2305,7 @@ footer {
   .hero-container {
     padding: 0.5rem 0.6rem 1rem 0.6rem;
     margin: 0.05rem;
-    margin-top: -0.8rem;
+    margin-top: 0.2rem;
     gap: 0.5rem;
     min-height: calc(100vh - 110px);
   }
@@ -2377,7 +2377,7 @@ footer {
     padding: 1.5rem 1.2rem;
     gap: 1rem;
     min-height: calc(100vh - 170px);
-    margin-top: -0.5rem;
+    margin-top: 1rem;
   }
 
   .tex-logo-text-inside {
@@ -2408,7 +2408,7 @@ footer {
     min-height: calc(100vh - 110px);
     gap: 0.6rem;
     padding: 0.8rem 0.7rem;
-    margin-top: -1.5rem;
+    margin-top: 0.2rem;
   }
 
   .tex-logo-text-inside {
@@ -2455,7 +2455,7 @@ footer {
     min-height: calc(100vh - 100px);
     gap: 0.5rem;
     padding: 0.7rem 0.6rem;
-    margin-top: -1.8rem;
+    margin-top: 0.1rem;
   }
 
   .tex-logo-text-inside {
@@ -2506,7 +2506,7 @@ footer {
     min-height: calc(100vh - 90px);
     gap: 0.4rem;
     padding: 0.6rem 0.5rem;
-    margin-top: -2rem;
+    margin-top: 0.1rem;
   }
 
   .tex-logo-text-inside {
@@ -2573,7 +2573,7 @@ footer {
     min-height: calc(100vh - 80px);
     gap: 0.3rem;
     padding: 0.5rem;
-    margin-top: -2.5rem;
+    margin-top: 0.1rem;
   }
 
   .tex-logo-text-inside {
