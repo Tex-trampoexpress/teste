@@ -72,6 +72,14 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  // Save user session when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('tex_user_whatsapp', currentUser.whatsapp)
+      console.log('💾 Sessão salva para:', currentUser.nome)
+    }
+  }, [currentUser])
+
   // Load user data on mount
   useEffect(() => {
     // Check if terms were already accepted
