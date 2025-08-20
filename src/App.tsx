@@ -72,6 +72,14 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  // Save user session when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('tex_user_whatsapp', currentUser.whatsapp)
+      console.log('💾 Sessão salva para:', currentUser.nome)
+    }
+  }, [currentUser])
+
   // Load user data on mount
   useEffect(() => {
     // Check if terms were already accepted
@@ -337,9 +345,7 @@ function App() {
       setLoading(true)
       
       // Gerar ID único para cliente anônimo se não estiver logado
-      const clienteId = currentUser?.id || crypto.randomUUID()
       // Verificar se usuário já existe
-      const existingUser = await DatabaseService.getUsuarioById(clienteId)
       
       console.log('🔑 Cliente ID:', clienteId)
       console.log('🔑 Prestador ID:', user.id)
@@ -390,23 +396,23 @@ function App() {
         const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
         
         // Usuário existe - ir para o perfil
-        if (currentUser) {
           window.open(whatsappUrl, '_blank')
           navigateTo('feed')
           setPaymentData(null)
         
-          // Atualizar último acesso
-          await DatabaseService.updateLastAccess(currentUser.id)
-        } else {
-          // Usuário não existe - ir para criar perfil
-          window.open(whatsappUrl, '_blank')
-          setCurrentScreen('profile')
-        }
+        // Usuário existe - ir para o perfil
+        await DatabaseService.updateLastAccess(existingUser.id)
         
-        setTimeout(() => {
+        // Usuário não existe - ir para criar perfil
+        
+        // Atualizar último acesso
+        await DatabaseService.updateLastAccess(existingUser.id)
+        
+        // Ir direto para o perfil do usuário
+        setCurrentScreen('profile')
         }, 1000)
       } else {
-        toast.error('Pagamento ainda não confirmado. Aguarde e tente novamente.')
+        // Usuário não existe - ir para criar perfil
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
@@ -500,9 +506,8 @@ function App() {
           >
             {currentUser.foto_url ? (
               <img src={currentUser.foto_url} alt={currentUser.nome} />
-            ) : (
-              <i className="fas fa-user"></i>
-            )}
+            ) : null}
+            <i className="fas fa-user"></i>
           </button>
 
           {showProfileMenu && (
