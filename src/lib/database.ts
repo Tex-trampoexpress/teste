@@ -244,33 +244,40 @@ export class DatabaseService {
         return null
       }
 
-      // Limpar e formatar o número
-      const cleanNumber = whatsapp.replace(/\D/g, '')
-      console.log('🔍 Buscando usuário por WhatsApp:', cleanNumber)
+      // Limpar o número (apenas dígitos)
+      const cleanWhatsApp = whatsapp.replace(/\D/g, '')
+      console.log('🔍 Buscando usuário por WhatsApp:', cleanWhatsApp)
 
-      // Buscar diretamente no banco
+      if (cleanWhatsApp.length < 10) {
+        console.log('❌ Número muito curto:', cleanWhatsApp)
+        return null
+      }
+
+      // Buscar no banco de dados
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
-        .eq('whatsapp', cleanNumber)
+        .eq('whatsapp', cleanWhatsApp)
         .maybeSingle()
       
       if (error) {
-        console.error('❌ Erro na busca por WhatsApp:', error)
-        return null
+        console.error('❌ Erro ao buscar por WhatsApp:', error)
+        throw error
       }
       
       if (data) {
-        console.log('✅ Usuário encontrado:', data.nome)
-        this.updateLastAccess(data.id)
+        console.log('✅ Usuário encontrado por WhatsApp:', data.nome)
+        // Atualizar último acesso
+        await this.updateLastAccess(data.id)
         return data
       }
       
-      console.log('ℹ️ Usuário não encontrado para:', cleanNumber)
+      console.log('ℹ️ Nenhum usuário encontrado para WhatsApp:', cleanWhatsApp)
       return null
+      
     } catch (error) {
       console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
-      return null
+      throw error
     }
   }
 

@@ -144,73 +144,53 @@ function App() {
 
     setLoading(true)
     try {
-      // Limpar o número (manter apenas dígitos)
-      const cleanNumber = whatsappNumber.replace(/\D/g, '')
-      console.log('📱 Verificando WhatsApp:', cleanNumber)
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-        console.log('⚠️ Usuário já existe, redirecionando para perfil')
-        setCurrentUser(existingUser)
-        localStorage.setItem('currentUser', JSON.stringify(existingUser))
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        setCurrentScreen('userProfile')
+      // Limpar número (apenas dígitos)
+      const cleanWhatsApp = whatsappNumber.replace(/\D/g, '')
+      console.log('📱 Verificando WhatsApp:', cleanWhatsApp)
+      
+      if (cleanWhatsApp.length < 10) {
+        toast.error('Número de WhatsApp inválido')
+        setLoading(false)
         return
       }
 
       // Buscar usuário existente
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
+      console.log('🔍 Buscando usuário existente...')
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(cleanWhatsApp)
       
-      if (cleanNumber.length < 10) {
-        console.log('✅ Usuário existente encontrado:', existingUser.nome)
-        return
-          setProfileData({
-            descricao: foundUser.descricao || '',
-          console.log('📋 Perfil completo - indo para perfil')
-            tags: foundUser.tags || [],
-            foto_url: foundUser.foto_url || '',
-            localizacao: foundUser.localizacao || '',
-          console.log('📝 Perfil incompleto - indo para edição')
-            status: foundUser.status || 'available',
-            latitude: foundUser.latitude,
-            longitude: foundUser.longitude
-          })
-          navigateTo('profile-setup')
+      if (existingUser) {
+        console.log('✅ Login realizado com sucesso!')
+        console.log('👤 Usuário:', existingUser.nome)
+        console.log('📋 Perfil completo:', existingUser.perfil_completo)
+        
+        // Definir usuário logado
+        setCurrentUser(existingUser)
+
+        // Navegar para tela apropriada
+        if (existingUser.perfil_completo) {
+          console.log('📍 Redirecionando para perfil')
+          setCurrentScreen('profile')
+        } else {
+          console.log('📍 Redirecionando para edição de perfil')
+          setCurrentScreen('edit-profile')
         }
-        console.log('🆕 Usuário novo - indo para criação')
-        const newUserId = crypto.randomUUID()
-        setCurrentUser({
-          id: newUserId,
-          nome: '',
-          whatsapp: cleanNumber, // Salvar número limpo
-          descricao: '',
-          tags: [],
-          foto_url: '',
-          localizacao: '',
-          status: 'available',
-          latitude: null,
-          longitude: null,
-          criado_em: new Date().toISOString(),
-          atualizado_em: new Date().toISOString(),
-          ultimo_acesso: new Date().toISOString(),
-          perfil_completo: false,
-          verificado: false
-        })
-        setIsLoggedIn(true)
+        
+        // Atualizar histórico de navegação
+        setNavigationHistory(['home', existingUser.perfil_completo ? 'profile' : 'edit-profile'])
+        
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+      } else {
+        console.log('🆕 Usuário novo - iniciando cadastro')
+        // Usuário novo
+        setTempWhatsApp(cleanWhatsApp)
+        setCurrentScreen('create-profile')
         setNavigationHistory(['home', 'whatsapp-login', 'create-profile'])
-          nome: '',
-          descricao: '',
-          tags: [],
-          foto_url: '',
-          localizacao: '',
-          status: 'available',
-          latitude: null,
-          longitude: null
-        })
-        navigateTo('profile-setup')
-        toast.success('Vamos criar seu perfil profissional!')
+        toast.success('Vamos criar seu perfil!')
       }
+      
     } catch (error) {
       console.error('❌ Erro no login:', error)
-      toast.error('Erro ao fazer login. Tente novamente.')
+      toast.error('Erro ao verificar número. Tente novamente.')
     } finally {
       setLoading(false)
     }
