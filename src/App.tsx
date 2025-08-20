@@ -167,39 +167,35 @@ function App() {
       
       if (existingUser2) {
         console.log('✅ Usuário encontrado:', existingUser2.nome)
-        
-        if (existingUser2.perfil_completo) {
-          console.log('📋 Perfil completo - indo para perfil')
-          setCurrentUser({
-            id: existingUser2.id,
-            nome: existingUser2.nome,
-            descricao: existingUser2.descricao || '',
-            tags: existingUser2.tags || [],
-            foto_url: existingUser2.foto_url || '',
-            localizacao: existingUser2.localizacao || '',
-            status: existingUser2.status || 'available',
-            latitude: existingUser2.latitude,
-            longitude: existingUser2.longitude
-          })
-          setCurrentScreen('profile')
-        } else {
-          console.log('📝 Perfil incompleto - indo para edição')
-          setCurrentUser({
-            id: existingUser2.id,
-            nome: existingUser2.nome,
-            descricao: existingUser2.descricao || '',
-            tags: existingUser2.tags || [],
-            foto_url: existingUser2.foto_url || '',
-            localizacao: existingUser2.localizacao || '',
-            status: existingUser2.status || 'available',
-            latitude: existingUser2.latitude,
-            longitude: existingUser2.longitude
-          })
-          setCurrentScreen('edit-profile')
-        }
-        
-        // Atualizar histórico
-        setNavigationHistory(prev => [...prev, currentScreen])
+        console.log('📋 Perfil completo - indo para perfil')
+        setProfileData({
+          nome: existingUser2.nome,
+          descricao: existingUser2.descricao || '',
+          tags: existingUser2.tags || [],
+          foto_url: existingUser2.foto_url || '',
+          localizacao: existingUser2.localizacao || '',
+          status: existingUser2.status || 'available',
+          latitude: existingUser2.latitude,
+          longitude: existingUser2.longitude
+        })
+        console.log('📝 Perfil incompleto - indo para edição')
+        setCurrentUser({
+          id: existingUser2.id,
+          nome: existingUser2.nome,
+          whatsapp: cleanNumber,
+          descricao: existingUser2.descricao || '',
+          tags: existingUser2.tags || [],
+          foto_url: existingUser2.foto_url || '',
+          localizacao: existingUser2.localizacao || '',
+          status: existingUser2.status || 'available',
+          latitude: existingUser2.latitude,
+          longitude: existingUser2.longitude,
+          criado_em: existingUser2.criado_em,
+          atualizado_em: existingUser2.atualizado_em,
+          ultimo_acesso: existingUser2.ultimo_acesso,
+          perfil_completo: existingUser2.perfil_completo,
+          verificado: existingUser2.verificado
+        })
         navigateTo('profile-setup')
       } else {
         console.log('🆕 Usuário novo - indo para criação')
