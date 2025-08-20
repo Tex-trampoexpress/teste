@@ -337,7 +337,7 @@ function App() {
       setLoading(true)
       
       // Gerar ID único para cliente anônimo se não estiver logado
-      const clienteId = currentUser?.id || crypto.randomUUID()
+      // Verificar se usuário já existe
       
       console.log('🔑 Cliente ID:', clienteId)
       console.log('🔑 Prestador ID:', user.id)
@@ -387,11 +387,16 @@ function App() {
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
         const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
         
-        setTimeout(() => {
+        // Usuário existe - ir para o perfil
           window.open(whatsappUrl, '_blank')
           navigateTo('feed')
           setPaymentData(null)
-          setSelectedPrestador(null)
+        
+        // Atualizar último acesso
+        await DatabaseService.updateLastAccess(existingUser.id)
+        
+        // Usuário não existe - ir para criar perfil
+        setCurrentScreen('profile')
         }, 1000)
       } else {
         toast.error('Pagamento ainda não confirmado. Aguarde e tente novamente.')
