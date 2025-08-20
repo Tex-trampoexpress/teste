@@ -375,10 +375,10 @@ h1 span {
   font-weight: 700;
   text-align: center;
   margin: 0.8rem 0 1.2rem 0;
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+  color: #FFFFFF;
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.5);
   letter-spacing: 1px;
 }
 
