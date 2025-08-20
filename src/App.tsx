@@ -162,7 +162,7 @@ function App() {
       }
 
       const formattedNumber = `+55${cleanNumber}`
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
+      const foundUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
 
       if (existingUser) {
         setCurrentUser(existingUser)
@@ -298,10 +298,10 @@ function App() {
         setCurrentUser(existingUser)
       if (existingUser) {
         // USUÁRIO EXISTENTE - Login direto para o perfil
-        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', existingUser.nome)
-        setCurrentUser(existingUser)
-        localStorage.setItem('currentUser', JSON.stringify(existingUser))
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+      if (foundUser) {
+        setCurrentUser(foundUser)
+        localStorage.setItem('currentUser', JSON.stringify(foundUser))
+        toast.success(`Bem-vindo de volta, ${foundUser.nome}!`)
         setCurrentScreen('userProfile')
         toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         return
