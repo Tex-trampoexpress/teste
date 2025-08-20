@@ -18,6 +18,7 @@ function App() {
   const [quickLoading, setQuickLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
@@ -75,6 +76,78 @@ function App() {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
+
+  // Sistema de navegação com histórico para botão nativo
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      console.log('🔙 Botão nativo pressionado, estado:', event.state)
+      
+      if (event.state && event.state.screen) {
+        // Navegar para a tela do histórico
+        setCurrentScreen(event.state.screen)
+        
+        // Atualizar histórico local
+        setNavigationHistory(prev => {
+          const newHistory = [...prev]
+          if (newHistory[newHistory.length - 1] !== event.state.screen) {
+            newHistory.push(event.state.screen)
+          }
+          return newHistory
+        })
+      } else {
+        // Se não há estado, voltar para home
+        setCurrentScreen('home')
+        setNavigationHistory(['home'])
+      }
+    }
+
+    // Adicionar listener para o botão nativo
+    window.addEventListener('popstate', handlePopState)
+    
+    // Estado inicial
+    if (window.history.state === null) {
+      window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  // Função para navegar com histórico
+  const navigateToScreen = (screen: string, pushToHistory: boolean = true) => {
+    console.log('🧭 Navegando para:', screen)
+    
+    setCurrentScreen(screen)
+    
+    if (pushToHistory) {
+      // Adicionar ao histórico do navegador
+      window.history.pushState({ screen }, '', window.location.pathname)
+      
+      // Atualizar histórico local
+      setNavigationHistory(prev => [...prev, screen])
+    }
+  }
+
+  // Função para voltar (botão de volta manual)
+  const goBack = () => {
+    console.log('⬅️ Voltando, histórico atual:', navigationHistory)
+    
+    if (navigationHistory.length > 1) {
+      const newHistory = [...navigationHistory]
+      newHistory.pop() // Remove tela atual
+      const previousScreen = newHistory[newHistory.length - 1] || 'home'
+      
+      setNavigationHistory(newHistory)
+      setCurrentScreen(previousScreen)
+      
+      // Voltar no histórico do navegador
+      window.history.back()
+    } else {
+      // Se não há histórico, ir para home
+      navigateToScreen('home', false)
+    }
+  }
 
   // Save user session when currentUser changes
   useEffect(() => {
