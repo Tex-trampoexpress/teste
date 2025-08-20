@@ -400,14 +400,19 @@ function App() {
           navigateTo('feed')
           setPaymentData(null)
         
-        // Atualizar último acesso
+        // Usuário existe - ir para o perfil
         await DatabaseService.updateLastAccess(existingUser.id)
         
         // Usuário não existe - ir para criar perfil
+        
+        // Atualizar último acesso
+        await DatabaseService.updateLastAccess(existingUser.id)
+        
+        // Ir direto para o perfil do usuário
         setCurrentScreen('profile')
         }, 1000)
       } else {
-        toast.error('Pagamento ainda não confirmado. Aguarde e tente novamente.')
+        // Usuário não existe - ir para criar perfil
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
