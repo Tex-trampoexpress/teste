@@ -89,7 +89,6 @@ function App() {
       setTermsAccepted(true)
     }
 
-    console.log('🔄 Verificando sessão salva...')
     const savedUser = localStorage.getItem('tex-user')
     if (savedUser) {
       try {
@@ -105,8 +104,6 @@ function App() {
         console.error('Erro ao carregar usuário salvo:', error)
         localStorage.removeItem('tex-user')
       }
-    } else {
-      console.log('ℹ️ Nenhuma sessão salva encontrada')
     }
   }, [])
 
@@ -156,7 +153,7 @@ function App() {
       if (existingUser) {
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
-        console.log('💾 Sessão encontrada:', sessionData)
+        localStorage.setItem('tex-user', JSON.stringify(existingUser))
         
         if (existingUser.perfil_completo) {
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
@@ -167,13 +164,10 @@ function App() {
           setProfileData({
             nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
-              console.log('✅ Usuário da sessão encontrado:', user.nome)
             tags: existingUser.tags || [],
             foto_url: existingUser.foto_url || '',
             localizacao: existingUser.localizacao || '',
-              console.log('🏠 Redirecionado para feed')
             status: existingUser.status || 'available',
-              console.log('⚠️ Usuário da sessão não encontrado, limpando sessão')
             latitude: existingUser.latitude,
             longitude: existingUser.longitude
           })
@@ -356,7 +350,6 @@ function App() {
       // Gerar ID único para cliente anônimo se não estiver logado
       // Limpar dados anteriores
       setCurrentUser(null)
-      setSelectedUser(null)
       
       // Verificar se usuário já existe no banco
       const clienteId = currentUser?.id || crypto.randomUUID()
@@ -393,10 +386,36 @@ function App() {
   }
 
   // Check payment and redirect to WhatsApp
-        // USUÁRIO NÃO EXISTE - IR PARA CRIAR PERFIL
+  const handlePaymentCheck = async () => {
     if (!paymentData || !selectedPrestador) return
-        await redirectToCreateProfile()
+
+    setCheckingPayment(true)
+    try {
+      console.log('🔍 Verificando pagamento:', paymentData.id)
+      
+      const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentData.id)
+      console.log('📊 Status do pagamento:', paymentStatus)
+      
+      if (paymentStatus.status === 'approved') {
+        console.log('✅ Pagamento aprovado! Redirecionando para WhatsApp...')
+        toast.success('🎉 Pagamento aprovado! Redirecionando para WhatsApp...')
+        
+        const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+        const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+        
+        setTimeout(() => {
+          window.open(whatsappUrl, '_blank')
+          navigateTo('feed')
+          setPaymentData(null)
+          setSelectedPrestador(null)
+        }, 2000)
+        
+      } else if (paymentStatus.status === 'pending') {
+        toast.error('⏳ Pagamento ainda pendente. Aguarde alguns segundos e tente novamente.')
+      } else {
+        toast.error('❌ Pagamento não foi aprovado. Tente novamente.')
       }
+      
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
       toast.error('Erro ao verificar pagamento. Tente novamente.')
@@ -411,7 +430,6 @@ function App() {
     
     // Definir usuário atual
     setCurrentUser(user)
-    setSelectedUser(user)
     
     // Salvar sessão no localStorage
     const sessionData = {
@@ -447,7 +465,6 @@ function App() {
     
     // Limpar dados de usuário
     setCurrentUser(null)
-    setSelectedUser(null)
     
     // Mostrar mensagem
     toast.success('Vamos criar seu perfil!')
