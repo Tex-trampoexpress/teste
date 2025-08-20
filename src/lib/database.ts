@@ -246,12 +246,36 @@ export class DatabaseService {
 
       console.log('🔍 Buscando usuário por WhatsApp:', whatsapp)
 
-      // Busca direta por WhatsApp (mais confiável)
-      return this.getUsuarioByWhatsAppDirect(whatsapp)
+      // Tentar busca direta primeiro
+      let user = await this.getUsuarioByWhatsAppDirect(whatsapp)
+      
+      if (!user) {
+        // Tentar variações do número
+        const cleanNumber = whatsapp.replace(/\D/g, '')
+        const variations = [
+          whatsapp,
+          `+${cleanNumber}`,
+          `+55${cleanNumber}`,
+          cleanNumber,
+          cleanNumber.startsWith('55') ? cleanNumber.substring(2) : cleanNumber
+        ]
+        
+        for (const variation of variations) {
+          if (variation !== whatsapp) {
+            console.log('🔄 Tentando variação:', variation)
+            user = await this.getUsuarioByWhatsAppDirect(variation)
+            if (user) {
+              console.log('✅ Usuário encontrado com variação:', variation)
+              break
+            }
+          }
+        }
+      }
+      
+      return user
     } catch (error) {
       console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
-      // Fallback para busca direta
-      return this.getUsuarioByWhatsAppDirect(whatsapp)
+      return null
     }
   }
 
