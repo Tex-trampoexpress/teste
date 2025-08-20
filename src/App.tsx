@@ -26,6 +26,10 @@ function App() {
   const [selectedPrestador, setSelectedPrestador] = useState<Usuario | null>(null)
   const [checkingPayment, setCheckingPayment] = useState(false)
 
+  // Terms acceptance state
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+
   // Form states
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [profileData, setProfileData] = useState({
@@ -70,6 +74,12 @@ function App() {
 
   // Load user data on mount
   useEffect(() => {
+    // Check if terms were already accepted
+    const acceptedTerms = localStorage.getItem('tex-terms-accepted')
+    if (acceptedTerms === 'true') {
+      setTermsAccepted(true)
+    }
+
     const savedUser = localStorage.getItem('tex-user')
     if (savedUser) {
       try {
@@ -85,6 +95,31 @@ function App() {
       }
     }
   }, [])
+
+  // Handle explore button click
+  const handleExploreClick = () => {
+    if (!termsAccepted) {
+      setShowTermsModal(true)
+    } else {
+      navigateTo('feed')
+      loadUsuarios()
+    }
+  }
+
+  // Handle terms acceptance
+  const handleAcceptTerms = () => {
+    setTermsAccepted(true)
+    localStorage.setItem('tex-terms-accepted', 'true')
+    localStorage.setItem('tex-terms-accepted-date', new Date().toISOString())
+    setShowTermsModal(false)
+    navigateTo('feed')
+    loadUsuarios()
+  }
+
+  // Handle terms rejection
+  const handleRejectTerms = () => {
+    setShowTermsModal(false)
+  }
 
   // WhatsApp login
   const handleWhatsAppLogin = async () => {
@@ -552,10 +587,7 @@ function App() {
             
             <button 
               className="explore-btn"
-              onClick={() => {
-                navigateTo('feed')
-                loadUsuarios()
-              }}
+              onClick={handleExploreClick}
             >
               <i className="fas fa-search"></i>
               Explorar Profissionais
