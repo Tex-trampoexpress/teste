@@ -364,7 +364,34 @@ function App() {
   // Carregamento inicial rápido
   useEffect(() => {
     loadQuickUsers()
+    
+    // Verificar se há usuário na sessão (simulado via localStorage para teste)
+    const savedUser = localStorage.getItem('tex-current-user')
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser)
+        console.log('👤 Usuário encontrado na sessão:', user.nome)
+        setCurrentUser(user)
+        if (user.perfil_completo) {
+          navigateTo('feed')
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar usuário da sessão:', error)
+        localStorage.removeItem('tex-current-user')
+      }
+    }
   }, [])
+
+  // Salvar usuário na sessão quando mudar
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('tex-current-user', JSON.stringify(currentUser))
+      console.log('💾 Usuário salvo na sessão:', currentUser.nome)
+    } else {
+      localStorage.removeItem('tex-current-user')
+      console.log('🗑️ Usuário removido da sessão')
+    }
+  }, [currentUser])
 
   // Get user location
   const getUserLocation = () => {
@@ -456,7 +483,8 @@ function App() {
     setCurrentUser(null)
     setIsLoggedIn(false)
     localStorage.removeItem('tex-user')
-    setCurrentScreen('home')
+    localStorage.removeItem('tex-current-user')
+    navigateTo('home')
     toast.success('Logout realizado com sucesso')
   }
 
