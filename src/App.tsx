@@ -166,10 +166,11 @@ function App() {
       }
       
       if (existingUser2) {
+        console.log('✅ Usuário encontrado:', existingUser2.nome)
+        console.log('📋 Perfil completo - indo para perfil')
         setProfileData({
           nome: existingUser2.nome,
           descricao: existingUser2.descricao || '',
-          console.log('📋 Perfil completo - indo para perfil')
           tags: existingUser2.tags || [],
           foto_url: existingUser2.foto_url || '',
           localizacao: existingUser2.localizacao || '',
