@@ -2299,7 +2299,7 @@ footer {
 
 @media (max-width: 480px) {
   .tex-logo-text-inside {
-    font-size: 3.8rem;
+    font-size: 1.6rem;
   }
 
   .hero-container {
@@ -2338,7 +2338,7 @@ footer {
 /* Breakpoint adicional para celulares muito pequenos */
 @media (max-width: 360px) {
   .hero-container {
-    padding: 0.4rem 0.5rem 0.8rem 0.5rem;
+    font-size: 1.4rem;
     margin: 0.02rem;
     gap: 0.4rem;
   }
@@ -2381,7 +2381,7 @@ footer {
   }
 
   .tex-logo-text-inside {
-    font-size: 2.0rem;
+    font-size: 1.8rem;
   }
 
   h1 {
