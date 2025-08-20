@@ -89,6 +89,7 @@ function App() {
       setTermsAccepted(true)
     }
 
+    console.log('🔄 Verificando sessão salva...')
     const savedUser = localStorage.getItem('tex-user')
     if (savedUser) {
       try {
@@ -104,6 +105,8 @@ function App() {
         console.error('Erro ao carregar usuário salvo:', error)
         localStorage.removeItem('tex-user')
       }
+    } else {
+      console.log('ℹ️ Nenhuma sessão salva encontrada')
     }
   }, [])
 
@@ -153,7 +156,7 @@ function App() {
       if (existingUser) {
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
-        localStorage.setItem('tex-user', JSON.stringify(existingUser))
+        console.log('💾 Sessão encontrada:', existingUser)
         
         if (existingUser.perfil_completo) {
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
@@ -409,13 +412,10 @@ function App() {
           setPaymentData(null)
           setSelectedPrestador(null)
         }, 2000)
-        
-      } else if (paymentStatus.status === 'pending') {
-        toast.error('⏳ Pagamento ainda pendente. Aguarde alguns segundos e tente novamente.')
       } else {
-        toast.error('❌ Pagamento não foi aprovado. Tente novamente.')
+        console.log('⏳ Pagamento ainda pendente')
+        toast.error('Pagamento ainda não foi processado. Aguarde alguns instantes e tente novamente.')
       }
-      
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
       toast.error('Erro ao verificar pagamento. Tente novamente.')
