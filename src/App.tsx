@@ -226,10 +226,10 @@ function App() {
 
       // Verificar se usuário já existe no banco
       console.log('🔍 Buscando usuário no banco de dados...')
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+      const foundUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
       
-      if (existingUser) {
-        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', existingUser.nome)
+      if (foundUser) {
+        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', foundUser.nome)
         console.log('📋 Dados do usuário:', {
           id: existingUser.id,
           nome: existingUser.nome,
@@ -237,7 +237,7 @@ function App() {
         })
         
         // Login direto para usuário existente
-        setCurrentUser(existingUser)
+        await loginExistingUser(foundUser)
         setSelectedUser(existingUser)
         
         // Salvar sessão
