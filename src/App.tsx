@@ -410,12 +410,14 @@ function App() {
         await DatabaseService.updateLastAccess(existingUser.id)
         
         // Ir direto para o perfil do usuário
-        setCurrentScreen('profile')
+        setTimeout(() => {
+          setCurrentScreen('profile')
         }, 1000)
       } else {
         // Usuário não existe - ir para criar perfil
-      }
-    } catch (error) {
+        setTimeout(() => {
+          setCurrentScreen('createProfile')
+        }, 1000)
       console.error('❌ Erro ao verificar pagamento:', error)
       toast.error('Erro ao verificar pagamento. Tente novamente.')
     } finally {
