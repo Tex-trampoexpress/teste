@@ -95,7 +95,8 @@ function App() {
         const user = JSON.parse(savedUser)
         setCurrentUser(user)
         setIsLoggedIn(true)
-        if (user.perfil_completo) {
+        // Se tem usuário salvo, vai para o feed
+        setCurrentScreen('feed')
           loadUsuarios()
         }
       } catch (error) {
@@ -385,6 +386,18 @@ function App() {
     if (!paymentData || !selectedPrestador) return
 
     try {
+      // Verificar novamente se usuário não foi criado enquanto isso
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+      if (existingUser) {
+        console.log('⚠️ Usuário já existe, redirecionando para perfil')
+        setCurrentUser(existingUser)
+        localStorage.setItem('currentUser', JSON.stringify(existingUser))
+        toast.success(`Bem-vindo, ${existingUser.nome}!`)
+        setCurrentScreen('userProfile')
+        setSelectedUser(existingUser)
+        return
+      }
+
       setCheckingPayment(true)
       console.log('🔍 Verificando pagamento:', paymentData.id)
       
@@ -414,10 +427,28 @@ function App() {
           await DatabaseService.updateLastAccess(currentUser.id)
         }
         
-        // Ir direto para o perfil do usuário
+        // Ir direto para o perfil do usuário existente
         setTimeout(() => {
-          setCurrentScreen('profile')
-        }, 1000)
+          setCurrentScreen('userProfile')
+        // Se WhatsApp já cadastrado, tentar fazer login automático
+        console.log('🔄 WhatsApp duplicado, tentando login automático...')
+        try {
+          const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+          if (existingUser) {
+            setCurrentUser(existingUser)
+            localStorage.setItem('currentUser', JSON.stringify(existingUser))
+            toast.success(`Bem-vindo, ${existingUser.nome}!`)
+            setCurrentScreen('userProfile')
+            setSelectedUser(existingUser)
+          } else {
+            toast.error('Este WhatsApp já está cadastrado. Tente fazer login.')
+            setCurrentScreen('home')
+          }
+        } catch (loginError) {
+          console.error('❌ Erro no login automático:', loginError)
+          toast.error('Este WhatsApp já está cadastrado. Tente fazer login.')
+          setCurrentScreen('home')
+        }
       } else {
         // Usuário não existe - ir para criar perfil
         setTimeout(() => {
