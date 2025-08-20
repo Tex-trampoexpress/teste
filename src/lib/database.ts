@@ -311,72 +311,74 @@ export class DatabaseService {
     tags?: string[]
     search?: string
     limit?: number
+    offset?: number
   }): Promise<Usuario[]> {
     try {
       const searchTerm = filters?.search?.trim() || ''
       const filterTags = filters?.tags || []
       const filterStatus = filters?.status || 'available'
-      const limitResults = filters?.limit || 50
+      const limitResults = filters?.limit || 20
+      const offsetResults = filters?.offset || 0
 
-      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults })
+      console.log('🔍 Busca otimizada:', { searchTerm, filterTags, filterStatus, limitResults, offsetResults })
 
-      const { data, error } = await supabase
-        .rpc('search_usuarios', {
-          search_term: searchTerm,
-          filter_tags: filterTags,
-          filter_status: filterStatus,
-          limit_results: limitResults
-        })
+      // Usar query direta otimizada em vez de RPC para melhor performance
+      let query = supabase
+        .from('usuarios')
+        .select(`
+          id, nome, whatsapp, descricao, tags, foto_url, 
+          localizacao, status, latitude, longitude, 
+          criado_em, ultimo_acesso, perfil_completo, verificado
+        `)
+        .eq('status', filterStatus)
+        .eq('perfil_completo', true)
+        .order('ultimo_acesso', { ascending: false })
+        .range(offsetResults, offsetResults + limitResults - 1)
+
+      // Aplicar filtros condicionalmente
+      if (searchTerm) {
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
+      }
+
+      if (filterTags.length > 0) {
+        query = query.overlaps('tags', filterTags)
+      }
+
+      const { data, error } = await query
 
       if (error) {
-        console.error('❌ Erro na busca de usuários:', error)
-        // Fallback para busca simples se a função RPC falhar
-        console.log('🔄 Tentando busca simples como fallback...')
-        return this.getUsuariosSimple(filters)
+        console.error('❌ Erro na busca otimizada:', error)
+        throw error
       }
 
       console.log(`✅ Encontrados ${data?.length || 0} usuários`)
       return data || []
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      // Fallback para busca simples
-      return this.getUsuariosSimple(filters)
+      return []
     }
   }
 
-  // Fallback simple search
-  private static async getUsuariosSimple(filters?: {
-    status?: 'available' | 'busy'
-    search?: string
-    limit?: number
-  }): Promise<Usuario[]> {
+  // Busca rápida apenas com campos essenciais
+  static async getUsuariosRapido(limit: number = 10): Promise<Partial<Usuario>[]> {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('usuarios')
-        .select('*')
-        .eq('status', filters?.status || 'available')
+        .select('id, nome, foto_url, tags, localizacao, status, ultimo_acesso')
+        .eq('status', 'available')
         .eq('perfil_completo', true)
         .order('ultimo_acesso', { ascending: false })
-
-      if (filters?.search?.trim()) {
-        const searchTerm = filters.search.trim()
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
-      }
-
-      if (filters?.limit) {
-        query = query.limit(filters.limit)
-      }
-
-      const { data, error } = await query
+        .limit(limit)
 
       if (error) {
-        console.error('❌ Erro na busca simples:', error)
+        console.error('❌ Erro na busca rápida:', error)
         throw error
       }
 
+      console.log(`⚡ Busca rápida: ${data?.length || 0} usuários`)
       return data || []
     } catch (error) {
-      console.error('❌ Erro na busca simples:', error)
+      console.error('❌ Erro na busca rápida:', error)
       return []
     }
   }
