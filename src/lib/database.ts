@@ -244,37 +244,31 @@ export class DatabaseService {
         throw new Error('WhatsApp é obrigatório')
       }
 
-      console.log('🔍 Buscando usuário por WhatsApp:', whatsapp)
+      console.log('🔍 [DB] Buscando usuário por WhatsApp:', whatsapp)
 
-      // Tentar busca direta primeiro
-      let user = await this.getUsuarioByWhatsAppDirect(whatsapp)
+      // Busca direta primeiro
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('whatsapp', whatsapp.trim())
+        .maybeSingle()
       
-      if (!user) {
-        // Tentar variações do número
-        const cleanNumber = whatsapp.replace(/\D/g, '')
-        const variations = [
-          whatsapp,
-          `+${cleanNumber}`,
-          `+55${cleanNumber}`,
-          cleanNumber,
-          cleanNumber.startsWith('55') ? cleanNumber.substring(2) : cleanNumber
-        ]
-        
-        for (const variation of variations) {
-          if (variation !== whatsapp) {
-            console.log('🔄 Tentando variação:', variation)
-            user = await this.getUsuarioByWhatsAppDirect(variation)
-            if (user) {
-              console.log('✅ Usuário encontrado com variação:', variation)
-              break
-            }
-          }
-        }
+      if (error) {
+        console.error('❌ [DB] Erro na busca:', error)
+        return null
       }
       
-      return user
+      if (data) {
+        console.log('✅ [DB] Usuário encontrado:', data.nome)
+        // Atualizar último acesso
+        this.updateLastAccess(data.id)
+        return data
+      }
+      
+      console.log('ℹ️ [DB] Usuário não encontrado para:', whatsapp)
+      return null
     } catch (error) {
-      console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
+      console.error('❌ [DB] Erro ao buscar usuário por WhatsApp:', error)
       return null
     }
   }
