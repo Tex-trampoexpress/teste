@@ -166,6 +166,7 @@ function App() {
           toast.success('Complete seu perfil para continuar')
           setProfileData({
             nome: existingUser.nome || '',
+            descricao: existingUser.descricao || '',
             tags: existingUser.tags || [],
             foto_url: existingUser.foto_url || '',
             localizacao: existingUser.localizacao || '',
@@ -198,62 +199,16 @@ function App() {
         setIsLoggedIn(true)
         setProfileData({
           nome: '',
-      // Limpar dados anteriores
-      setCurrentUser(null)
-      setSelectedUser(null)
-      setFormData({
-        nome: '',
-        descricao: '',
-        tags: [],
-        foto_url: '',
-        localizacao: '',
-        status: 'available',
-        latitude: null,
-        longitude: null
-      })
-
-      // Verificar se usuário já existe no banco
-      console.log('🔍 Buscando usuário no banco de dados...')
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      
-      if (existingUser) {
-        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', existingUser.nome)
-        console.log('📋 Dados do usuário:', {
-          id: existingUser.id,
-          nome: existingUser.nome,
-          perfil_completo: existingUser.perfil_completo
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available',
+          latitude: null,
+          longitude: null
         })
-        
-        // Login direto para usuário existente
-        setCurrentUser(existingUser)
-        setSelectedUser(existingUser)
-        
-        // Salvar sessão
-        localStorage.setItem('tex_user_session', JSON.stringify({
-          whatsapp: whatsappNumber,
-          user_id: existingUser.id,
-          logged_in: true
-        }))
-        
-        // Atualizar último acesso
-        await DatabaseService.updateLastAccess(existingUser.id)
-        
-        // Ir para o perfil do usuário
-        setCurrentScreen('userProfile')
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        
-      } else {
-        console.log('📝 USUÁRIO NÃO ENCONTRADO - Redirecionando para criação')
-        
-        // Preparar dados para criação de novo perfil
-        setFormData(prev => ({
-          ...prev,
-          // NÃO salvar o WhatsApp ainda - só quando clicar em "Criar Perfil"
-        }))
-        
-        // Ir para tela de criação
-        setCurrentScreen('createProfile')
         toast.success('Vamos criar seu perfil profissional!')
+        navigateTo('profile-setup')
       }
       
     } catch (error) {
@@ -323,29 +278,6 @@ function App() {
   }
 
   // Save profile
-    // Verificar novamente se o usuário já existe (prevenção de duplicata)
-    try {
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      if (existingUser) {
-        console.log('⚠️ Usuário já existe! Fazendo login automático...')
-        
-        setCurrentUser(existingUser)
-        setSelectedUser(existingUser)
-        
-        localStorage.setItem('tex_user_session', JSON.stringify({
-          whatsapp: whatsappNumber,
-          user_id: existingUser.id,
-          logged_in: true
-        }))
-        
-        setCurrentScreen('userProfile')
-        toast.success(`Perfil encontrado! Bem-vindo, ${existingUser.nome}!`)
-        return
-      }
-    } catch (error) {
-      console.error('⚠️ Erro na verificação de duplicata:', error)
-    }
-    
   const handleSaveProfile = async () => {
     if (!profileData.nome.trim()) {
       toast.error('Nome é obrigatório')
@@ -420,10 +352,6 @@ function App() {
       setLoading(true)
       
       // Gerar ID único para cliente anônimo se não estiver logado
-      // Limpar dados anteriores
-      setCurrentUser(null)
-      
-      // Verificar se usuário já existe no banco
       const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
@@ -491,6 +419,58 @@ function App() {
     } finally {
       setCheckingPayment(false)
     }
+  }
+
+  // Função para fazer login de usuário existente
+  const loginExistingUser = async (user: Usuario) => {
+    console.log('🎯 Fazendo login do usuário existente:', user.nome)
+    
+    // Definir usuário atual
+    setCurrentUser(user)
+    
+    // Salvar sessão no localStorage
+    const sessionData = {
+      id: user.id,
+      whatsapp: user.whatsapp,
+      nome: user.nome,
+      loginTime: new Date().toISOString()
+    }
+    localStorage.setItem('tex_user_session', JSON.stringify(sessionData))
+    console.log('💾 Sessão salva:', sessionData)
+    
+    // Atualizar último acesso no banco
+    try {
+      await DatabaseService.updateLastAccess(user.id)
+      console.log('📅 Último acesso atualizado')
+    } catch (error) {
+      console.error('⚠️ Erro ao atualizar último acesso:', error)
+    }
+    
+    // Mostrar mensagem de boas-vindas
+    toast.success(`Bem-vindo de volta, ${user.nome}!`)
+    
+    // Ir para o perfil do usuário após delay
+    setTimeout(() => {
+      console.log('🎯 Redirecionando para perfil do usuário')
+      setCurrentScreen('userProfile')
+    }, 1500)
+  }
+
+  // Função para redirecionar para criação de perfil
+  const redirectToCreateProfile = async () => {
+    console.log('📝 Redirecionando para criação de perfil')
+    
+    // Limpar dados de usuário
+    setCurrentUser(null)
+    
+    // Mostrar mensagem
+    toast.success('Vamos criar seu perfil!')
+    
+    // Ir para criação de perfil após delay
+    setTimeout(() => {
+      console.log('📝 Abrindo tela de criação de perfil')
+      setCurrentScreen('createProfile')
+    }, 1500)
   }
 
   // Simulate payment approval (for testing)
