@@ -340,7 +340,7 @@ body::before {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   transition: all 0.3s ease;
   text-align: center;
-  font-size: 3.5rem;
+  font-size: 4rem;
 }
 
 .tex-logo-container-inside:hover .tex-logo-text-inside {
@@ -349,7 +349,7 @@ body::before {
 }
 
 h1 {
-  font-size: 2.8rem;
+  font-size: 3.2rem;
   margin-bottom: 0.5rem;
   line-height: 1.1;
   color: #FFFFFF;
@@ -361,7 +361,7 @@ h1 {
 
 h1 span {
   color: #FFFFFF;
-  font-size: 3.2rem;
+  font-size: 3.6rem;
   display: block;
   margin-top: 0.3rem;
   text-shadow: 
@@ -370,7 +370,7 @@ h1 span {
 }
 
 .trampoexpress-subtitle {
-  font-size: 3.2rem;
+  font-size: 3.6rem;
   font-weight: 700;
   text-align: center;
   margin: 0.8rem 0 1.2rem 0;
@@ -390,8 +390,8 @@ h1 span {
 }
 
 input, textarea {
-  padding: 1rem 1.2rem;
-  font-size: 1rem;
+  padding: 1.2rem 1.4rem;
+  font-size: 1.1rem;
   border: 2px solid rgba(255, 215, 0, 0.3);
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.6);
@@ -410,8 +410,8 @@ input:focus, textarea:focus {
 }
 
 .explore-btn {
-  padding: 0.9rem 1.3rem;
-  font-size: 1rem;
+  padding: 1.1rem 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
   background: var(--gradient);
   color: var(--black);
