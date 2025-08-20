@@ -14,12 +14,16 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(false)
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [quickUsers, setQuickUsers] = useState<Partial<Usuario>[]>([])
+  const [quickLoading, setQuickLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [offset, setOffset] = useState(0)
 
   // Payment states
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
@@ -240,9 +244,10 @@ function App() {
   }
 
   // Load users
-  const loadUsuarios = async () => {
+  const loadUsuarios = async (reset: boolean = false) => {
     setLoading(true)
     try {
+      const currentOffset = reset ? 0 : offset
       let users: Usuario[] = []
 
       if (proximityEnabled && userLocation) {
@@ -256,11 +261,20 @@ function App() {
           search: searchTerm,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
           status: 'available',
-          limit: 50
+          limit: 10,
+          offset: currentOffset
         })
       }
 
-      setUsuarios(users)
+      if (reset) {
+        setUsuarios(users)
+        setOffset(10)
+      } else {
+        setUsuarios(prev => [...prev, ...users])
+        setOffset(prev => prev + 10)
+      }
+      
+      setHasMore(users.length === 10)
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
       toast.error('Erro ao carregar profissionais')
@@ -268,6 +282,33 @@ function App() {
       setLoading(false)
     }
   }
+
+  // Carregamento rápido inicial
+  const loadQuickUsers = async () => {
+    try {
+      setQuickLoading(true)
+      const quickData = await DatabaseService.getUsuariosRapido(8)
+      setQuickUsers(quickData)
+    } catch (error) {
+      console.error('❌ Erro no carregamento rápido:', error)
+    } finally {
+      setQuickLoading(false)
+    }
+  }
+
+  // Load users when filters change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadUsuarios(true) // Reset on filter change
+    }, 300) // Debounce de 300ms
+    
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, selectedTags])
+
+  // Carregamento inicial rápido
+  useEffect(() => {
+    loadQuickUsers()
+  }, [])
 
   // Get user location
   const getUserLocation = () => {
@@ -1034,24 +1075,23 @@ function App() {
             </div>
           </div>
 
-          {usuarios.length === 0 && !loading ? (
-            <div className="no-results">
-              <i className="fas fa-search"></i>
-              <h3>Nenhum profissional encontrado</h3>
-              <p>Tente ajustar os filtros de busca ou expandir a área de pesquisa</p>
-              <div className="no-results-actions">
-                <button className="explore-all-btn" onClick={clearSearch}>
-                  Ver Todos os Profissionais
-                </button>
-                <button className="back-home-btn" onClick={() => navigateTo('home')}>
-                  <i className="fas fa-home"></i>
-                  Voltar ao Início
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="profiles-grid">
-              {usuarios.map((usuario) => (
+          <div className="profiles-grid">
+            {quickLoading && usuarios.length === 0 ? (
+              // Loading skeleton
+              [...Array(6)].map((_, i) => (
+                <div key={i} className="profile-card loading">
+                  <div className="profile-header">
+                    <div className="profile-pic skeleton"></div>
+                    <div className="profile-info">
+                      <div className="skeleton-line"></div>
+                      <div className="skeleton-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              // Mostrar usuários rápidos primeiro, depois os completos
+              (usuarios.length > 0 ? usuarios : quickUsers).map((usuario) => (
                 <div key={usuario.id} className="profile-card">
                   <div className="profile-header">
                     <div className="profile-pic">
@@ -1085,7 +1125,7 @@ function App() {
                   </div>
 
                   <div className="hashtags">
-                    {usuario.tags.map((tag, index) => (
+                    {usuario.tags?.map((tag, index) => (
                       <span 
                         key={index} 
                         className="tag-clickable"
@@ -1105,7 +1145,47 @@ function App() {
                     {(selectedPrestador?.id === usuario.id && loading) ? 'Gerando PIX...' : 'Entrar em Contato - R$ 2,02'}
                   </button>
                 </div>
-              ))}
+              ))
+            )}
+          </div>
+
+          {!quickLoading && !loading && usuarios.length === 0 && quickUsers.length === 0 && (
+            <div className="no-results">
+              <i className="fas fa-search"></i>
+              <h3>Nenhum profissional encontrado</h3>
+              <p>Tente ajustar os filtros de busca ou expandir a área de pesquisa</p>
+              <div className="no-results-actions">
+                <button className="explore-all-btn" onClick={clearSearch}>
+                  Ver Todos os Profissionais
+                </button>
+                <button className="back-home-btn" onClick={() => navigateTo('home')}>
+                  <i className="fas fa-home"></i>
+                  Voltar ao Início
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Botão carregar mais */}
+          {hasMore && usuarios.length > 0 && (
+            <div className="load-more-container">
+              <button 
+                className="load-more-btn"
+                onClick={() => loadUsuarios(false)}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    Carregando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-plus"></i>
+                    Carregar mais profissionais
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
