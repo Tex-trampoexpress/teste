@@ -97,8 +97,7 @@ function App() {
         setIsLoggedIn(true)
         // Se tem usuário salvo, vai para o feed
         setCurrentScreen('feed')
-          loadUsuarios()
-        }
+        loadUsuarios()
       } catch (error) {
         console.error('Erro ao carregar usuário salvo:', error)
         localStorage.removeItem('tex-user')
@@ -394,7 +393,7 @@ function App() {
         localStorage.setItem('currentUser', JSON.stringify(existingUser))
         toast.success(`Bem-vindo, ${existingUser.nome}!`)
         setCurrentScreen('userProfile')
-        setSelectedUser(existingUser)
+        // setSelectedUser(existingUser)
         return
       }
 
@@ -430,6 +429,7 @@ function App() {
         // Ir direto para o perfil do usuário existente
         setTimeout(() => {
           setCurrentScreen('userProfile')
+        }, 1000)
         // Se WhatsApp já cadastrado, tentar fazer login automático
         console.log('🔄 WhatsApp duplicado, tentando login automático...')
         try {
@@ -439,7 +439,7 @@ function App() {
             localStorage.setItem('currentUser', JSON.stringify(existingUser))
             toast.success(`Bem-vindo, ${existingUser.nome}!`)
             setCurrentScreen('userProfile')
-            setSelectedUser(existingUser)
+            // setSelectedUser(existingUser)
           } else {
             toast.error('Este WhatsApp já está cadastrado. Tente fazer login.')
             setCurrentScreen('home')
@@ -746,7 +746,7 @@ function App() {
               <button 
                 onClick={() => {
                   setCurrentScreen('home')
-                  setNavigationHistory(['home'])
+                  // setNavigationHistory(['home'])
                 }}
                 className={currentScreen === 'home' ? 'active' : ''}
               >
