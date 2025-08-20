@@ -167,13 +167,22 @@ function App() {
       
       if (existingUser2) {
         console.log('✅ Usuário encontrado:', existingUser2.nome)
-        console.log('📋 Perfil completo - indo para perfil')
-        setProfileData({
-          nome: existingUser2.nome,
-          descricao: existingUser2.descricao || '',
-          tags: existingUser2.tags || [],
-          foto_url: existingUser2.foto_url || '',
-          localizacao: existingUser2.localizacao || '',
+        
+        if (existingUser2.perfil_completo) {
+          console.log('📋 Perfil completo - indo para perfil')
+          setCurrentUser({
+            id: existingUser2.id,
+            nome: existingUser2.nome,
+            descricao: existingUser2.descricao || '',
+            tags: existingUser2.tags || [],
+            foto_url: existingUser2.foto_url || '',
+            localizacao: existingUser2.localizacao || '',
+            status: existingUser2.status || 'available',
+            latitude: existingUser2.latitude,
+            longitude: existingUser2.longitude
+          })
+          setCurrentScreen('profile')
+        } else {
           console.log('📝 Perfil incompleto - indo para edição')
           setCurrentUser({
             id: existingUser2.id,
@@ -185,7 +194,12 @@ function App() {
             status: existingUser2.status || 'available',
             latitude: existingUser2.latitude,
             longitude: existingUser2.longitude
-        })
+          })
+          setCurrentScreen('edit-profile')
+        }
+        
+        // Atualizar histórico
+        setNavigationHistory(prev => [...prev, currentScreen])
         navigateTo('profile-setup')
       } else {
         console.log('🆕 Usuário novo - indo para criação')
