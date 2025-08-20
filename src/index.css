@@ -411,8 +411,8 @@ input:focus, textarea:focus {
 }
 
 .explore-btn {
-  padding: 1rem;
-  font-size: 1.1rem;
+  padding: 0.9rem 1.3rem;
+  font-size: 1rem;
   font-weight: 600;
   background: var(--gradient);
   color: var(--black);
@@ -422,6 +422,10 @@ input:focus, textarea:focus {
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .explore-btn:hover {
@@ -443,7 +447,7 @@ input:focus, textarea:focus {
   background: rgba(0, 255, 255, 0.1);
   border: 1px solid rgba(0, 255, 255, 0.3);
   color: var(--cyan);
-  padding: 0.8rem 1.2rem;
+  padding: 0.9rem 1.3rem;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -451,7 +455,10 @@ input:focus, textarea:focus {
   align-items: center;
   gap: 0.5rem;
   font-size: 1rem;
+  font-weight: 600;
   margin: 0 auto;
+  width: 100%;
+  justify-content: center;
 }
 
 .location-enable-btn:hover {
@@ -2120,13 +2127,13 @@ footer {
   }
 
   .explore-btn {
-    padding: 0.9rem;
-    font-size: 1rem;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
   }
 
   .location-enable-btn {
-    padding: 0.7rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
     margin-top: 0.3rem;
   }
 
