@@ -213,9 +213,9 @@ function App() {
       // Limpar dados anteriores
       setCurrentUser(null)
       // Verificar se usuário já existe
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
+      const foundUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
       
-      if (existingUser) {
+      if (foundUser) {
         // USUÁRIO EXISTENTE - Login direto
         console.log('✅ Usuário existente encontrado:', existingUser.nome)
         
@@ -334,20 +334,20 @@ function App() {
     // Verificar novamente se o usuário já existe (prevenção de duplicata)
     try {
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      if (existingUser) {
+        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', foundUser.nome)
         console.log('⚠️ Usuário já existe! Fazendo login automático...')
         
-        setCurrentUser(existingUser)
-        setSelectedUser(existingUser)
+        setCurrentUser(foundUser)
+        setSelectedUser(foundUser)
         
         localStorage.setItem('tex_user_session', JSON.stringify({
           whatsapp: whatsappNumber,
           user_id: existingUser.id,
-          logged_in: true
+        localStorage.setItem('currentUser', JSON.stringify(foundUser))
         }))
         
         setCurrentScreen('userProfile')
-        toast.success(`Perfil encontrado! Bem-vindo, ${existingUser.nome}!`)
+        toast.success(`Bem-vindo de volta, ${foundUser.nome}!`)
         return
       }
     } catch (error) {
