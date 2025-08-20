@@ -246,42 +246,8 @@ export class DatabaseService {
 
       console.log('🔍 Buscando usuário por WhatsApp:', whatsapp)
 
-      // Usar a função SQL otimizada
-      const { data, error } = await supabase
-        .rpc('get_user_by_whatsapp', {
-          phone_number: whatsapp.trim()
-        })
-
-      if (error) {
-        console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
-        // Fallback para busca direta se a função falhar
-        return this.getUsuarioByWhatsAppDirect(whatsapp)
-      }
-
-      if (data && data.length > 0) {
-        const user = data[0]
-        console.log('✅ Usuário encontrado:', user.nome)
-        return {
-          id: user.user_id,
-          nome: user.nome,
-          whatsapp: user.whatsapp,
-          descricao: user.descricao,
-          tags: user.tags,
-          foto_url: user.foto_url,
-          localizacao: user.localizacao,
-          status: user.status,
-          latitude: user.latitude,
-          longitude: user.longitude,
-          criado_em: user.criado_em,
-          atualizado_em: user.atualizado_em,
-          ultimo_acesso: user.ultimo_acesso,
-          perfil_completo: user.perfil_completo,
-          verificado: user.verificado
-        }
-      }
-
-      console.log('ℹ️ Usuário não encontrado para WhatsApp:', whatsapp)
-      return null
+      // Busca direta por WhatsApp (mais confiável)
+      return this.getUsuarioByWhatsAppDirect(whatsapp)
     } catch (error) {
       console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
       // Fallback para busca direta
@@ -309,9 +275,11 @@ export class DatabaseService {
         console.log('✅ Usuário encontrado na busca direta:', data.nome)
         // Atualizar último acesso
         this.updateLastAccess(data.id)
+        return data
       }
 
-      return data
+      console.log('ℹ️ Usuário não encontrado para WhatsApp:', whatsapp)
+      return null
     } catch (error) {
       console.error('❌ Erro na busca direta por WhatsApp:', error)
       return null
@@ -483,21 +451,11 @@ export class DatabaseService {
 
       console.log('🔍 Verificando se WhatsApp está registrado:', whatsapp)
 
-      // Usar a função SQL otimizada
-      const { data, error } = await supabase
-        .rpc('check_whatsapp_exists', {
-          phone_number: whatsapp.trim()
-        })
-
-      if (error) {
-        console.error('❌ Erro ao verificar WhatsApp:', error)
-        // Fallback para verificação direta
-        const user = await this.getUsuarioByWhatsAppDirect(whatsapp)
-        return !!user
-      }
-
-      console.log('✅ Verificação de WhatsApp concluída:', data)
-      return !!data
+      // Verificação direta (mais confiável)
+      const user = await this.getUsuarioByWhatsAppDirect(whatsapp)
+      const exists = !!user
+      console.log('✅ Verificação de WhatsApp concluída:', exists)
+      return exists
     } catch (error) {
       console.error('❌ Erro ao verificar WhatsApp:', error)
       return false
