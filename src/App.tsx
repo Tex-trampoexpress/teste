@@ -89,6 +89,7 @@ function App() {
       setTermsAccepted(true)
     }
 
+    console.log('🔄 Verificando sessão salva...')
     const savedUser = localStorage.getItem('tex-user')
     if (savedUser) {
       try {
@@ -104,6 +105,8 @@ function App() {
         console.error('Erro ao carregar usuário salvo:', error)
         localStorage.removeItem('tex-user')
       }
+    } else {
+      console.log('ℹ️ Nenhuma sessão salva encontrada')
     }
   }, [])
 
@@ -153,7 +156,7 @@ function App() {
       if (existingUser) {
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
-        localStorage.setItem('tex-user', JSON.stringify(existingUser))
+        console.log('💾 Sessão encontrada:', sessionData)
         
         if (existingUser.perfil_completo) {
           toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
@@ -164,10 +167,13 @@ function App() {
           setProfileData({
             nome: existingUser.nome || '',
             descricao: existingUser.descricao || '',
+              console.log('✅ Usuário da sessão encontrado:', user.nome)
             tags: existingUser.tags || [],
             foto_url: existingUser.foto_url || '',
             localizacao: existingUser.localizacao || '',
+              console.log('🏠 Redirecionado para feed')
             status: existingUser.status || 'available',
+              console.log('⚠️ Usuário da sessão não encontrado, limpando sessão')
             latitude: existingUser.latitude,
             longitude: existingUser.longitude
           })
