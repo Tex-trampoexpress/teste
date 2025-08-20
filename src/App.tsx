@@ -536,21 +536,24 @@ function App() {
         
         setTimeout(() => {
           window.open(whatsappUrl, '_blank')
-          console.log('✅ Perfil completo, indo para feed...')
-          navigateTo('feed')
-          setPaymentData(null)
-          console.log('⚠️ Perfil incompleto, indo para criação...')
-          setSelectedPrestador(null)
-        }, 1000)
-        console.log('🆕 Usuário não encontrado, criando novo perfil...')
-        toast.success('Vamos criar seu perfil! 🚀', {
-          duration: 2000,
-          icon: '✨'
-        })
+        // Aguardar um pouco para garantir que o estado foi atualizado
+        setTimeout(() => {
+          // Mostrar mensagem de boas-vindas
+          toast.success(`Bem-vindo de volta, ${existingUser.nome}! 🎉`)
+          
+          // Redirecionar baseado no perfil
+          if (existingUser.perfil_completo) {
+            console.log('📱 Perfil completo, indo para feed')
+            navigateTo('feed')
+          } else {
+            console.log('📝 Perfil incompleto, indo para criação')
+            navigateTo('create-profile')
+          }
+        }, 100)
         
       } else {
         console.log('⏳ Pagamento ainda pendente')
-        toast.error('Pagamento ainda não foi processado. Aguarde alguns instantes e tente novamente.')
+        navigateTo('create-profile')
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
