@@ -1087,64 +1087,120 @@ function App() {
             <>
               <div className="profile-card">
                 <div className="profile-header">
-                  <div className="profile-pic">
+                  <div className="profile-avatar">
                     {currentUser.foto_url ? (
-                      <img src={currentUser.foto_url} alt={currentUser.nome} />
-                    ) : (
-                      <i className="fas fa-user"></i>
-                    )}
+                      <img 
+                        src={currentUser.foto_url} 
+                        alt={currentUser.nome}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
                   </div>
-                  <div className="profile-info">
-                    <h2>{currentUser.nome}</h2>
-                    <p className="description">{currentUser.descricao}</p>
-                    {currentUser.localizacao && (
-                      <p className="location">
-                        <i className="fas fa-map-marker-alt"></i>
-                        {currentUser.localizacao}
-                      </p>
-                    )}
-                    
-                    <div className="status-toggle-profile">
-                      <button
-                        className={`status-btn-profile ${currentUser.status === 'available' ? 'active' : ''}`}
-                        onClick={async () => {
-                          try {
-                            const updatedUser = await DatabaseService.updateStatus(currentUser.id, 'available')
-                            setCurrentUser(updatedUser)
-                            localStorage.setItem('tex-user', JSON.stringify(updatedUser))
-                            toast.success('Status atualizado para Disponível')
-                          } catch (error) {
-                            toast.error('Erro ao atualizar status')
-                          }
-                        }}
-                      >
-                        <span className="dot available"></span>
-                        Disponível
-                      </button>
-                      <button
-                        className={`status-btn-profile ${currentUser.status === 'busy' ? 'active' : ''}`}
-                        onClick={async () => {
-                          try {
-                            const updatedUser = await DatabaseService.updateStatus(currentUser.id, 'busy')
-                            setCurrentUser(updatedUser)
-                            localStorage.setItem('tex-user', JSON.stringify(updatedUser))
-                            toast.success('Status atualizado para Ocupado')
-                          } catch (error) {
-                            toast.error('Erro ao atualizar status')
-                          }
-                        }}
-                      >
-                        <span className="dot busy"></span>
-                        Ocupado
-                      </button>
+                  <h2>{currentUser.nome}</h2>
+                  <p className="profile-whatsapp">📱 {currentUser.whatsapp}</p>
+                  
+                  {/* Status Badge */}
+                  <div className={`status-badge ${currentUser.status}`}>
+                    <span className="status-dot"></span>
+                    {currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}
+                  </div>
+                </div>
+
+                {/* Profile Content */}
+                <div className="profile-content">
+                  {/* Description */}
+                  {currentUser.descricao && (
+                    <div className="profile-section">
+                      <h3><i className="fas fa-info-circle"></i> Sobre</h3>
+                      <p className="profile-description">{currentUser.descricao}</p>
+                    </div>
+                  )}
+
+                  {/* Tags/Specialties */}
+                  {currentUser.tags && currentUser.tags.length > 0 && (
+                    <div className="profile-section">
+                      <h3><i className="fas fa-tags"></i> Especialidades</h3>
+                      <div className="tags-grid">
+                        {currentUser.tags.map((tag, index) => (
+                          <span key={index} className="profile-tag">#{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Location */}
+                  {currentUser.localizacao && (
+                    <div className="profile-section">
+                      <h3><i className="fas fa-map-marker-alt"></i> Localização</h3>
+                      <p className="profile-location">{currentUser.localizacao}</p>
+                    </div>
+                  )}
+
+                  {/* Member Since */}
+                  <div className="profile-section">
+                    <h3><i className="fas fa-calendar-alt"></i> Informações</h3>
+                    <div className="profile-stats">
+                      <div className="stat-item">
+                        <span className="stat-label">Membro desde</span>
+                        <span className="stat-value">{new Date(currentUser.criado_em).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Último acesso</span>
+                        <span className="stat-value">{new Date(currentUser.ultimo_acesso).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Perfil</span>
+                        <span className={`stat-value ${currentUser.perfil_completo ? 'complete' : 'incomplete'}`}>
+                          {currentUser.perfil_completo ? '✅ Completo' : '⚠️ Incompleto'}
+                        </span>
+                      </div>
+                      {currentUser.verificado && (
+                        <div className="stat-item">
+                          <span className="stat-label">Status</span>
+                          <span className="stat-value verified">✅ Verificado</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="hashtags">
-                  {currentUser.tags.map((tag, index) => (
-                    <span key={index}>#{tag}</span>
-                  ))}
+                {/* Action Buttons */}
+                <div className="profile-actions-grid">
+                  <button 
+                    className="btn-secondary"
+                    onClick={() => setCurrentScreen('editProfile')}
+                  >
+                    <i className="fas fa-edit"></i>
+                    Editar Perfil
+                  </button>
+                  
+                  <button 
+                    className={`btn-status ${currentUser.status}`}
+                    onClick={handleStatusToggle}
+                    disabled={statusLoading}
+                  >
+                    <i className={`fas ${statusLoading ? 'fa-spinner fa-spin' : currentUser.status === 'available' ? 'fa-pause' : 'fa-play'}`}></i>
+                    {statusLoading ? 'Atualizando...' : currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
+                  </button>
+                  
+                  <button 
+                    className="btn-danger"
+                    onClick={() => {
+                      if (confirm('Tem certeza que deseja sair?')) {
+                        setCurrentUser(null)
+                        setCurrentScreen('home')
+                        localStorage.removeItem('currentUser')
+                        toast.success('Logout realizado com sucesso!')
+                      }
+                    }}
+                  >
+                    <i className="fas fa-sign-out-alt"></i>
+                    Sair
+                  </button>
                 </div>
 
                 <div className="profile-stats">
