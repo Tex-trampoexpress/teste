@@ -360,14 +360,13 @@ h1 {
 }
 
 h1 span {
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #FFFFFF;
   font-size: 3.2rem;
   display: block;
   margin-top: 0.3rem;
-  text-shadow: none;
-  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .trampoexpress-subtitle {
@@ -375,11 +374,11 @@ h1 span {
   font-weight: 700;
   text-align: center;
   margin: 0.8rem 0 1.2rem 0;
-  color: #FFFFFF;
-  text-shadow: 
-    0 0 20px rgba(255, 255, 255, 0.8),
-    0 2px 4px rgba(0, 0, 0, 0.5);
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   letter-spacing: 1px;
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
 }
 
 .search-box {
