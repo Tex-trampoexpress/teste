@@ -557,6 +557,7 @@ function App() {
                 loadUsuarios()
               }}
             >
+              <i className="fas fa-search"></i>
               Explorar Profissionais
             </button>
           </div>
