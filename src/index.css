@@ -379,6 +379,9 @@ h1 span {
   -webkit-text-fill-color: transparent;
   letter-spacing: 1px;
   filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+  word-break: keep-all;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 .search-box {
@@ -2121,8 +2124,12 @@ footer {
   }
 
   .trampoexpress-subtitle {
-    font-size: 2.6rem;
+    font-size: 2rem;
     margin: 0.6rem 0 1rem 0;
+    letter-spacing: 0.3px;
+    padding: 0 0.8rem;
+    letter-spacing: 0.5px;
+    padding: 0 0.5rem;
   }
 
   input {
@@ -2327,8 +2334,10 @@ footer {
   }
 
   .trampoexpress-subtitle {
-    font-size: 3.4rem;
+    font-size: 2.8rem;
     margin: 0.5rem 0 0.8rem 0;
+    letter-spacing: 0.5px;
+    padding: 0 0.3rem;
   }
 
   .screen {
@@ -2364,8 +2373,10 @@ footer {
   }
 
   .trampoexpress-subtitle {
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     margin: 0.4rem 0 0.6rem 0;
+    letter-spacing: 0.2px;
+    padding: 0 1rem;
   }
 
   input, .explore-btn, .location-enable-btn, .whatsapp-login-btn {
@@ -2599,6 +2610,8 @@ footer {
   .trampoexpress-subtitle {
     font-size: 1.6rem;
     margin: 0.3rem 0 0.5rem 0;
+    letter-spacing: 0.1px;
+    padding: 0 1.2rem;
   }
 
   input, .explore-btn, .location-enable-btn, .whatsapp-login-btn {
