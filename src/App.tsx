@@ -166,7 +166,6 @@ function App() {
           toast.success('Complete seu perfil para continuar')
           setProfileData({
             nome: existingUser.nome || '',
-            descricao: existingUser.descricao || '',
             tags: existingUser.tags || [],
             foto_url: existingUser.foto_url || '',
             localizacao: existingUser.localizacao || '',
