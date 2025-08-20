@@ -613,8 +613,24 @@ body::before {
   .terms-modal {
     max-width: 95vw;
     margin: 1rem;
+    max-width: calc(100vw - 2rem);
+    width: calc(100vw - 2rem);
   }
   
+  .phone-input {
+    max-width: 100%;
+  }
+  
+  .phone-number {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+  
+  .country-code {
+    padding: 0.8rem;
+    min-width: 50px;
+    font-size: 0.9rem;
+  }
   .terms-header {
     padding: 1rem;
   }
@@ -1011,6 +1027,9 @@ input:focus, textarea:focus {
   margin-bottom: 1.5rem;
 }
 
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 .country-code {
   background: rgba(255, 255, 255, 0.1);
   padding: 1.2rem;
@@ -1484,6 +1503,7 @@ input:focus, textarea:focus {
   color: var(--gold);
   margin-right: 0.8rem;
 }
+  flex-shrink: 0;
 
 .search-bar input {
   flex: 1;
@@ -2042,6 +2062,7 @@ input:focus, textarea:focus {
   z-index: 1000;
   animation: slideUpPrompt 0.3s ease-out;
   max-width: 400px;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
@@ -2279,6 +2300,8 @@ footer {
   padding: 0.5rem;
 }
 
+  min-width: 0;
+  width: 100%;
 .qr-code-placeholder {
   padding: 2rem;
   color: rgba(255, 255, 255, 0.5);
