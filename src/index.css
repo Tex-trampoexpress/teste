@@ -370,6 +370,18 @@ h1 span {
   filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
 }
 
+.trampoexpress-subtitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0.8rem 0 1.2rem 0;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+  letter-spacing: 1px;
+}
+
 .search-box {
   display: flex;
   flex-direction: column;
@@ -2097,6 +2109,11 @@ footer {
     margin-top: 0.2rem;
   }
 
+  .trampoexpress-subtitle {
+    font-size: 1.5rem;
+    margin: 0.6rem 0 1rem 0;
+  }
+
   input {
     padding: 0.9rem 1.2rem;
     font-size: 1rem;
@@ -2294,6 +2311,11 @@ footer {
 
   h1 span {
     font-size: 2.6rem;
+  }
+
+  .trampoexpress-subtitle {
+    font-size: 1.3rem;
+    margin: 0.5rem 0 0.8rem 0;
   }
 
   .screen {
