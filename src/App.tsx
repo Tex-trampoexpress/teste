@@ -207,7 +207,7 @@ function App() {
           latitude: null,
           longitude: null
         })
-        toast.success('Vamos criar seu perfil profissional!')
+        toast.success('Vamos criar seu perfil!')
         navigateTo('profile-setup')
       }
       
