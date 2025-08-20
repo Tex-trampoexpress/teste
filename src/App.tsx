@@ -144,6 +144,17 @@ function App() {
 
     setLoading(true)
     try {
+      // Verificação dupla para evitar duplicatas
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formData.whatsapp)
+      if (existingUser) {
+        console.log('⚠️ Usuário já existe, redirecionando para perfil')
+        setCurrentUser(existingUser)
+        localStorage.setItem('currentUser', JSON.stringify(existingUser))
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+        setCurrentScreen('userProfile')
+        return
+      }
+
       const cleanNumber = whatsappNumber.replace(/\D/g, '')
       if (cleanNumber.length < 10) {
         toast.error('Número de WhatsApp inválido')
@@ -282,25 +293,32 @@ function App() {
     try {
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
       if (existingUser) {
-        console.log('⚠️ Usuário já existe! Fazendo login automático...')
-        
+      // Verificar se usuário já existe no banco
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
         setCurrentUser(existingUser)
-        
-        localStorage.setItem('tex_user_session', JSON.stringify({
-          whatsapp: whatsappNumber,
-          user_id: existingUser.id,
-        }))
-        
+      if (existingUser) {
+        // USUÁRIO EXISTENTE - Login direto para o perfil
+        console.log('✅ USUÁRIO EXISTENTE ENCONTRADO:', existingUser.nome)
+        setCurrentUser(existingUser)
+        localStorage.setItem('currentUser', JSON.stringify(existingUser))
+        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         setCurrentScreen('userProfile')
         toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         return
       }
     } catch (error) {
-      console.error('⚠️ Erro na verificação de duplicata:', error)
-    }
-    
-    if (!profileData.nome.trim()) {
-      toast.error('Nome é obrigatório')
+      // USUÁRIO NOVO - Preparar para criação de perfil
+      console.log('📝 USUÁRIO NOVO - Preparando criação de perfil')
+      setFormData({
+        nome: '',
+        descricao: '',
+        tags: [],
+        localizacao: '',
+        status: 'available',
+        whatsapp: formattedNumber
+      })
+      toast.success('Olá! Vamos criar seu perfil profissional!')
+      setCurrentScreen('createProfile')
       return
     }
     if (!profileData.descricao.trim()) {
