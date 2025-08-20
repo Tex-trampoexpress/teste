@@ -129,26 +129,6 @@ function App() {
     }
   }
 
-  // Função para voltar (botão de volta manual)
-  const goBack = () => {
-    console.log('⬅️ Voltando, histórico atual:', navigationHistory)
-    
-    if (navigationHistory.length > 1) {
-      const newHistory = [...navigationHistory]
-      newHistory.pop() // Remove tela atual
-      const previousScreen = newHistory[newHistory.length - 1] || 'home'
-      
-      setNavigationHistory(newHistory)
-      setCurrentScreen(previousScreen)
-      
-      // Voltar no histórico do navegador
-      window.history.back()
-    } else {
-      // Se não há histórico, ir para home
-      navigateToScreen('home', false)
-    }
-  }
-
   // Save user session when currentUser changes
   useEffect(() => {
     if (currentUser) {
