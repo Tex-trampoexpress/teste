@@ -77,6 +77,7 @@ function App() {
     if (currentUser) {
       localStorage.setItem('tex_user_whatsapp', currentUser.whatsapp)
       console.log('💾 Sessão salva para:', currentUser.nome)
+      console.log('💾 Sessão salva para:', currentUser.nome)
     }
   }, [currentUser])
 
@@ -345,8 +346,8 @@ function App() {
       setLoading(true)
       
       // Gerar ID único para cliente anônimo se não estiver logado
-      const clienteId = currentUser?.id || crypto.randomUUID()
       // Verificar se usuário já existe
+      const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
       console.log('🔑 Prestador ID:', user.id)
@@ -396,30 +397,32 @@ function App() {
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
         const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
         
+        // Usuário existe - ir para o perfil
+        window.open(whatsappUrl, '_blank')
+        navigateTo('feed')
+        setPaymentData(null)
+        
+        // Usuário existe - ir para o perfil
+        if (currentUser) {
+          await DatabaseService.updateLastAccess(currentUser.id)
+        }
+        
+        // Usuário não existe - ir para criar perfil
+        
+        // Atualizar último acesso
+        if (currentUser) {
+          await DatabaseService.updateLastAccess(currentUser.id)
+        }
+        
+        // Ir direto para o perfil do usuário
         setTimeout(() => {
-          // Usuário existe - ir para o perfil
-          window.open(whatsappUrl, '_blank')
-          navigateTo('feed')
-          setPaymentData(null)
-        
-          // Usuário existe - ir para o perfil
-          if (currentUser) {
-            DatabaseService.updateLastAccess(currentUser.id)
-          }
-        
-          // Usuário não existe - ir para criar perfil
-        
-          // Atualizar último acesso
-          if (currentUser) {
-            DatabaseService.updateLastAccess(currentUser.id)
-          }
-        
-          // Ir direto para o perfil do usuário
           setCurrentScreen('profile')
         }, 1000)
       } else {
-        toast.error('Pagamento não confirmado. Tente novamente.')
         // Usuário não existe - ir para criar perfil
+        setTimeout(() => {
+          setCurrentScreen('createProfile')
+        }, 1000)
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
