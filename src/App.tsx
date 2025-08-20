@@ -997,7 +997,7 @@ function App() {
                 type="text"
                 placeholder="Cidade, Estado"
                 value={profileData.localizacao}
-                onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
+                <p>Carregando seu perfil...</p>
               />
               
               <div className="location-gps-option">
@@ -1676,22 +1676,9 @@ function App() {
               </div>
 
               <div className="payment-actions">
-                <button
-                  className="payment-check-btn"
-                  onClick={handlePaymentCheck}
-                  disabled={checkingPayment}
-                >
-                  <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
-                  {checkingPayment ? 'Verificando...' : '✅ Já Paguei - Verificar'}
-                </button>
-                
-                <button
-                  className="payment-cancel-btn"
-                  onClick={handleCancelPayment}
-                >
-                  <i className="fas fa-times"></i>
-                  ❌ Cancelar
-                </button>
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Aguarde um momento...</p>
               </div>
 
               <div className="payment-help">
