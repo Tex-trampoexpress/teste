@@ -519,6 +519,7 @@ function App() {
         console.log('✅ Pagamento aprovado! Redirecionando para WhatsApp...')
         toast.success('🎉 Pagamento aprovado! Redirecionando para WhatsApp...')
         console.log('🎉 Usuário existente encontrado!')
+        const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
         console.log('📊 Dados:', {
           nome: existingUser.nome,
           perfil_completo: existingUser.perfil_completo,
@@ -536,6 +537,7 @@ function App() {
         
         setTimeout(() => {
           window.open(whatsappUrl, '_blank')
+        }, 1000)
         // Aguardar um pouco para garantir que o estado foi atualizado
         setTimeout(() => {
           // Mostrar mensagem de boas-vindas
@@ -553,7 +555,7 @@ function App() {
         
       } else {
         console.log('⏳ Pagamento ainda pendente')
-        navigateTo('create-profile')
+        toast.error('Pagamento ainda não foi aprovado. Tente novamente.')
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
@@ -997,7 +999,7 @@ function App() {
                 type="text"
                 placeholder="Cidade, Estado"
                 value={profileData.localizacao}
-                <p>Carregando seu perfil...</p>
+                onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
               />
               
               <div className="location-gps-option">
@@ -1676,9 +1678,22 @@ function App() {
               </div>
 
               <div className="payment-actions">
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Aguarde um momento...</p>
+                <button
+                  className="payment-check-btn"
+                  onClick={handlePaymentCheck}
+                  disabled={checkingPayment}
+                >
+                  <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
+                  {checkingPayment ? 'Verificando...' : '✅ Já Paguei - Verificar'}
+                </button>
+                
+                <button
+                  className="payment-cancel-btn"
+                  onClick={handleCancelPayment}
+                >
+                  <i className="fas fa-times"></i>
+                  ❌ Cancelar
+                </button>
               </div>
 
               <div className="payment-help">
