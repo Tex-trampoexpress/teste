@@ -190,6 +190,12 @@ function App() {
           status: 'available',
           latitude: null,
           longitude: null,
+    } catch (error) {
+      console.error('❌ Erro no login:', error)
+      toast.error('Erro ao fazer login. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
           criado_em: new Date().toISOString(),
           atualizado_em: new Date().toISOString(),
           ultimo_acesso: new Date().toISOString(),
