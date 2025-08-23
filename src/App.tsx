@@ -945,18 +945,7 @@ function App() {
         </div>
       )}
     </div>
-  ), [
-    navigationHistory, 
-    searchTerm, 
-    proximityEnabled, 
-    userLocation, 
-    proximityRadius, 
-    loading, 
-    users, 
-    searchUsers, 
-    handleTagClick, 
-    handleContactClick
-  ])
+  ), [loading, users, searchTerm, proximityEnabled, userLocation, proximityRadius])
 
   const MyProfileScreen = () => {
     if (!currentUser) {
