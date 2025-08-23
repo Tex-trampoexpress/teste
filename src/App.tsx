@@ -657,6 +657,62 @@ function App() {
     }
   }
 
+  // Handle payment verification
+  const handlePaymentVerification = async () => {
+    if (!currentPayment) {
+      setPaymentStatus('Erro: Nenhum pagamento encontrado.')
+      return
+    }
+
+    setVerifyingPayment(true)
+    setPaymentStatus('')
+    
+    try {
+      console.log('🔍 Verificando pagamento:', currentPayment.id)
+      
+      const result = await MercadoPagoService.checkPaymentStatus(currentPayment.id)
+      
+      console.log('📊 Status verificado:', result)
+      
+      if (result.status === 'approved') {
+        console.log('✅ Pagamento aprovado! Abrindo WhatsApp...')
+        setPaymentStatus('✅ Pagamento confirmado! Abrindo WhatsApp...')
+        
+        // Abrir WhatsApp após pequeno delay
+        setTimeout(() => {
+          const whatsappUrl = `https://wa.me/55${selectedUser.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+          window.open(whatsappUrl, '_blank')
+          
+          // Voltar ao feed após abrir WhatsApp
+          setTimeout(() => {
+            setCurrentScreen('feed')
+            setCurrentPayment(null)
+            setPaymentStatus('')
+            toast.success('Contato liberado com sucesso!')
+          }, 2000)
+        }, 500)
+        
+      } else if (result.status === 'pending' || result.status === 'in_process') {
+        console.log('⏳ Pagamento ainda pendente')
+        setPaymentStatus('⏳ Pagamento ainda sendo processado. Aguarde alguns instantes e tente novamente.')
+        
+      } else if (result.status === 'rejected' || result.status === 'cancelled') {
+        console.log('❌ Pagamento rejeitado')
+        setPaymentStatus('❌ Pagamento rejeitado. Tente fazer um novo pagamento.')
+        
+      } else {
+        console.log('🚫 Pagamento não confirmado')
+        setPaymentStatus('🚫 Pagamento não confirmado. Verifique se realizou o pagamento.')
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao verificar pagamento:', error)
+      setPaymentStatus('❌ Erro ao verificar pagamento. Tente novamente.')
+    } finally {
+      setVerifyingPayment(false)
+    }
+  }
+
   // Simulate payment approval (for testing)
   const handleSimulatePayment = () => {
     if (!selectedPrestador) return
@@ -1915,22 +1971,51 @@ function App() {
 
               <div className="payment-actions">
                 <button
-                  className="payment-check-btn"
-                  onClick={handlePaymentCheck}
-                  disabled={checkingPayment}
+                  onClick={handlePaymentVerification}
+                  disabled={verifyingPayment || !currentPayment}
+                  className="verify-payment-btn"
                 >
-                  <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
-                  {checkingPayment ? 'Verificando...' : '✅ Já Paguei - Verificar'}
+                  {verifyingPayment ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-check-circle"></i>
+                      Já Paguei
+                    </>
+                  )}
                 </button>
                 
                 <button
-                  className="payment-cancel-btn"
-                  onClick={handleCancelPayment}
+                  onClick={() => {
+                    setCurrentScreen('feed')
+                    setCurrentPayment(null)
+                    setPaymentStatus('')
+                  }}
+                  className="cancel-payment-btn"
                 >
                   <i className="fas fa-times"></i>
-                  ❌ Cancelar
+                  Cancelar
                 </button>
               </div>
+              
+              {/* Payment Status Messages */}
+              {paymentStatus && (
+                <div className={`payment-status-message ${
+                  paymentStatus.includes('confirmado') ? 'success' :
+                  paymentStatus.includes('processado') ? 'warning' :
+                  'error'
+                }`}>
+                  <i className={`fas ${
+                    paymentStatus.includes('confirmado') ? 'fa-check-circle' :
+                    paymentStatus.includes('processado') ? 'fa-clock' :
+                    'fa-exclamation-triangle'
+                  }`}></i>
+                  <p>{paymentStatus}</p>
+                </div>
+              )}
 
               <div className="payment-help">
                 <h4>💡 Como pagar com PIX:</h4>
