@@ -1103,7 +1103,9 @@ function App() {
             <button 
               className="logo" 
               onClick={() => navigateTo('home')}
-              )}
+            >
+              TEX
+            </div>
             </div>
           </div>
         </header>
