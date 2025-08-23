@@ -883,7 +883,7 @@ function App() {
           )}
         </div>
 
-        <button className="explore-btn" onClick={searchUsers}>
+        <button className="explore-btn" onClick={handleSearchSubmit}>
           <i className="fas fa-search"></i>
           Buscar
         </button>
