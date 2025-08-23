@@ -9,54 +9,35 @@ const navigationHistory: string[] = []
 
 function App() {
   // State management
-  const [currentScreen, setCurrentScreen] = useState('')
+  const [currentScreen, setCurrentScreen] = useState('home')
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(false)
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
-  const [quickUsers, setQuickUsers] = useState<Partial<Usuario>[]>([])
-  const [quickLoading, setQuickLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isCreatingProfile, setIsCreatingProfile] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [users, setUsers] = useState<Usuario[]>([])
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const [offset, setOffset] = useState(0)
-  const [error, setError] = useState<string | null>(null)
 
   // Payment states
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
   const [selectedPrestador, setSelectedPrestador] = useState<Usuario | null>(null)
   const [checkingPayment, setCheckingPayment] = useState(false)
 
-  // Terms acceptance state
-  const [showTermsModal, setShowTermsModal] = useState(false)
-  const [termsAccepted, setTermsAccepted] = useState(false)
-
   // Form states
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [profileData, setProfileData] = useState({
     nome: '',
     descricao: '',
-    tags: [] as string[], 
+    tags: [] as string[],
     foto_url: '',
     localizacao: '',
     status: 'available' as 'available' | 'busy',
     latitude: null as number | null,
     longitude: null as number | null
   })
-
-  // Profile creation states
-  const [profileStep, setProfileStep] = useState(0) // Começar em 0 para não mostrar nada
-  const [isCreatingUser, setIsCreatingUser] = useState(false)
-  const [profileError, setProfileError] = useState('')
 
   // Navigation functions
   const navigateTo = (screen: string) => {
@@ -87,154 +68,23 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  // Sistema de navegação com histórico para botão nativo
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      console.log('🔙 Botão nativo pressionado, estado:', event.state)
-      
-      if (event.state && event.state.screen) {
-        // Navegar para a tela do histórico
-        setCurrentScreen(event.state.screen)
-        
-        // Atualizar histórico local
-        setNavigationHistory(prev => {
-          const newHistory = [...prev]
-          if (newHistory[newHistory.length - 1] !== event.state.screen) {
-            newHistory.push(event.state.screen)
-          }
-          return newHistory
-        })
-      } else {
-        // Se não há estado, voltar para home
-        setCurrentScreen('home')
-        setNavigationHistory(['home'])
-      }
-    }
-
-    // Adicionar listener para o botão nativo
-    window.addEventListener('popstate', handlePopState)
-    
-    // Estado inicial
-    if (window.history.state === null) {
-      window.history.replaceState({ screen: 'home' }, '', window.location.pathname)
-    }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
-  }, [])
-
-  // Função para navegar com histórico
-  const navigateToScreen = (screen: string, pushToHistory: boolean = true) => {
-    console.log('🧭 Navegando para:', screen)
-    
-    setCurrentScreen(screen)
-    
-    if (pushToHistory) {
-      // Adicionar ao histórico do navegador
-      window.history.pushState({ screen }, '', window.location.pathname)
-      
-      // Atualizar histórico local
-      setNavigationHistory(prev => [...prev, screen])
-    }
-  }
-
-  // Save user session when currentUser changes
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('tex_user_whatsapp', currentUser.whatsapp)
-      console.log('💾 Sessão salva para:', currentUser.nome)
-      console.log('💾 Sessão salva para:', currentUser.nome)
-    }
-  }, [currentUser])
-
-  // Initialize app
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        console.log('🚀 Inicializando aplicação...')
-        
-        // Check for existing user session
-        const savedUser = localStorage.getItem('currentUser')
-        if (savedUser) {
-          try {
-            const user = JSON.parse(savedUser)
-            console.log('👤 Usuário encontrado no localStorage:', user.nome)
-            setCurrentUser(user)
-          } catch (error) {
-            console.error('❌ Erro ao parsear usuário salvo:', error)
-            localStorage.removeItem('currentUser')
-          }
-        }
-        
-        // Always start at home screen
-        console.log('🏠 Definindo tela inicial como home')
-        setCurrentScreen('home')
-        setIsInitialized(true)
-        
-      } catch (error) {
-        console.error('❌ Erro na inicialização:', error)
-        setCurrentScreen('home')
-        setIsInitialized(true)
-      }
-    }
-
-    initializeApp()
-  }, [])
-
   // Load user data on mount
   useEffect(() => {
-    // Check if terms were already accepted
-    const acceptedTerms = localStorage.getItem('tex-terms-accepted')
-    if (acceptedTerms === 'true') {
-      setTermsAccepted(true)
-    }
-
-    console.log('🔄 Verificando sessão salva...')
     const savedUser = localStorage.getItem('tex-user')
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser)
         setCurrentUser(user)
         setIsLoggedIn(true)
-        // Se tem usuário salvo, vai para o feed
-        // Se tem usuário salvo, vai para o feed
-        // Se tem usuário salvo, vai para o feed
-        setCurrentScreen('feed')
-        loadUsuarios()
+        if (user.perfil_completo) {
+          loadUsuarios()
+        }
       } catch (error) {
         console.error('Erro ao carregar usuário salvo:', error)
         localStorage.removeItem('tex-user')
       }
-    } else {
-      console.log('ℹ️ Nenhuma sessão salva encontrada')
     }
   }, [])
-
-  // Handle explore button click
-  const handleExploreClick = () => {
-    if (!termsAccepted) {
-      setShowTermsModal(true)
-    } else {
-      navigateTo('feed')
-      loadUsuarios()
-    }
-  }
-
-  // Handle terms acceptance
-  const handleAcceptTerms = () => {
-    setTermsAccepted(true)
-    localStorage.setItem('tex-terms-accepted', 'true')
-    localStorage.setItem('tex-terms-accepted-date', new Date().toISOString())
-    setShowTermsModal(false)
-    navigateTo('feed')
-    loadUsuarios()
-  }
-
-  // Handle terms rejection
-  const handleRejectTerms = () => {
-    setShowTermsModal(false)
-  }
 
   // WhatsApp login
   const handleWhatsAppLogin = async () => {
@@ -244,80 +94,46 @@ function App() {
     }
 
     setLoading(true)
-    setIsCreatingProfile(false)
-    setProfileStep(0)
-
     try {
-      // Limpar o número (manter apenas dígitos)
       const cleanNumber = whatsappNumber.replace(/\D/g, '')
-      console.log('📱 Verificando WhatsApp:', cleanNumber)
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(whatsappNumber)
-      if (existingUser) {
-        console.log('⚠️ Usuário já existe, redirecionando para perfil')
-        setCurrentUser(existingUser)
-        localStorage.setItem('currentUser', JSON.stringify(existingUser))
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        setCurrentScreen('userProfile')
+      if (cleanNumber.length < 10) {
+        toast.error('Número de WhatsApp inválido')
         return
       }
 
-      // Buscar usuário existente
-      const existingUser2 = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
-      
-      if (cleanNumber.length < 10) {
-        console.log('✅ Usuário existente encontrado:', existingUser2.nome)
-        return
-      }
-      
-      if (existingUser2) {
-        console.log('✅ Usuário encontrado:', existingUser2.nome)
-        console.log('📋 Perfil completo - indo para perfil')
-        setProfileData({
-          nome: existingUser2.nome,
-          descricao: existingUser2.descricao || '',
-          tags: existingUser2.tags || [],
-          foto_url: existingUser2.foto_url || '',
-          localizacao: existingUser2.localizacao || '',
-          status: existingUser2.status || 'available',
-          latitude: existingUser2.latitude,
-          longitude: existingUser2.longitude
-        })
-        console.log('📝 Perfil incompleto - indo para edição')
-        setCurrentUser({
-          id: existingUser2.id,
-          nome: existingUser2.nome,
-          whatsapp: cleanNumber,
-          descricao: existingUser2.descricao || '',
-          tags: existingUser2.tags || [],
-          foto_url: existingUser2.foto_url || '',
-          localizacao: existingUser2.localizacao || '',
-          status: existingUser2.status || 'available',
-          latitude: existingUser2.latitude,
-          longitude: existingUser2.longitude,
-          criado_em: existingUser2.criado_em,
-          atualizado_em: existingUser2.atualizado_em,
-          ultimo_acesso: existingUser2.ultimo_acesso,
-          perfil_completo: existingUser2.perfil_completo,
-          verificado: existingUser2.verificado
-        })
-        if (existingUser2.perfil_completo) {
-          setTimeout(() => {
-            setCurrentScreen('feed')
-            setNavigationHistory(['home', 'feed'])
-          }, 2000)
+      const formattedNumber = `+55${cleanNumber}`
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(formattedNumber)
+
+      if (existingUser) {
+        setCurrentUser(existingUser)
+        setIsLoggedIn(true)
+        localStorage.setItem('tex-user', JSON.stringify(existingUser))
+        
+        if (existingUser.perfil_completo) {
+          toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
+          navigateTo('feed')
+          loadUsuarios()
         } else {
-          setIsCreatingProfile(true)
-          setCurrentScreen('profile-creation')
-          setNavigationHistory(['home', 'profile-creation'])
-          setProfileStep(1) // Iniciar criação
+          toast.success('Complete seu perfil para continuar')
+          setProfileData({
+            nome: existingUser.nome || '',
+            descricao: existingUser.descricao || '',
+            tags: existingUser.tags || [],
+            foto_url: existingUser.foto_url || '',
+            localizacao: existingUser.localizacao || '',
+            status: existingUser.status || 'available',
+            latitude: existingUser.latitude,
+            longitude: existingUser.longitude
+          })
+          navigateTo('profile-setup')
         }
       } else {
-        console.log('🆕 Usuário novo - indo para criação')
+        // New user - create basic profile
         const newUserId = crypto.randomUUID()
         setCurrentUser({
           id: newUserId,
           nome: '',
-          whatsapp: cleanNumber, // Salvar número limpo
+          whatsapp: formattedNumber,
           descricao: '',
           tags: [],
           foto_url: '',
@@ -342,28 +158,21 @@ function App() {
           latitude: null,
           longitude: null
         })
-        setIsCreatingProfile(true)
-        setCurrentScreen('profile-creation')
-        setNavigationHistory(['home', 'profile-creation'])
-        setProfileStep(1) // Iniciar criação
-        toast.success('Vamos criar seu perfil profissional!')
+        toast.success('Vamos criar seu perfil!')
+        navigateTo('profile-setup')
       }
     } catch (error) {
-      console.error('❌ Erro no login:', error)
-      toast.error('Erro ao fazer login. Verifique sua conexão e tente novamente.', {
-        duration: 4000,
-        icon: '❌'
-      })
+      console.error('Erro no login:', error)
+      toast.error('Erro ao fazer login. Tente novamente.')
     } finally {
       setLoading(false)
     }
   }
 
   // Load users
-  const loadUsuarios = async (reset: boolean = false) => {
+  const loadUsuarios = async () => {
     setLoading(true)
     try {
-      const currentOffset = reset ? 0 : offset
       let users: Usuario[] = []
 
       if (proximityEnabled && userLocation) {
@@ -377,20 +186,11 @@ function App() {
           search: searchTerm,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
           status: 'available',
-          limit: 10,
-          offset: currentOffset
+          limit: 50
         })
       }
 
-      if (reset) {
-        setUsuarios(users)
-        setOffset(10)
-      } else {
-        setUsuarios(prev => [...prev, ...users])
-        setOffset(prev => prev + 10)
-      }
-      
-      setHasMore(users.length === 10)
+      setUsuarios(users)
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
       toast.error('Erro ao carregar profissionais')
@@ -398,64 +198,6 @@ function App() {
       setLoading(false)
     }
   }
-
-  // Carregamento rápido inicial
-  const loadQuickUsers = async () => {
-    try {
-      setLoading(true)
-      console.log('🔄 Carregando usuários rápidos...')
-      const quickUsers = await DatabaseService.getUsuariosRapido(10)
-      console.log('📊 Usuários carregados:', quickUsers.length)
-      setUsers(quickUsers as Usuario[])
-    } catch (error) {
-      console.error('❌ Erro ao carregar usuários:', error.message)
-      toast.error('Erro ao carregar usuários. Verifique sua conexão.')
-      setUsers([]) // Set empty array on error
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Load users when filters change
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadUsuarios(true) // Reset on filter change
-    }, 300) // Debounce de 300ms
-    
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, selectedTags])
-
-  // Carregamento inicial rápido
-  useEffect(() => {
-    loadQuickUsers()
-    
-    // Verificar se há usuário na sessão (simulado via localStorage para teste)
-    const savedUser = localStorage.getItem('tex-current-user')
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser)
-        console.log('👤 Usuário encontrado na sessão:', user.nome)
-        setCurrentUser(user)
-        if (user.perfil_completo) {
-          navigateTo('feed')
-        }
-      } catch (error) {
-        console.error('❌ Erro ao carregar usuário da sessão:', error)
-        localStorage.removeItem('tex-current-user')
-      }
-    }
-  }, [])
-
-  // Salvar usuário na sessão quando mudar
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('tex-current-user', JSON.stringify(currentUser))
-      console.log('💾 Usuário salvo na sessão:', currentUser.nome)
-    } else {
-      localStorage.removeItem('tex-current-user')
-      console.log('🗑️ Usuário removido da sessão')
-    }
-  }, [currentUser])
 
   // Get user location
   const getUserLocation = () => {
@@ -483,124 +225,6 @@ function App() {
         setLoading(false)
       }
     )
-  }
-
-  // Handle photo upload
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      toast.error('Por favor, selecione apenas arquivos de imagem')
-      return
-    }
-
-    // Validar tamanho (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('A imagem deve ter no máximo 5MB')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result as string
-      setProfileData(prev => ({ ...prev, foto_url: result }))
-      toast.success('Foto adicionada com sucesso!')
-    }
-    reader.readAsDataURL(file)
-  }
-
-  // Handle tag input
-  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      const input = e.currentTarget
-      const tag = input.value.trim().toLowerCase()
-      
-      if (tag && !profileData.tags.includes(tag) && profileData.tags.length < 10) {
-        setProfileData(prev => ({
-          ...prev,
-          tags: [...prev.tags, tag]
-        }))
-        input.value = ''
-        toast.success(`Especialidade "${tag}" adicionada!`)
-      } else if (profileData.tags.length >= 10) {
-        toast.error('Máximo de 10 especialidades permitidas')
-      } else if (profileData.tags.includes(tag)) {
-        toast.error('Esta especialidade já foi adicionada')
-      }
-    }
-  }
-
-  // Remove tag
-  const removeTag = (tagToRemove: string) => {
-    setProfileData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }))
-    toast.success(`Especialidade "${tagToRemove}" removida`)
-  }
-
-  // Handle profile creation
-  const handleCreateProfile = async () => {
-    // Validações
-    if (!profileData.nome.trim()) {
-      toast.error('Nome é obrigatório')
-      return
-    }
-    
-    if (!profileData.descricao.trim()) {
-      toast.error('Descrição é obrigatória')
-      return
-    }
-    
-    if (profileData.tags.length === 0) {
-      toast.error('Adicione pelo menos uma especialidade')
-      return
-    }
-
-    setIsCreatingUser(true)
-    setProfileError('')
-
-    try {
-      const userData = {
-        id: crypto.randomUUID(),
-        nome: profileData.nome.trim(),
-        whatsapp: whatsappNumber.replace(/\D/g, ''),
-        descricao: profileData.descricao.trim(),
-        tags: profileData.tags,
-        foto_url: profileData.foto_url || undefined,
-        localizacao: profileData.localizacao.trim() || undefined,
-        status: profileData.status,
-        latitude: profileData.latitude || undefined,
-        longitude: profileData.longitude || undefined
-      }
-
-      console.log('📝 Criando perfil:', userData)
-      
-      const createdUser = await DatabaseService.createUsuario(userData)
-      
-      console.log('✅ Perfil criado:', createdUser)
-      
-      setCurrentUser(createdUser)
-      setIsCreatingProfile(false)
-      
-      toast.success(`Perfil criado com sucesso! Bem-vindo, ${createdUser.nome}!`)
-      
-      // Redirecionar para o feed
-      setTimeout(() => {
-        setCurrentScreen('feed')
-        setNavigationHistory(['home', 'profile-creation', 'feed'])
-      }, 2000)
-      
-    } catch (error) {
-      console.error('❌ Erro ao criar perfil:', error)
-      setProfileError(error.message || 'Erro ao criar perfil')
-      toast.error('Erro ao criar perfil. Tente novamente.')
-    } finally {
-      setIsCreatingUser(false)
-    }
   }
 
   // Save profile
@@ -665,8 +289,7 @@ function App() {
     setCurrentUser(null)
     setIsLoggedIn(false)
     localStorage.removeItem('tex-user')
-    localStorage.removeItem('tex-current-user')
-    navigateTo('home')
+    setCurrentScreen('home')
     toast.success('Logout realizado com sucesso')
   }
 
@@ -676,46 +299,24 @@ function App() {
       console.log('💳 [PRODUÇÃO] Iniciando pagamento para:', user.nome)
       
       setSelectedPrestador(user)
-      console.log('🔍 Verificando pagamento:', currentPayment.id)
-      const result = await MercadoPagoService.checkPaymentStatus(currentPayment.id)
-      console.log('📊 Resultado da verificação:', result)
-      console.log('🔍 Verificando pagamento:', paymentId)
-      if (result.status === 'approved') {
-        toast.success('✅ Pagamento confirmado! Abrindo WhatsApp...')
-      // Verificar status do pagamento
-        // Limpar dados de pagamento
-        setCurrentPayment(null)
-        setShowPayment(false)
-        
-        // Abrir WhatsApp imediatamente
-      console.log('📊 Status do pagamento:', paymentStatus)
-          console.log('📱 Abrindo WhatsApp para:', selectedUser?.nome)
+      setLoading(true)
+      
+      // Gerar ID único para cliente anônimo se não estiver logado
       const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
       console.log('🔑 Prestador ID:', user.id)
-
-        // Abrir WhatsApp após 0.5 segundos
-        setTimeout(() => {
-          window.open(
-            `https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`,
-            '_blank'
-          )
-        }, 500)
-
-        // Voltar ao feed após 2 segundos
-        setTimeout(() => {
-          setCurrentScreen('feed')
-          setSelectedUser(null)
-        }, 2000)
-        
-      } else if (result.status === 'pending' || result.status === 'in_process') {
-        toast.error('⏳ Pagamento ainda sendo processado. Aguarde e tente novamente.')
-      } else if (result.status === 'rejected' || result.status === 'cancelled') {
-        toast.error('❌ Pagamento rejeitado. Tente fazer um novo pagamento.')
-      } else {
-        toast.error('❌ Pagamento não confirmado. Verifique se realizou o pagamento.')
-      }
+      
+      // Criar pagamento PIX
+      const payment = await MercadoPagoService.createPixPayment({
+        cliente_id: clienteId,
+        prestador_id: user.id,
+        amount: 2.02
+      })
+      
+      console.log('✅ Pagamento criado com sucesso:', payment)
+      setPaymentData(payment)
+      navigateTo('payment')
       toast.success('💳 QR Code gerado! Complete o pagamento PIX')
       
     } catch (error) {
@@ -738,133 +339,33 @@ function App() {
   const handlePaymentCheck = async () => {
     if (!paymentData || !selectedPrestador) return
 
-    setCheckingPayment(true)
     try {
+      setCheckingPayment(true)
       console.log('🔍 Verificando pagamento:', paymentData.id)
       
-      const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentData.id)
-      console.log('📊 Status do pagamento:', paymentStatus)
+      const isApproved = await MercadoPagoService.isPaymentApproved(paymentData.id)
       
-      console.log('🔍 Verificando se usuário existe...')
-      if (paymentStatus.status === 'approved') {
-        console.log('✅ Pagamento aprovado! Redirecionando para WhatsApp...')
-        toast.success('🎉 Pagamento aprovado! Redirecionando para WhatsApp...')
-        console.log('🎉 Usuário existente encontrado!')
-        console.log('📊 Dados:', {
-          nome: existingUser.nome,
-          perfil_completo: existingUser.perfil_completo,
-          status: existingUser.status
-        })
+      if (isApproved) {
+        toast.success('🎉 Pagamento confirmado! Redirecionando...')
         
+        // Redirect to WhatsApp
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
         const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
         
-        // Mostrar notificação de boas-vindas
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}! 👋`, {
-          duration: 3000,
-          icon: '🎉'
-        })
-        
         setTimeout(() => {
           window.open(whatsappUrl, '_blank')
+          navigateTo('feed')
+          setPaymentData(null)
+          setSelectedPrestador(null)
         }, 1000)
-        // Aguardar um pouco para garantir que o estado foi atualizado
-        setTimeout(() => {
-          // Mostrar mensagem de boas-vindas
-          toast.success(`Bem-vindo de volta, ${existingUser.nome}! 🎉`)
-          if (paymentStatus === 'approved') {
-            toast.success('Pagamento confirmado! Redirecionando...', { id: 'payment-check' })
-            console.log('✅ Pagamento aprovado, liberando acesso')
-            
-            // Aguardar um pouco antes de redirecionar
-            setTimeout(() => {
-              const whatsappUrl = `https://wa.me/55${selectedUser.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-              console.log('📱 Redirecionando para WhatsApp:', whatsappUrl)
-              window.open(whatsappUrl, '_blank')
-              
-              // Voltar para o feed
-              setCurrentScreen('feed')
-              setSelectedUser(null)
-              setPaymentData(null)
-            }, 1500)
-            
-          } else if (paymentStatus === 'pending' || paymentStatus === 'in_process') {
-            toast.error('Pagamento ainda não foi processado. Aguarde alguns minutos e tente novamente.', { id: 'payment-check' })
-            console.log('⏳ Pagamento pendente')
-            
-          } else if (paymentStatus === 'rejected' || paymentStatus === 'cancelled') {
-            toast.error('Pagamento foi rejeitado ou cancelado. Tente novamente.', { id: 'payment-check' })
-            console.log('❌ Pagamento rejeitado/cancelado')
-            if (existingUser.perfil_completo) {
-            }
-          } else {
-            console.log('⏳ Pagamento ainda pendente')
-            toast.error('Status do pagamento desconhecido. Tente novamente.', { id: 'payment-check' })
-            console.log('❓ Status desconhecido:', paymentStatus)
-          }
-        }, 1000)
+      } else {
+        toast.error('Pagamento ainda não confirmado. Aguarde e tente novamente.')
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('❌ Erro ao verificar pagamento. Tente novamente em alguns segundos.')
+      toast.error('Erro ao verificar pagamento. Tente novamente.')
     } finally {
       setCheckingPayment(false)
-    }
-  }
-
-  // Handle payment verification
-  const handlePaymentVerification = async () => {
-    if (!currentPayment) {
-      setPaymentStatus('Erro: Nenhum pagamento encontrado.')
-      return
-    }
-
-    setVerifyingPayment(true)
-    setPaymentStatus('')
-    
-    try {
-      console.log('🔍 Verificando pagamento:', currentPayment.id)
-      
-      const result = await MercadoPagoService.checkPaymentStatus(currentPayment.id)
-      
-      console.log('📊 Status verificado:', result)
-      
-      if (result.status === 'approved') {
-        console.log('✅ Pagamento aprovado! Abrindo WhatsApp...')
-        setPaymentStatus('✅ Pagamento confirmado! Abrindo WhatsApp...')
-        
-        // Abrir WhatsApp após pequeno delay
-        setTimeout(() => {
-          const whatsappUrl = `https://wa.me/55${selectedUser.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-          window.open(whatsappUrl, '_blank')
-          
-          // Voltar ao feed após abrir WhatsApp
-          setTimeout(() => {
-            setCurrentScreen('feed')
-            setCurrentPayment(null)
-            setPaymentStatus('')
-            toast.success('Contato liberado com sucesso!')
-          }, 2000)
-        }, 500)
-        
-      } else if (result.status === 'pending' || result.status === 'in_process') {
-        console.log('⏳ Pagamento ainda pendente')
-        setPaymentStatus('⏳ Pagamento ainda sendo processado. Aguarde alguns instantes e tente novamente.')
-        
-      } else if (result.status === 'rejected' || result.status === 'cancelled') {
-        console.log('❌ Pagamento rejeitado')
-        setPaymentStatus('❌ Pagamento rejeitado. Tente fazer um novo pagamento.')
-        
-      } else {
-        console.log('🚫 Pagamento não confirmado')
-        setPaymentStatus('🚫 Pagamento não confirmado. Verifique se realizou o pagamento.')
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro ao verificar pagamento:', error)
-      setPaymentStatus('❌ Erro ao verificar pagamento. Tente novamente.')
-    } finally {
-      setVerifyingPayment(false)
     }
   }
 
@@ -913,6 +414,14 @@ function App() {
     }
   }
 
+  // Remove tag
+  const removeTag = (tagToRemove: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }))
+  }
+
   // Filter by tag
   const filterByTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -930,440 +439,10 @@ function App() {
     loadUsuarios()
   }
 
-  // Status toggle handler
-  const [statusLoading, setStatusLoading] = useState(false)
-  
-  const handleStatusToggle = async () => {
-    if (!currentUser) return
-    
-    setStatusLoading(true)
-    try {
-      const newStatus = currentUser.status === 'available' ? 'busy' : 'available'
-      const updatedUser = await DatabaseService.updateUsuario(currentUser.id, { status: newStatus })
-      setCurrentUser(updatedUser)
-      localStorage.setItem('tex-user', JSON.stringify(updatedUser))
-      toast.success(`Status alterado para ${newStatus === 'available' ? 'Disponível' : 'Ocupado'}`)
-    } catch (error) {
-      console.error('Erro ao alterar status:', error)
-      toast.error('Erro ao alterar status')
-    } finally {
-      setStatusLoading(false)
-    }
-  }
-
-  // Render current screen
-  const renderScreen = () => {
-    // Show loading until initialized
-    if (!isInitialized) {
-      return (
-        <div className="screen active">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Carregando TEX...</p>
-          </div>
-        </div>
-      )
-    }
-
-    // Always show home screen if no current screen or explicitly home
-    if (currentScreen === 'home') {
-      return (
-        <div className="screen active">
-          {/* Header with login button */}
-          <div className="hero-container">
-            <div className="tex-logo-container-inside">
-              <div className="tex-logo-text-inside">TEX</div>
-            </div>
-            
-            <h1>
-              Do trampo
-              <span>ao encontro</span>
-            </h1>
-
-            <h3 className="trampoexpress-subtitle">TrampoExpress</h3>
-
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Buscar serviços ou acompanhantes"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              
-              <button 
-                className="explore-btn"
-                onClick={handleExploreClick}
-              >
-                <i className="fas fa-search"></i>
-                Explorar Profissionais
-              </button>
-            </div>
-
-            {!isLoggedIn && (
-              <button 
-                className="whatsapp-login-btn"
-                onClick={() => navigateTo('verify')}
-              >
-                <i className="fab fa-whatsapp"></i>
-                Entrar com WhatsApp
-              </button>
-            )}
-
-            <div className="location-status">
-              {!userLocation ? (
-                <button 
-                  className="location-enable-btn"
-                  onClick={getUserLocation}
-                  disabled={loading}
-                >
-                  <i className="fas fa-map-marker-alt"></i>
-                  {loading ? 'Obtendo localização...' : 'Ativar localização'}
-                </button>
-              ) : (
-                <p className="location-gps-status">
-                  <i className="fas fa-check-circle"></i>
-                  Localização ativada
-                </p>
-              )}
-            </div>
-
-            <div className="hero-footer-info">
-              <nav className="hero-footer-nav">
-                <button 
-                  onClick={() => {
-                    setCurrentScreen('home')
-                    // setNavigationHistory(['home'])
-                  }}
-                  className={currentScreen === 'home' ? 'active' : ''}
-                >
-                  Home
-                </button>
-                <button onClick={() => navigateTo('about')}>Sobre</button>
-                <button onClick={() => navigateTo('terms')}>Termos</button>
-                <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
-              </nav>
-              <div className="hero-copyright">
-                © 2025 TrampoExpress. Conectando talentos.
-              </div>
-            </div>
-          </div>
-          
-          {/* Auto-redirect for logged users */}
-          {currentUser && (
-            <AutoRedirectMessage />
-          )}
-        </div>
-      )
-    }
-
-    // Other screens would be rendered here based on currentScreen
-    // This is where you'd add your switch statement or conditional rendering
-    // for other screens like 'feed', 'profile-setup', etc.
-  }
-
-  // Auto-redirect message component
-  const AutoRedirectMessage = () => {
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        if (currentUser?.perfil_completo) {
-          console.log('✅ Auto-redirecionando para feed...')
-          navigateTo('feed')
-        } else {
-          console.log('⚠️ Auto-redirecionando para criação de perfil...')
-          navigateTo('create-profile')
-        }
-      }, 3000) // 3 segundos na tela inicial
-
-      return () => clearTimeout(timer)
-    }, [])
-
-    return (
-      <div className="auto-redirect-message">
-        <div className="redirect-content">
-          <div className="loading-spinner small"></div>
-          <p>Bem-vindo de volta, {currentUser?.nome}!</p>
-          <p className="redirect-text">
-            {currentUser?.perfil_completo 
-              ? 'Redirecionando para o feed...' 
-              : 'Redirecionando para completar perfil...'}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="App">
       <Toaster position="top-center" />
       <PWAInstallPrompt />
-
-      {/* Header */}
-      <div className="app-container">
-        <header className="header">
-        </header>
-
-        <main className="main-content">
-          {/* Profile Creation Screen */}
-          {currentScreen === 'profile-creation' && (
-            <div className="screen profile-creation-screen">
-              <div className="profile-creation-container">
-                <div className="profile-creation-header">
-                  <h2>Criar Perfil Profissional</h2>
-                  <p>Complete seu perfil para começar a receber contatos</p>
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${(profileStep / 4) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="progress-text">Passo {profileStep} de 4</span>
-                </div>
-
-                {profileError && (
-                  <div className="error-message">
-                    <i className="fas fa-exclamation-triangle"></i>
-                    {profileError}
-                  </div>
-                )}
-
-                {/* Step 1: Photo Upload */}
-                {profileStep === 1 && (
-                  <div className="profile-step">
-                    <h3>Adicione uma foto (opcional)</h3>
-                    <p>Uma foto ajuda a criar confiança com seus clientes</p>
-                    
-                    <div className="photo-upload-container">
-                      <div className="photo-preview">
-                        {profileData.foto_url ? (
-                          <img src={profileData.foto_url} alt="Preview" />
-                        ) : (
-                          <div className="photo-placeholder">
-                            <i className="fas fa-camera"></i>
-                            <span>Adicionar Foto</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <input
-                        type="file"
-                        id="photo-upload"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        style={{ display: 'none' }}
-                      />
-                      
-                      <div className="photo-actions">
-                        <label htmlFor="photo-upload" className="btn btn-secondary">
-                          <i className="fas fa-upload"></i>
-                          {profileData.foto_url ? 'Trocar Foto' : 'Escolher Foto'}
-                        </label>
-                        
-                        {profileData.foto_url && (
-                          <button 
-                            className="btn btn-outline"
-                            onClick={() => setProfileData(prev => ({ ...prev, foto_url: '' }))}
-                          >
-                            <i className="fas fa-trash"></i>
-                            Remover
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="step-actions">
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => setProfileStep(2)}
-                      >
-                        Continuar
-                        <i className="fas fa-arrow-right"></i>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 2: Basic Info */}
-                {profileStep === 2 && (
-                  <div className="profile-step">
-                    <h3>Informações Básicas</h3>
-                    <p>Como você gostaria de ser conhecido?</p>
-                    
-                    <div className="form-group">
-                      <label>Nome Completo *</label>
-                      <input
-                        type="text"
-                        value={profileData.nome}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, nome: e.target.value }))}
-                        placeholder="Seu nome completo"
-                        maxLength={100}
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>Descrição Profissional *</label>
-                      <textarea
-                        value={profileData.descricao}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, descricao: e.target.value }))}
-                        placeholder="Descreva seus serviços e experiência..."
-                        rows={4}
-                        maxLength={500}
-                      />
-                      <small>{profileData.descricao.length}/500 caracteres</small>
-                    </div>
-                    
-                    <div className="step-actions">
-                      <button 
-                        className="btn btn-outline"
-                        onClick={() => setProfileStep(1)}
-                      >
-                        <i className="fas fa-arrow-left"></i>
-                        Voltar
-                      </button>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => setProfileStep(3)}
-                        disabled={!profileData.nome.trim() || !profileData.descricao.trim()}
-                      >
-                        Continuar
-                        <i className="fas fa-arrow-right"></i>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 3: Specialties */}
-                {profileStep === 3 && (
-                  <div className="profile-step">
-                    <h3>Suas Especialidades</h3>
-                    <p>Adicione suas áreas de atuação (mínimo 1, máximo 10)</p>
-                    
-                    <div className="form-group">
-                      <label>Especialidades *</label>
-                      <input
-                        type="text"
-                        placeholder="Digite uma especialidade e pressione Enter"
-                        onKeyDown={handleTagInput}
-                        maxLength={30}
-                      />
-                      <small>Pressione Enter ou vírgula para adicionar</small>
-                    </div>
-                    
-                    <div className="tags-container">
-                      {profileData.tags.map((tag, index) => (
-                        <span key={index} className="tag">
-                          #{tag}
-                          <button onClick={() => removeTag(tag)}>
-                            <i className="fas fa-times"></i>
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    
-                    {profileData.tags.length === 0 && (
-                      <div className="empty-tags">
-                        <i className="fas fa-tags"></i>
-                        <p>Nenhuma especialidade adicionada ainda</p>
-                      </div>
-                    )}
-                    
-                    <div className="step-actions">
-                      <button 
-                        className="btn btn-outline"
-                        onClick={() => setProfileStep(2)}
-                      >
-                        <i className="fas fa-arrow-left"></i>
-                        Voltar
-                      </button>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => setProfileStep(4)}
-                        disabled={profileData.tags.length === 0}
-                      >
-                        Continuar
-                        <i className="fas fa-arrow-right"></i>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 4: Location & Status */}
-                {profileStep === 4 && (
-                  <div className="profile-step">
-                    <h3>Localização e Status</h3>
-                    <p>Finalize seu perfil com informações de localização</p>
-                    
-                    <div className="form-group">
-                      <label>Localização (opcional)</label>
-                      <input
-                        type="text"
-                        value={profileData.localizacao}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
-                        placeholder="Cidade, Estado"
-                        maxLength={100}
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>Status Inicial</label>
-                      <div className="status-options">
-                        <label className="status-option">
-                          <input
-                            type="radio"
-                            name="status"
-                            value="available"
-                            checked={profileData.status === 'available'}
-                            onChange={(e) => setProfileData(prev => ({ ...prev, status: e.target.value as 'available' | 'busy' }))}
-                          />
-                          <span className="status-indicator available"></span>
-                          Disponível para novos trabalhos
-                        </label>
-                        <label className="status-option">
-                          <input
-                            type="radio"
-                            name="status"
-                            value="busy"
-                            checked={profileData.status === 'busy'}
-                            onChange={(e) => setProfileData(prev => ({ ...prev, status: e.target.value as 'available' | 'busy' }))}
-                          />
-                          <span className="status-indicator busy"></span>
-                          Ocupado no momento
-                        </label>
-                      </div>
-                    </div>
-                    
-                    <div className="step-actions">
-                      <button 
-                        className="btn btn-outline"
-                        onClick={() => setProfileStep(3)}
-                      >
-                        <i className="fas fa-arrow-left"></i>
-                        Voltar
-                      </button>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={handleCreateProfile}
-                        disabled={isCreatingUser}
-                      >
-                        {isCreatingUser ? (
-                          <>
-                            <i className="fas fa-spinner fa-spin"></i>
-                            Criando Perfil...
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-check"></i>
-                            Criar Perfil
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
 
       {/* Profile Header Button */}
       {isLoggedIn && currentUser && (
@@ -1374,9 +453,8 @@ function App() {
           >
             {currentUser.foto_url ? (
               <img src={currentUser.foto_url} alt={currentUser.nome} />
-            ) : (
-              <i className="fas fa-user"></i>
-            )}
+            ) : null}
+            <i className="fas fa-user"></i>
           </button>
 
           {showProfileMenu && (
@@ -1425,7 +503,6 @@ function App() {
                     <button 
                       className="profile-menu-item logout"
                       onClick={() => {
-                        setCurrentScreen('feed')
                         setShowProfileMenu(false)
                         handleLogout()
                       }}
@@ -1441,65 +518,6 @@ function App() {
         </>
       )}
 
-      {/* Terms Acceptance Modal */}
-      {showTermsModal && (
-        <div className="terms-modal-overlay">
-          <div className="terms-modal">
-            <div className="terms-modal-header">
-              <h3>📋 Termos de Uso</h3>
-              <p>Leia e aceite os termos para continuar</p>
-            </div>
-            
-            <div className="terms-modal-content">
-              <div className="terms-text">
-                <h4>🔗 Sobre o TEX - TrampoExpress</h4>
-                <p>
-                  O TEX é uma plataforma de <strong>conexão</strong> que facilita o encontro 
-                  entre prestadores de serviços e clientes.
-                </p>
-                
-                <h4>⚠️ Importante - Nossa Responsabilidade</h4>
-                <ul>
-                  <li>✅ <strong>Conectamos</strong> você com profissionais qualificados</li>
-                  <li>❌ <strong>NÃO nos responsabilizamos</strong> pela qualidade dos serviços</li>
-                  <li>❌ <strong>NÃO executamos</strong> nem intermediamos os serviços</li>
-                  <li>❌ <strong>NÃO temos responsabilidade</strong> sobre acordos entre as partes</li>
-                </ul>
-                
-                <h4>💬 Como Funciona</h4>
-                <p>
-                  Toda negociação, acordo de preços, prazos e execução do serviço 
-                  acontece <strong>diretamente entre você e o prestador via WhatsApp</strong>.
-                </p>
-                
-                <div className="terms-highlight">
-                  <i className="fas fa-info-circle"></i>
-                  <p>
-                    <strong>Resumo:</strong> O TEX apenas conecta. Tudo é resolvido 
-                    diretamente entre as partes no WhatsApp.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="terms-modal-actions">
-              <button 
-                className="terms-reject-btn"
-                onClick={handleRejectTerms}
-              >
-                ❌ Não Aceito
-              </button>
-              <button 
-                className="terms-accept-btn"
-                onClick={handleAcceptTerms}
-              >
-                ✅ Aceito e Continuar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Back Button */}
       {currentScreen !== 'home' && (
         <div className="back-button-container">
@@ -1511,87 +529,79 @@ function App() {
       )}
 
       {/* Home Screen */}
-      {(!currentScreen || currentScreen === 'home') && (
-        <div className="screen active">
-          <div className="hero-container">
-            <div className="tex-logo-container-inside">
-              <div className="tex-logo-text-inside">TEX</div>
-            </div>
+      <div className={`screen ${currentScreen === 'home' ? 'active' : ''}`}>
+        <div className="hero-container">
+          <div className="tex-logo-container-inside">
+            <div className="tex-logo-text-inside">TEX</div>
+          </div>
+          
+          <h1>
+            Do trampo
+            <span>ao encontro</span>
+          </h1>
+
+          <h3 className="trampoexpress-subtitle">TrampoExpress</h3>
+
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Buscar profissionais, serviços ou localização..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             
-            <h1>
-              Do trampo
-              <span>ao encontro</span>
-            </h1>
+            <button 
+              className="explore-btn"
+              onClick={() => {
+                navigateTo('feed')
+                loadUsuarios()
+              }}
+            >
+              <i className="fas fa-search"></i>
+              Explorar Profissionais
+            </button>
+          </div>
 
-            <h3 className="trampoexpress-subtitle">TrampoExpress</h3>
+          {!isLoggedIn && (
+            <button 
+              className="whatsapp-login-btn"
+              onClick={() => navigateTo('verify')}
+            >
+              <i className="fab fa-whatsapp"></i>
+              Entrar com WhatsApp
+            </button>
+          )}
 
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Buscar serviços ou acompanhantes"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              
+          <div className="location-status">
+            {!userLocation ? (
               <button 
-                className="explore-btn"
-                onClick={handleExploreClick}
+                className="location-enable-btn"
+                onClick={getUserLocation}
+                disabled={loading}
               >
-                <i className="fas fa-search"></i>
-                Explorar Profissionais
+                <i className="fas fa-map-marker-alt"></i>
+                {loading ? 'Obtendo localização...' : 'Ativar localização'}
               </button>
-            </div>
-
-            {!isLoggedIn && (
-              <button 
-                className="whatsapp-login-btn"
-                onClick={() => navigateTo('verify')}
-              >
-                <i className="fab fa-whatsapp"></i>
-                Entrar com WhatsApp
-              </button>
+            ) : (
+              <p className="location-gps-status">
+                <i className="fas fa-check-circle"></i>
+                Localização ativada
+              </p>
             )}
+          </div>
 
-            <div className="location-status">
-              {!userLocation ? (
-                <button 
-                  className="location-enable-btn"
-                  onClick={getUserLocation}
-                  disabled={loading}
-                >
-                  <i className="fas fa-map-marker-alt"></i>
-                  {loading ? 'Obtendo localização...' : 'Ativar localização'}
-                </button>
-              ) : (
-                <p className="location-gps-status">
-                  <i className="fas fa-check-circle"></i>
-                  Localização ativada
-                </p>
-              )}
-            </div>
-
-            <div className="hero-footer-info">
-              <nav className="hero-footer-nav">
-                <button 
-                  onClick={() => {
-                    setCurrentScreen('home')
-                    // setNavigationHistory(['home'])
-                  }}
-                  className={currentScreen === 'home' ? 'active' : ''}
-                >
-                  Home
-                </button>
-                <button onClick={() => navigateTo('about')}>Sobre</button>
-                <button onClick={() => navigateTo('terms')}>Termos</button>
-                <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
-              </nav>
-              <div className="hero-copyright">
-                © 2025 TrampoExpress. Conectando talentos.
-              </div>
+          <div className="hero-footer-info">
+            <nav className="hero-footer-nav">
+              <button onClick={() => navigateTo('about')}>Sobre</button>
+              <button onClick={() => navigateTo('terms')}>Termos</button>
+              <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
+            </nav>
+            <div className="hero-copyright">
+              © 2025 TrampoExpress. Conectando talentos.
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Verify Screen */}
       <div className={`screen ${currentScreen === 'verify' ? 'active' : ''}`}>
@@ -1865,40 +875,24 @@ function App() {
             </div>
           </div>
 
-          {error && (
-            <div className="error-message">
-              <i className="fas fa-exclamation-triangle"></i>
-              <p>{error}</p>
-              <button 
-                onClick={() => {
-                  setError(null)
-                  loadUsuarios()
-                }}
-                className="retry-button"
-              >
-                <i className="fas fa-redo"></i>
-                Tentar Novamente
-              </button>
+          {usuarios.length === 0 && !loading ? (
+            <div className="no-results">
+              <i className="fas fa-search"></i>
+              <h3>Nenhum profissional encontrado</h3>
+              <p>Tente ajustar os filtros de busca ou expandir a área de pesquisa</p>
+              <div className="no-results-actions">
+                <button className="explore-all-btn" onClick={clearSearch}>
+                  Ver Todos os Profissionais
+                </button>
+                <button className="back-home-btn" onClick={() => navigateTo('home')}>
+                  <i className="fas fa-home"></i>
+                  Voltar ao Início
+                </button>
+              </div>
             </div>
-          )}
-
-          <div className="profiles-grid">
-            {quickLoading && usuarios.length === 0 ? (
-              // Loading skeleton
-              [...Array(6)].map((_, i) => (
-                <div key={i} className="profile-card loading">
-                  <div className="profile-header">
-                    <div className="profile-pic skeleton"></div>
-                    <div className="profile-info">
-                      <div className="skeleton-line"></div>
-                      <div className="skeleton-line short"></div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              // Mostrar usuários rápidos primeiro, depois os completos
-              (usuarios.length > 0 ? usuarios : quickUsers).map((usuario) => (
+          ) : (
+            <div className="profiles-grid">
+              {usuarios.map((usuario) => (
                 <div key={usuario.id} className="profile-card">
                   <div className="profile-header">
                     <div className="profile-pic">
@@ -1932,7 +926,7 @@ function App() {
                   </div>
 
                   <div className="hashtags">
-                    {usuario.tags?.map((tag, index) => (
+                    {usuario.tags.map((tag, index) => (
                       <span 
                         key={index} 
                         className="tag-clickable"
@@ -1952,47 +946,7 @@ function App() {
                     {(selectedPrestador?.id === usuario.id && loading) ? 'Gerando PIX...' : 'Entrar em Contato - R$ 2,02'}
                   </button>
                 </div>
-              ))
-            )}
-          </div>
-
-          {!quickLoading && !loading && usuarios.length === 0 && quickUsers.length === 0 && (
-            <div className="no-results">
-              <i className="fas fa-search"></i>
-              <h3>Nenhum profissional encontrado</h3>
-              <p>Tente ajustar os filtros de busca ou expandir a área de pesquisa</p>
-              <div className="no-results-actions">
-                <button className="explore-all-btn" onClick={clearSearch}>
-                  Ver Todos os Profissionais
-                </button>
-                <button className="back-home-btn" onClick={() => navigateTo('home')}>
-                  <i className="fas fa-home"></i>
-                  Voltar ao Início
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Botão carregar mais */}
-          {hasMore && usuarios.length > 0 && (
-            <div className="load-more-container">
-              <button 
-                className="load-more-btn"
-                onClick={() => loadUsuarios(false)}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Carregando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-plus"></i>
-                    Carregar mais profissionais
-                  </>
-                )}
-              </button>
+              ))}
             </div>
           )}
         </div>
@@ -2005,120 +959,64 @@ function App() {
             <>
               <div className="profile-card">
                 <div className="profile-header">
-                  <div className="profile-avatar">
+                  <div className="profile-pic">
                     {currentUser.foto_url ? (
-                      <img 
-                        src={currentUser.foto_url} 
-                        alt={currentUser.nome}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                      <img src={currentUser.foto_url} alt={currentUser.nome} />
+                    ) : (
+                      <i className="fas fa-user"></i>
+                    )}
+                  </div>
+                  <div className="profile-info">
+                    <h2>{currentUser.nome}</h2>
+                    <p className="description">{currentUser.descricao}</p>
+                    {currentUser.localizacao && (
+                      <p className="location">
+                        <i className="fas fa-map-marker-alt"></i>
+                        {currentUser.localizacao}
+                      </p>
+                    )}
+                    
+                    <div className="status-toggle-profile">
+                      <button
+                        className={`status-btn-profile ${currentUser.status === 'available' ? 'active' : ''}`}
+                        onClick={async () => {
+                          try {
+                            const updatedUser = await DatabaseService.updateStatus(currentUser.id, 'available')
+                            setCurrentUser(updatedUser)
+                            localStorage.setItem('tex-user', JSON.stringify(updatedUser))
+                            toast.success('Status atualizado para Disponível')
+                          } catch (error) {
+                            toast.error('Erro ao atualizar status')
+                          }
                         }}
-                      />
-                    ) : null}
-                    <i className={`fas fa-user ${currentUser.foto_url ? 'hidden' : ''}`}></i>
-                  </div>
-                  <h2>{currentUser.nome}</h2>
-                  <p className="profile-whatsapp">📱 {currentUser.whatsapp}</p>
-                  
-                  {/* Status Badge */}
-                  <div className={`status-badge ${currentUser.status}`}>
-                    <span className="status-dot"></span>
-                    {currentUser.status === 'available' ? 'Disponível' : 'Ocupado'}
-                  </div>
-                </div>
-
-                {/* Profile Content */}
-                <div className="profile-content">
-                  {/* Description */}
-                  {currentUser.descricao && (
-                    <div className="profile-section">
-                      <h3><i className="fas fa-info-circle"></i> Sobre</h3>
-                      <p className="profile-description">{currentUser.descricao}</p>
-                    </div>
-                  )}
-
-                  {/* Tags/Specialties */}
-                  {currentUser.tags && currentUser.tags.length > 0 && (
-                    <div className="profile-section">
-                      <h3><i className="fas fa-tags"></i> Especialidades</h3>
-                      <div className="tags-grid">
-                        {currentUser.tags.map((tag, index) => (
-                          <span key={index} className="profile-tag">#{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Location */}
-                  {currentUser.localizacao && (
-                    <div className="profile-section">
-                      <h3><i className="fas fa-map-marker-alt"></i> Localização</h3>
-                      <p className="profile-location">{currentUser.localizacao}</p>
-                    </div>
-                  )}
-
-                  {/* Member Since */}
-                  <div className="profile-section">
-                    <h3><i className="fas fa-calendar-alt"></i> Informações</h3>
-                    <div className="profile-stats">
-                      <div className="stat-item">
-                        <span className="stat-label">Membro desde</span>
-                        <span className="stat-value">{new Date(currentUser.criado_em).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Último acesso</span>
-                        <span className="stat-value">{new Date(currentUser.ultimo_acesso).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Perfil</span>
-                        <span className={`stat-value ${currentUser.perfil_completo ? 'complete' : 'incomplete'}`}>
-                          {currentUser.perfil_completo ? '✅ Completo' : '⚠️ Incompleto'}
-                        </span>
-                      </div>
-                      {currentUser.verificado && (
-                        <div className="stat-item">
-                          <span className="stat-label">Status</span>
-                          <span className="stat-value verified">✅ Verificado</span>
-                        </div>
-                      )}
+                      >
+                        <span className="dot available"></span>
+                        Disponível
+                      </button>
+                      <button
+                        className={`status-btn-profile ${currentUser.status === 'busy' ? 'active' : ''}`}
+                        onClick={async () => {
+                          try {
+                            const updatedUser = await DatabaseService.updateStatus(currentUser.id, 'busy')
+                            setCurrentUser(updatedUser)
+                            localStorage.setItem('tex-user', JSON.stringify(updatedUser))
+                            toast.success('Status atualizado para Ocupado')
+                          } catch (error) {
+                            toast.error('Erro ao atualizar status')
+                          }
+                        }}
+                      >
+                        <span className="dot busy"></span>
+                        Ocupado
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="profile-actions-grid">
-                  <button 
-                    className="btn-secondary"
-                    onClick={() => setCurrentScreen('editProfile')}
-                  >
-                    <i className="fas fa-edit"></i>
-                    Editar Perfil
-                  </button>
-                  
-                  <button 
-                    className={`btn-status ${currentUser.status}`}
-                    onClick={handleStatusToggle}
-                    disabled={statusLoading}
-                  >
-                    <i className={`fas ${statusLoading ? 'fa-spinner fa-spin' : currentUser.status === 'available' ? 'fa-pause' : 'fa-play'}`}></i>
-                    {statusLoading ? 'Atualizando...' : currentUser.status === 'available' ? 'Marcar como Ocupado' : 'Marcar como Disponível'}
-                  </button>
-                  
-                  <button 
-                    className="btn-danger"
-                    onClick={() => {
-                      if (confirm('Tem certeza que deseja sair?')) {
-                        setCurrentUser(null)
-                        setCurrentScreen('home')
-                        localStorage.removeItem('currentUser')
-                        toast.success('Logout realizado com sucesso!')
-                      }
-                    }}
-                  >
-                    <i className="fas fa-sign-out-alt"></i>
-                    Sair
-                  </button>
+                <div className="hashtags">
+                  {currentUser.tags.map((tag, index) => (
+                    <span key={index}>#{tag}</span>
+                  ))}
                 </div>
 
                 <div className="profile-stats">
@@ -2268,36 +1166,185 @@ function App() {
                 1. Aceitação dos Termos
               </h2>
               <p>
-                Ao usar o TEX, você concorda com estes termos de uso.
+                Ao usar o TEX, você concorda com estes termos. Se não concordar, 
+                não use nossos serviços.
+              </p>
+            </div>
+
+            <div className="terms-section">
+              <h2>
+                <i className="fas fa-user-check"></i>
+                2. Uso da Plataforma
+              </h2>
+              <p>O TEX conecta prestadores de serviços e clientes. Você se compromete a:</p>
+              <ul>
+                <li>Fornecer informações verdadeiras e atualizadas</li>
+                <li>Usar a plataforma de forma legal e ética</li>
+                <li>Respeitar outros usuários</li>
+                <li>Não criar perfis falsos ou enganosos</li>
+              </ul>
+            </div>
+
+            <div className="terms-section">
+              <h2>
+                <i className="fas fa-exclamation-circle"></i>
+                3. Responsabilidades
+              </h2>
+              <p>O TEX <span className="highlight">NÃO se responsabiliza</span> por:</p>
+              <ul>
+                <li>Qualidade dos serviços prestados</li>
+                <li>Disputas entre usuários</li>
+                <li>Danos ou prejuízos decorrentes do uso</li>
+                <li>Conteúdo publicado pelos usuários</li>
+              </ul>
+            </div>
+
+            <div className="terms-section">
+              <h2>
+                <i className="fas fa-lock"></i>
+                4. Privacidade e Dados
+              </h2>
+              <p>
+                Coletamos apenas dados essenciais para o funcionamento da plataforma. 
+                Seus dados não são vendidos a terceiros.
+              </p>
+            </div>
+
+            <div className="terms-section coming-soon">
+              <h2>
+                <i className="fas fa-credit-card"></i>
+                5. Pagamentos
+                <span className="badge">Em Breve</span>
+              </h2>
+              <p>
+                Futuramente, a plataforma poderá incluir sistema de pagamentos integrado 
+                com taxas de serviço transparentes.
+              </p>
+            </div>
+
+            <div className="terms-section">
+              <h2>
+                <i className="fas fa-edit"></i>
+                6. Modificações
+              </h2>
+              <p>
+                Podemos alterar estes termos a qualquer momento. Mudanças importantes 
+                serão comunicadas aos usuários.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tela de Sobre */}
-      {currentScreen === 'about' && (
-        <div className="screen active">
-          <div className="screen-header">
-            <button 
-              className="back-button"
-              onClick={() => navigateTo('home')}
-            >
-              <i className="fas fa-arrow-left"></i>
-              Voltar
-            </button>
-            <h1>Sobre o TEX</h1>
-          </div>
-          <div className="content-container">
-            <section className="about-section">
-              <h2>Nossa Missão</h2>
-              <p>
-                O TEX conecta profissionais qualificados a pessoas que precisam de serviços de qualidade.
-              </p>
-            </section>
-          </div>
+      {/* Payment Screen */}
+      <div className={`screen ${currentScreen === 'payment' ? 'active' : ''}`}>
+        <div className="payment-container">
+          {paymentData && selectedPrestador ? (
+            <>
+              <div className="payment-header">
+                <h2>💳 Pagamento PIX</h2>
+                <p>Complete o pagamento para entrar em contato com <strong>{selectedPrestador.nome}</strong></p>
+              </div>
+
+              <div className="payment-info">
+                <div className="payment-amount">
+                  <span className="amount-label">Valor:</span>
+                  <span className="amount-value">R$ 2,02</span>
+                </div>
+                <p className="payment-description">
+                  Taxa única para conexão com prestador de serviço
+                </p>
+              </div>
+
+              <div className="qr-code-section">
+                <h3>📱 Escaneie o QR Code</h3>
+                {paymentData.qr_code_base64 ? (
+                  <div className="qr-code-container">
+                    <img 
+                      src={`data:image/png;base64,${paymentData.qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="qr-code-image"
+                    />
+                  </div>
+                ) : (
+                  <div className="qr-code-placeholder">
+                    <i className="fas fa-qrcode"></i>
+                    <p>QR Code não disponível</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pix-copy-section">
+                <h3>📋 PIX Copia e Cola</h3>
+                <div className="pix-code-container">
+                  <input
+                    type="text"
+                    value={paymentData.qr_code}
+                    readOnly
+                    className="pix-code-input"
+                  />
+                  <button
+                    className="copy-btn"
+                    onClick={() => {
+                      navigator.clipboard.writeText(paymentData.qr_code)
+                      toast.success('Código PIX copiado!')
+                    }}
+                  >
+                    <i className="fas fa-copy"></i>
+                    Copiar
+                  </button>
+                </div>
+                <p className="pix-instructions">
+                  Cole este código no seu app do banco para fazer o pagamento
+                </p>
+              </div>
+
+              <div className="payment-actions">
+                <button
+                  className="payment-check-btn"
+                  onClick={handlePaymentCheck}
+                  disabled={checkingPayment}
+                >
+                  <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
+                  {checkingPayment ? 'Verificando...' : '✅ Já Paguei - Verificar'}
+                </button>
+                
+                <button
+                  className="payment-cancel-btn"
+                  onClick={handleCancelPayment}
+                >
+                  <i className="fas fa-times"></i>
+                  ❌ Cancelar
+                </button>
+              </div>
+
+              <div className="payment-help">
+                <h4>💡 Como pagar com PIX:</h4>
+                <ol>
+                  <li>📱 Abra o app do seu banco</li>
+                  <li>💳 Escolha a opção PIX</li>
+                  <li>📷 Escaneie o QR Code ou cole o código</li>
+                  <li>✅ Confirme o pagamento de R$ 2,02</li>
+                  <li>🔄 Volte aqui e clique "Já Paguei"</li>
+                  <li>📞 Acesse o WhatsApp!</li>
+                </ol>
+              </div>
+            </>
+          ) : (
+            <div className="payment-error">
+              <i className="fas fa-exclamation-triangle"></i>
+              <h3>❌ Erro no Pagamento</h3>
+              <p>Não foi possível gerar o PIX. Tente novamente.</p>
+              <button 
+                className="back-btn"
+                onClick={() => navigateTo('feed')}
+              >
+                🔄 Voltar
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

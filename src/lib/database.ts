@@ -241,93 +241,79 @@ export class DatabaseService {
   static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
     try {
       if (!whatsapp?.trim()) {
-        console.log('⚠️ WhatsApp vazio ou inválido')
-        return null
+        throw new Error('WhatsApp é obrigatório')
       }
 
-      // Limpar o número (apenas dígitos)
-      const cleanWhatsApp = whatsapp.replace(/\D/g, '')
-      console.log('🔍 Buscando usuário por WhatsApp:', cleanWhatsApp)
+      console.log('🔍 Buscando usuário por WhatsApp:', whatsapp)
 
-      if (cleanWhatsApp.length < 10) {
-        console.log('❌ Número muito curto:', cleanWhatsApp)
-        return null
-      }
-
-      // Tentar diferentes formatos do número
-      const possibleFormats = [
-        cleanWhatsApp,
-        cleanWhatsApp.startsWith('55') ? cleanWhatsApp.substring(2) : `55${cleanWhatsApp}`,
-        cleanWhatsApp.startsWith('0') ? cleanWhatsApp.substring(1) : `0${cleanWhatsApp}`
-      ]
-
-      console.log('📱 Testando formatos:', possibleFormats)
-
-      // Buscar no banco de dados
-      let data = null
-      let error = null
-
-      // Tentar cada formato até encontrar
-      for (const format of possibleFormats) {
-        const result = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('whatsapp', format)
-          .maybeSingle()
-        
-        if (result.error) {
-          console.log(`⚠️ Erro ao buscar formato ${format}:`, result.error.message)
-          continue
-        }
-        
-        if (result.data) {
-          data = result.data
-          console.log(`✅ Usuário encontrado com formato ${format}:`, data.nome)
-          break
-        }
-      }
-
-      // Se não encontrou com nenhum formato, fazer busca LIKE mais flexível
-      if (!data) {
-        console.log('🔍 Tentando busca flexível...')
-        const { data: flexData, error: flexError } = await supabase
-        .from('usuarios')
-        .select('*')
-        .or(`whatsapp.like.%${cleanWhatsApp.slice(-8)}%,whatsapp.like.%${cleanWhatsApp.slice(-9)}%`)
-        .maybeSingle()
-      
-        if (flexError) {
-          console.error('❌ Erro na busca flexível:', flexError)
-          error = flexError
-        } else {
-          data = flexData
-          if (data) {
-            console.log('✅ Usuário encontrado com busca flexível:', data.nome)
-          }
-        }
-      }
-      
-      if (data) {
-        console.log('🎉 Login bem-sucedido para:', data.nome)
-        console.log('📊 Dados do usuário:', {
-          id: data.id,
-          nome: data.nome,
-          whatsapp: data.whatsapp,
-          perfil_completo: data.perfil_completo,
-          status: data.status
+      // Usar a função SQL otimizada
+      const { data, error } = await supabase
+        .rpc('get_user_by_whatsapp', {
+          phone_number: whatsapp.trim()
         })
-        
-        // Atualizar último acesso
-        await this.updateLastAccess(data.id)
-        return data
+
+      if (error) {
+        console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
+        // Fallback para busca direta se a função falhar
+        return this.getUsuarioByWhatsAppDirect(whatsapp)
       }
-      
-      console.log('ℹ️ Nenhum usuário encontrado para WhatsApp:', cleanWhatsApp)
-      console.log('💡 Formatos testados:', possibleFormats)
+
+      if (data && data.length > 0) {
+        const user = data[0]
+        console.log('✅ Usuário encontrado:', user.nome)
+        return {
+          id: user.user_id,
+          nome: user.nome,
+          whatsapp: user.whatsapp,
+          descricao: user.descricao,
+          tags: user.tags,
+          foto_url: user.foto_url,
+          localizacao: user.localizacao,
+          status: user.status,
+          latitude: user.latitude,
+          longitude: user.longitude,
+          criado_em: user.criado_em,
+          atualizado_em: user.atualizado_em,
+          ultimo_acesso: user.ultimo_acesso,
+          perfil_completo: user.perfil_completo,
+          verificado: user.verificado
+        }
+      }
+
+      console.log('ℹ️ Usuário não encontrado para WhatsApp:', whatsapp)
       return null
-      
     } catch (error) {
       console.error('❌ Erro ao buscar usuário por WhatsApp:', error)
+      // Fallback para busca direta
+      return this.getUsuarioByWhatsAppDirect(whatsapp)
+    }
+  }
+
+  // Fallback para busca direta por WhatsApp
+  private static async getUsuarioByWhatsAppDirect(whatsapp: string): Promise<Usuario | null> {
+    try {
+      console.log('🔄 Tentando busca direta por WhatsApp:', whatsapp)
+
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('whatsapp', whatsapp.trim())
+        .maybeSingle()
+
+      if (error) {
+        console.error('❌ Erro na busca direta por WhatsApp:', error)
+        return null
+      }
+
+      if (data) {
+        console.log('✅ Usuário encontrado na busca direta:', data.nome)
+        // Atualizar último acesso
+        this.updateLastAccess(data.id)
+      }
+
+      return data
+    } catch (error) {
+      console.error('❌ Erro na busca direta por WhatsApp:', error)
       return null
     }
   }
@@ -362,74 +348,73 @@ export class DatabaseService {
     tags?: string[]
     search?: string
     limit?: number
-    offset?: number
   }): Promise<Usuario[]> {
     try {
       const searchTerm = filters?.search?.trim() || ''
       const filterTags = filters?.tags || []
       const filterStatus = filters?.status || 'available'
-      const limitResults = filters?.limit || 20
-      const offsetResults = filters?.offset || 0
+      const limitResults = filters?.limit || 50
 
-      console.log('🔍 Busca otimizada:', { searchTerm, filterTags, filterStatus, limitResults, offsetResults })
+      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults })
 
-      let query = supabase!
-        .from('usuarios')
-        .select(`
-          id, nome, whatsapp, descricao, tags, foto_url, 
-          localizacao, status, latitude, longitude, 
-          criado_em, ultimo_acesso, perfil_completo, verificado
-        `)
-        .eq('status', filterStatus)
-        .eq('perfil_completo', true)
-        .order('ultimo_acesso', { ascending: false })
-        .range(offsetResults, offsetResults + limitResults - 1)
-
-        // Aplicar filtros condicionalmente
-        if (searchTerm) {
-          query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
-        }
-
-        if (filterTags.length > 0) {
-          query = query.overlaps('tags', filterTags)
-        }
-
-      const { data, error } = await query
+      const { data, error } = await supabase
+        .rpc('search_usuarios', {
+          search_term: searchTerm,
+          filter_tags: filterTags,
+          filter_status: filterStatus,
+          limit_results: limitResults
+        })
 
       if (error) {
-        console.error('❌ Erro na busca otimizada:', error)
-        throw error
+        console.error('❌ Erro na busca de usuários:', error)
+        // Fallback para busca simples se a função RPC falhar
+        console.log('🔄 Tentando busca simples como fallback...')
+        return this.getUsuariosSimple(filters)
       }
 
       console.log(`✅ Encontrados ${data?.length || 0} usuários`)
       return data || []
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      throw error
+      // Fallback para busca simples
+      return this.getUsuariosSimple(filters)
     }
   }
 
-  // Busca rápida apenas com campos essenciais
-  static async getUsuariosRapido(limit: number = 10): Promise<Partial<Usuario>[]> {
+  // Fallback simple search
+  private static async getUsuariosSimple(filters?: {
+    status?: 'available' | 'busy'
+    search?: string
+    limit?: number
+  }): Promise<Usuario[]> {
     try {
-      const { data, error } = await supabase!
+      let query = supabase
         .from('usuarios')
-        .select('id, nome, foto_url, tags, localizacao, status, ultimo_acesso')
-        .eq('status', 'available')
+        .select('*')
+        .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
         .order('ultimo_acesso', { ascending: false })
-        .limit(limit)
 
+      if (filters?.search?.trim()) {
+        const searchTerm = filters.search.trim()
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
+      }
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit)
+      }
+
+      const { data, error } = await query
 
       if (error) {
-        console.error('❌ Erro na busca rápida:', error)
+        console.error('❌ Erro na busca simples:', error)
         throw error
       }
 
       return data || []
     } catch (error) {
-      console.error('❌ Erro na busca rápida:', error)
-      throw error
+      console.error('❌ Erro na busca simples:', error)
+      return []
     }
   }
 
@@ -494,8 +479,25 @@ export class DatabaseService {
   // Check if WhatsApp number is already registered (CORRIGIDO)
   static async isWhatsAppRegistered(whatsapp: string): Promise<boolean> {
     try {
-      const user = await this.getUsuarioByWhatsApp(whatsapp)
-      return !!user
+      if (!whatsapp?.trim()) return false
+
+      console.log('🔍 Verificando se WhatsApp está registrado:', whatsapp)
+
+      // Usar a função SQL otimizada
+      const { data, error } = await supabase
+        .rpc('check_whatsapp_exists', {
+          phone_number: whatsapp.trim()
+        })
+
+      if (error) {
+        console.error('❌ Erro ao verificar WhatsApp:', error)
+        // Fallback para verificação direta
+        const user = await this.getUsuarioByWhatsAppDirect(whatsapp)
+        return !!user
+      }
+
+      console.log('✅ Verificação de WhatsApp concluída:', data)
+      return !!data
     } catch (error) {
       console.error('❌ Erro ao verificar WhatsApp:', error)
       return false
@@ -579,4 +581,24 @@ export class DatabaseService {
     return this.updateUsuario(id, { verificado: true })
   }
 
+  // Test database connection
+  static async testConnection(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('count')
+        .limit(1)
+
+      if (error) {
+        console.error('❌ Erro na conexão:', error)
+        return false
+      }
+
+      console.log('✅ Conexão com banco de dados OK')
+      return true
+    } catch (error) {
+      console.error('❌ Erro na conexão:', error)
+      return false
+    }
+  }
 }

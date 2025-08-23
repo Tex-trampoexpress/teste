@@ -82,47 +82,35 @@ export class MercadoPagoService {
   }
 
   // Verificar status do pagamento
-  static async checkPaymentStatus(paymentId: string): Promise<{
-    status: string
-    status_detail: string
-    transaction_amount: number
-    date_created: string
-    date_approved?: string
-  }> {
+  static async checkPaymentStatus(paymentId: string): Promise<string> {
     try {
       console.log('🔍 Verificando status via API direta:', paymentId)
 
-      // Usar Edge Function para evitar CORS
-      const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-payment-status`
-      
-      const response = await fetch(edgeFunctionUrl, {
-        method: 'POST',
+      const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ payment_id: paymentId })
+        }
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('❌ Erro ao consultar status:', errorData)
-        throw new Error(errorData.message || `HTTP ${response.status}`)
+        console.error('❌ Erro ao consultar status:', response.status)
+        return 'pending'
       }
 
-      const result = await response.json()
-      console.log('📊 Status atual:', result.status)
+      const paymentData = await response.json()
+      console.log('📊 Status atual:', paymentData.status)
 
-      return result.status
+      return paymentData.status
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
-      throw error
+      return 'pending'
     }
   }
 
   // Verificar se pagamento foi aprovado
   static async isPaymentApproved(paymentId: string): Promise<boolean> {
-    const result = await this.checkPaymentStatus(paymentId)
-    return result.status === 'approved'
+    const status = await this.checkPaymentStatus(paymentId)
+    return status === 'approved'
   }
 }
