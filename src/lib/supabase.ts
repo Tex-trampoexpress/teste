@@ -12,5 +12,4 @@ export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUr
   auth: {
     persistSession: false
   }
-}
-)
+}) : null
