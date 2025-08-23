@@ -573,19 +573,18 @@ function App() {
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
-          value={searchInputValue}
-          onChange={(e) => handleSearchInputChange(e.target.value)}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
-              handleSearchSubmit()
+              navigateTo('feed')
             }
           }}
-          key="home-search-input"
         />
         
         <button 
           className="explore-btn"
-          onClick={handleSearchSubmit}
+          onClick={() => navigateTo('feed')}
         >
           <i className="fas fa-search"></i>
           Explorar Profissionais
@@ -639,12 +638,12 @@ function App() {
         <input
           type="tel"
           placeholder="11999887766"
-          value={phoneInputValue}
-          onChange={(e) => handlePhoneInputChange(e.target.value)}
+          value={whatsappNumber}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="phone-input-verify"
+          key="whatsapp-input"
         />
       </div>
 
