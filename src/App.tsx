@@ -216,10 +216,9 @@ function App() {
 
       // Buscar usuário existente
       const existingUser2 = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
-          // Delay maior para garantir que funcione no Chrome
-          setTimeout(() => navigateTo('feed'), 1500)
+      
       if (cleanNumber.length < 10) {
-          setTimeout(() => navigateTo('profile'), 1500)
+        console.log('✅ Usuário existente encontrado:', existingUser2.nome)
         return
       }
       
@@ -287,7 +286,7 @@ function App() {
           longitude: null
         })
         navigateTo('profile-setup')
-        setTimeout(() => navigateTo('create-profile'), 1500)
+        toast.success('Vamos criar seu perfil profissional!')
       }
     } catch (error) {
       console.error('❌ Erro no login:', error)
@@ -834,85 +833,87 @@ function App() {
       )}
 
       {/* Home Screen */}
-      <div className={`screen ${currentScreen === 'home' ? 'active' : ''}`}>
-        <div className="hero-container">
-          <div className="tex-logo-container-inside">
-            <div className="tex-logo-text-inside">TEX</div>
-          </div>
-          
-          <h1>
-            Do trampo
-            <span>ao encontro</span>
-          </h1>
-
-          <h3 className="trampoexpress-subtitle">TrampoExpress</h3>
-
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Buscar serviços ou acompanhantes"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      {(!currentScreen || currentScreen === 'home') && (
+        <div className="screen active">
+          <div className="hero-container">
+            <div className="tex-logo-container-inside">
+              <div className="tex-logo-text-inside">TEX</div>
+            </div>
             
-            <button 
-              className="explore-btn"
-              onClick={handleExploreClick}
-            >
-              <i className="fas fa-search"></i>
-              Explorar Profissionais
-            </button>
-          </div>
+            <h1>
+              Do trampo
+              <span>ao encontro</span>
+            </h1>
 
-          {!isLoggedIn && (
-            <button 
-              className="whatsapp-login-btn"
-              onClick={() => navigateTo('verify')}
-            >
-              <i className="fab fa-whatsapp"></i>
-              Entrar com WhatsApp
-            </button>
-          )}
+            <h3 className="trampoexpress-subtitle">TrampoExpress</h3>
 
-          <div className="location-status">
-            {!userLocation ? (
+            <div className="search-box">
+              <input
+                type="text"
+                placeholder="Buscar serviços ou acompanhantes"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              
               <button 
-                className="location-enable-btn"
-                onClick={getUserLocation}
-                disabled={loading}
+                className="explore-btn"
+                onClick={handleExploreClick}
               >
-                <i className="fas fa-map-marker-alt"></i>
-                {loading ? 'Obtendo localização...' : 'Ativar localização'}
+                <i className="fas fa-search"></i>
+                Explorar Profissionais
               </button>
-            ) : (
-              <p className="location-gps-status">
-                <i className="fas fa-check-circle"></i>
-                Localização ativada
-              </p>
+            </div>
+
+            {!isLoggedIn && (
+              <button 
+                className="whatsapp-login-btn"
+                onClick={() => navigateTo('verify')}
+              >
+                <i className="fab fa-whatsapp"></i>
+                Entrar com WhatsApp
+              </button>
             )}
-          </div>
 
-          <div className="hero-footer-info">
-            <nav className="hero-footer-nav">
-              <button 
-                onClick={() => {
-                  setCurrentScreen('home')
-                  // setNavigationHistory(['home'])
-                }}
-                className={currentScreen === 'home' ? 'active' : ''}
-              >
-                Home
-              </button>
-              <button onClick={() => navigateTo('about')}>Sobre</button>
-              <button onClick={() => navigateTo('terms')}>Termos</button>
-              <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
-            </nav>
-            <div className="hero-copyright">
-              © 2025 TrampoExpress. Conectando talentos.
+            <div className="location-status">
+              {!userLocation ? (
+                <button 
+                  className="location-enable-btn"
+                  onClick={getUserLocation}
+                  disabled={loading}
+                >
+                  <i className="fas fa-map-marker-alt"></i>
+                  {loading ? 'Obtendo localização...' : 'Ativar localização'}
+                </button>
+              ) : (
+                <p className="location-gps-status">
+                  <i className="fas fa-check-circle"></i>
+                  Localização ativada
+                </p>
+              )}
+            </div>
+
+            <div className="hero-footer-info">
+              <nav className="hero-footer-nav">
+                <button 
+                  onClick={() => {
+                    setCurrentScreen('home')
+                    // setNavigationHistory(['home'])
+                  }}
+                  className={currentScreen === 'home' ? 'active' : ''}
+                >
+                  Home
+                </button>
+                <button onClick={() => navigateTo('about')}>Sobre</button>
+                <button onClick={() => navigateTo('terms')}>Termos</button>
+                <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
+              </nav>
+              <div className="hero-copyright">
+                © 2025 TrampoExpress. Conectando talentos.
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Verify Screen */}
       <div className={`screen ${currentScreen === 'verify' ? 'active' : ''}`}>
