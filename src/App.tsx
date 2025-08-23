@@ -29,6 +29,7 @@ function App() {
 
   // Search and feed state
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchInputValue, setSearchInputValue] = useState('')
   const [users, setUsers] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(false)
   const [proximityEnabled, setProximityEnabled] = useState(false)
@@ -36,6 +37,7 @@ function App() {
 
   // Form states
   const [whatsappNumber, setWhatsappNumber] = useState('')
+  const [phoneInputValue, setPhoneInputValue] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
 
@@ -57,6 +59,15 @@ function App() {
     setupBackButtonHandler()
   }, [])
 
+  // Sync search input with search term
+  useEffect(() => {
+    setSearchInputValue(searchTerm)
+  }, [searchTerm])
+
+  // Sync phone input with whatsapp number
+  useEffect(() => {
+    setPhoneInputValue(whatsappNumber)
+  }, [whatsappNumber])
   const initializeApp = async () => {
     // Check for existing session
     const savedUser = localStorage.getItem('tex-current-user')
@@ -145,13 +156,13 @@ function App() {
 
   // WhatsApp verification
   const handleWhatsAppVerification = useCallback(async () => {
-    if (!whatsappNumber.trim()) {
+    if (!phoneInputValue.trim()) {
       toast.error('Digite seu número do WhatsApp')
       return
     }
 
     // Format WhatsApp number
-    const formattedNumber = whatsappNumber.replace(/\D/g, '')
+    const formattedNumber = phoneInputValue.replace(/\D/g, '')
     if (formattedNumber.length < 10) {
       toast.error('Número do WhatsApp inválido')
       return
@@ -218,7 +229,6 @@ function App() {
     } finally {
       setIsVerifying(false)
     }
-  }, [whatsappNumber])
 
   // Profile management
   const handleProfileSave = async () => {
@@ -416,6 +426,26 @@ function App() {
     }
   }, [currentScreen, searchUsers])
 
+  // Handle search input change
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInputValue(value)
+  }, [])
+
+  // Handle search submit
+  const handleSearchSubmit = useCallback(() => {
+    setSearchTerm(searchInputValue)
+    if (currentScreen === 'home') {
+      navigateTo('feed')
+    } else {
+      searchUsers()
+    }
+  }, [searchInputValue, currentScreen])
+
+  // Handle phone input change
+  const handlePhoneInputChange = useCallback((value: string) => {
+    setPhoneInputValue(value)
+    setWhatsappNumber(value)
+  }, [])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -542,18 +572,19 @@ function App() {
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={searchInputValue}
+          onChange={(e) => handleSearchInputChange(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
-              navigateTo('feed')
+              handleSearchSubmit()
             }
           }}
+          key="home-search-input"
         />
         
         <button 
           className="explore-btn"
-          onClick={() => navigateTo('feed')}
+          onClick={handleSearchSubmit}
         >
           <i className="fas fa-search"></i>
           Explorar Profissionais
@@ -607,12 +638,12 @@ function App() {
         <input
           type="tel"
           placeholder="11999887766"
-          value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          value={phoneInputValue}
+          onChange={(e) => handlePhoneInputChange(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="whatsapp-input"
+          key="phone-input-verify"
         />
       </div>
 
@@ -796,17 +827,20 @@ function App() {
           <input
             type="text"
             placeholder="Buscar profissionais..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchInputValue}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                searchUsers()
+                handleSearchSubmit()
               }
             }}
-            key="search-input"
+            key="feed-search-input"
           />
-          {searchTerm && (
-            <button className="clear-search" onClick={() => setSearchTerm('')}>
+          {searchInputValue && (
+            <button className="clear-search" onClick={() => {
+              setSearchInputValue('')
+              setSearchTerm('')
+            }}>
               <i className="fas fa-times"></i>
             </button>
           )}
@@ -849,6 +883,7 @@ function App() {
         </div>
 
         <button className="explore-btn" onClick={searchUsers}>
+        <button className="explore-btn" onClick={handleSearchSubmit}>
           <i className="fas fa-search"></i>
           Buscar
         </button>
