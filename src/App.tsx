@@ -547,8 +547,15 @@ function App() {
       
       console.log('🔑 Cliente ID:', clienteId)
       console.log('🔑 Prestador ID:', user.id)
+
+        // Abrir WhatsApp após 0.5 segundos
+        setTimeout(() => {
+          window.open(
+            `https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`,
+            '_blank'
+          )
         }, 500)
-      })
+
         // Voltar ao feed após 2 segundos
         setTimeout(() => {
           setCurrentScreen('feed')
