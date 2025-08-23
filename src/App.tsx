@@ -37,6 +37,10 @@ function App() {
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
+  // Memoizar estados para evitar re-renders desnecessários
+  const [searchInputValue, setSearchInputValue] = useState('')
+  const [phoneInputValue, setPhoneInputValue] = useState('')
+
   // Profile form state
   const [profileForm, setProfileForm] = useState({
     nome: '',
@@ -53,6 +57,10 @@ function App() {
   useEffect(() => {
     initializeApp()
     setupBackButtonHandler()
+    
+    // Limpar estados de input ao inicializar
+    setSearchInputValue('')
+    setPhoneInputValue('')
   }, [])
 
   const initializeApp = async () => {
@@ -143,13 +151,13 @@ function App() {
 
   // WhatsApp verification
   const handleWhatsAppVerification = async () => {
-    if (!whatsappNumber.trim()) {
+    if (!phoneInputValue.trim()) {
       toast.error('Digite seu número do WhatsApp')
       return
     }
 
     // Format WhatsApp number
-    const formattedNumber = whatsappNumber.replace(/\D/g, '')
+    const formattedNumber = phoneInputValue.replace(/\D/g, '')
     if (formattedNumber.length < 10) {
       toast.error('Número do WhatsApp inválido')
       return
@@ -414,6 +422,19 @@ function App() {
     }
   }, [currentScreen, proximityEnabled, proximityRadius])
 
+  // Sincronizar valores de input com estados principais
+  useEffect(() => {
+    if (searchTerm !== searchInputValue) {
+      setSearchInputValue(searchTerm)
+    }
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (whatsappNumber !== phoneInputValue) {
+      setPhoneInputValue(whatsappNumber)
+    }
+  }, [whatsappNumber])
+
   // Render functions
   const renderProfileHeader = () => {
     if (!isLoggedIn || !currentUser) {
@@ -539,14 +560,25 @@ function App() {
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && navigateTo('feed')}
+          value={searchInputValue}
+          onChange={(e) => {
+            setSearchInputValue(e.target.value)
+            setSearchTerm(e.target.value)
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              setSearchTerm(searchInputValue)
+              navigateTo('feed')
+            }
+          }}
         />
         
         <button 
           className="explore-btn"
-          onClick={() => navigateTo('feed')}
+          onClick={() => {
+            setSearchTerm(searchInputValue)
+            navigateTo('feed')
+          }}
         >
           <i className="fas fa-search"></i>
           Explorar Profissionais
@@ -600,8 +632,8 @@ function App() {
         <input
           type="tel"
           placeholder="11999887766"
-          value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          value={phoneInputValue}
+          onChange={(e) => setPhoneInputValue(e.target.value)}
           maxLength={11}
         />
       </div>
@@ -785,12 +817,23 @@ function App() {
           <input
             type="text"
             placeholder="Buscar profissionais..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+            value={searchInputValue}
+            onChange={(e) => {
+              setSearchInputValue(e.target.value)
+              setSearchTerm(e.target.value)
+            }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                setSearchTerm(searchInputValue)
+                searchUsers()
+              }
+            }}
           />
-          {searchTerm && (
-            <button className="clear-search" onClick={() => setSearchTerm('')}>
+          {searchInputValue && (
+            <button className="clear-search" onClick={() => {
+              setSearchInputValue('')
+              setSearchTerm('')
+            }}>
               <i className="fas fa-times"></i>
             </button>
           )}
