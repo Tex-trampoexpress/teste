@@ -715,6 +715,7 @@ function App() {
           <input
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
+            key={`tags-input-${profileForm.tags.length}`}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -1159,6 +1160,7 @@ function App() {
           <input
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
+            key={`edit-tags-input-${profileForm.tags.length}`}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
