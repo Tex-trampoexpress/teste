@@ -495,12 +495,6 @@ function App() {
       
       setSelectedPrestador(user)
       setLoading(true)
-      console.log('🔍 Verificando pagamento:', paymentId)
-      toast.loading('Verificando pagamento...', { id: 'payment-check' })
-      
-      // Verificar status do pagamento
-      const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentId)
-      console.log('📊 Status do pagamento:', paymentStatus)
       const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
@@ -545,63 +539,28 @@ function App() {
       const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentData.id)
       console.log('📊 Status do pagamento:', paymentStatus)
       
-      console.log('🔍 Verificando se usuário existe...')
       if (paymentStatus.status === 'approved') {
         console.log('✅ Pagamento aprovado! Redirecionando para WhatsApp...')
         toast.success('🎉 Pagamento aprovado! Redirecionando para WhatsApp...')
-        console.log('🎉 Usuário existente encontrado!')
-        console.log('📊 Dados:', {
-          nome: existingUser.nome,
-          perfil_completo: existingUser.perfil_completo,
-          status: existingUser.status
-        })
         
         const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
         const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
         
-        // Mostrar notificação de boas-vindas
-        toast.success(`Bem-vindo de volta, ${existingUser.nome}! 👋`, {
-          duration: 3000,
-          icon: '🎉'
-        })
-        
         setTimeout(() => {
           window.open(whatsappUrl, '_blank')
         }, 1000)
-        // Aguardar um pouco para garantir que o estado foi atualizado
-        setTimeout(() => {
-          // Mostrar mensagem de boas-vindas
-          toast.success(`Bem-vindo de volta, ${existingUser.nome}! 🎉`)
-          if (paymentStatus === 'approved') {
-            toast.success('Pagamento confirmado! Redirecionando...', { id: 'payment-check' })
-            console.log('✅ Pagamento aprovado, liberando acesso')
-            
-            // Redirecionar IMEDIATAMENTE para WhatsApp
-            setTimeout(() => {
-              const whatsappUrl = `https://wa.me/55${selectedUser.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-              console.log('📱 Redirecionando para WhatsApp:', whatsappUrl)
-            
-            
-            // Limpar dados do pagamento
-            setTimeout(() => {
-              setSelectedUser(null)
-              setPaymentData(null)
-            }, 2000)
-          } else if (paymentStatus === 'pending' || paymentStatus === 'in_process') {
-            toast.error('Pagamento ainda não foi processado. Aguarde alguns minutos e tente novamente.', { id: 'payment-check' })
-            console.log('⏳ Pagamento pendente')
-            
-          } else if (paymentStatus === 'rejected' || paymentStatus === 'cancelled') {
-            toast.error('Pagamento foi rejeitado ou cancelado. Tente novamente.', { id: 'payment-check' })
-            console.log('❌ Pagamento rejeitado/cancelado')
-            if (existingUser.perfil_completo) {
-            }
-          } else {
-            console.log('⏳ Pagamento ainda pendente')
-            toast.error('Status do pagamento desconhecido. Tente novamente.', { id: 'payment-check' })
-            console.log('❓ Status desconhecido:', paymentStatus)
-          }
-        }, 1000)
+        
+      } else if (paymentStatus === 'pending' || paymentStatus === 'in_process') {
+        toast.error('Pagamento ainda não foi processado. Aguarde alguns minutos e tente novamente.', { id: 'payment-check' })
+        console.log('⏳ Pagamento pendente')
+        
+      } else if (paymentStatus === 'rejected' || paymentStatus === 'cancelled') {
+        toast.error('Pagamento foi rejeitado ou cancelado. Tente novamente.', { id: 'payment-check' })
+        console.log('❌ Pagamento rejeitado/cancelado')
+      } else {
+        console.log('⏳ Pagamento ainda pendente')
+        toast.error('Status do pagamento desconhecido. Tente novamente.', { id: 'payment-check' })
+        console.log('❓ Status desconhecido:', paymentStatus)
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
@@ -767,6 +726,7 @@ function App() {
                     <button 
                       className="profile-menu-item logout"
                       onClick={() => {
+                        setCurrentScreen('feed')
                         setShowProfileMenu(false)
                         handleLogout()
                       }}
