@@ -678,10 +678,7 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, nome: value }))
-          }}
+          onChange={(e) => setProfileForm(prev => ({ ...prev, nome: e.target.value }))}
         />
       </div>
 
@@ -690,10 +687,7 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, descricao: value }))
-          }}
+          onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
           rows={4}
         />
       </div>
@@ -1126,10 +1120,7 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, nome: value }))
-          }}
+          onChange={(e) => setProfileForm(prev => ({ ...prev, nome: e.target.value }))}
         />
       </div>
 
@@ -1138,10 +1129,7 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, descricao: value }))
-          }}
+          onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
           rows={4}
         />
       </div>
@@ -1152,6 +1140,7 @@ function App() {
           <input
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
+            key={`edit-tags-input-${profileForm.tags.length}`}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -1177,10 +1166,7 @@ function App() {
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, localizacao: value }))
-          }}
+          onChange={(e) => setProfileForm(prev => ({ ...prev, localizacao: e.target.value }))}
         />
       </div>
 
