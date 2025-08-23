@@ -576,18 +576,17 @@ function App() {
             toast.success('Pagamento confirmado! Redirecionando...', { id: 'payment-check' })
             console.log('✅ Pagamento aprovado, liberando acesso')
             
-            // Aguardar um pouco antes de redirecionar
+            // Redirecionar IMEDIATAMENTE para WhatsApp
             setTimeout(() => {
               const whatsappUrl = `https://wa.me/55${selectedUser.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
               console.log('📱 Redirecionando para WhatsApp:', whatsappUrl)
-              window.open(whatsappUrl, '_blank')
-              
-              // Voltar para o feed
-              setCurrentScreen('feed')
+            
+            
+            // Limpar dados do pagamento
+            setTimeout(() => {
               setSelectedUser(null)
               setPaymentData(null)
-            }, 1500)
-            
+            }, 2000)
           } else if (paymentStatus === 'pending' || paymentStatus === 'in_process') {
             toast.error('Pagamento ainda não foi processado. Aguarde alguns minutos e tente novamente.', { id: 'payment-check' })
             console.log('⏳ Pagamento pendente')
