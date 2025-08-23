@@ -29,6 +29,7 @@ function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   // Payment states
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
@@ -1864,6 +1865,23 @@ function App() {
             </div>
           </div>
 
+          {error && (
+            <div className="error-message">
+              <i className="fas fa-exclamation-triangle"></i>
+              <p>{error}</p>
+              <button 
+                onClick={() => {
+                  setError(null)
+                  loadUsuarios()
+                }}
+                className="retry-button"
+              >
+                <i className="fas fa-redo"></i>
+                Tentar Novamente
+              </button>
+            </div>
+          )}
+
           <div className="profiles-grid">
             {quickLoading && usuarios.length === 0 ? (
               // Loading skeleton
@@ -2250,283 +2268,4 @@ function App() {
                 1. Aceitação dos Termos
               </h2>
               <p>
-                Ao usar o TEX, você concorda com estes termos. Se não concordar, 
-                não use nossos serviços.
-              </p>
-            </div>
-
-            <div className="terms-section">
-              <h2>
-                <i className="fas fa-user-check"></i>
-                2. Uso da Plataforma
-              </h2>
-              <p>O TEX conecta prestadores de serviços e clientes. Você se compromete a:</p>
-              <ul>
-                <li>Fornecer informações verdadeiras e atualizadas</li>
-                <li>Usar a plataforma de forma legal e ética</li>
-                <li>Respeitar outros usuários</li>
-                <li>Não criar perfis falsos ou enganosos</li>
-              </ul>
-            </div>
-
-            <div className="terms-section">
-              <h2>
-                <i className="fas fa-exclamation-circle"></i>
-                3. Responsabilidades
-              </h2>
-              <p>O TEX <span className="highlight">NÃO se responsabiliza</span> por:</p>
-              <ul>
-                <li>Qualidade dos serviços prestados</li>
-                <li>Disputas entre usuários</li>
-                <li>Danos ou prejuízos decorrentes do uso</li>
-                <li>Conteúdo publicado pelos usuários</li>
-              </ul>
-            </div>
-
-            <div className="terms-section">
-              <h2>
-                <i className="fas fa-lock"></i>
-                4. Privacidade e Dados
-              </h2>
-              <p>
-                Coletamos apenas dados essenciais para o funcionamento da plataforma. 
-                Seus dados não são vendidos a terceiros.
-              </p>
-            </div>
-
-            <div className="terms-section coming-soon">
-              <h2>
-                <i className="fas fa-credit-card"></i>
-                5. Pagamentos
-                <span className="badge">Em Breve</span>
-              </h2>
-              <p>
-                Futuramente, a plataforma poderá incluir sistema de pagamentos integrado 
-                com taxas de serviço transparentes.
-              </p>
-            </div>
-
-            <div className="terms-section">
-              <h2>
-                <i className="fas fa-edit"></i>
-                6. Modificações
-              </h2>
-              <p>
-                Podemos alterar estes termos a qualquer momento. Mudanças importantes 
-                serão comunicadas aos usuários.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Screen */}
-      <div className={`screen ${currentScreen === 'payment' ? 'active' : ''}`}>
-        <div className="payment-container">
-          {paymentData && selectedPrestador ? (
-            <>
-              <div className="payment-header">
-                <h2>💳 Pagamento PIX</h2>
-                <p>Complete o pagamento para entrar em contato com <strong>{selectedPrestador.nome}</strong></p>
-              </div>
-
-              <div className="payment-info">
-                <div className="payment-amount">
-                  <span className="amount-label">Valor:</span>
-                  <span className="amount-value">R$ 2,02</span>
-                </div>
-                <p className="payment-description">
-                  Taxa única para conexão com prestador de serviço
-                </p>
-              </div>
-
-              <div className="qr-code-section">
-                <h3>📱 Escaneie o QR Code</h3>
-                {paymentData.qr_code_base64 ? (
-                  <div className="qr-code-container">
-                    <img 
-                      src={`data:image/png;base64,${paymentData.qr_code_base64}`}
-                      alt="QR Code PIX"
-                      className="qr-code-image"
-                    />
-                  </div>
-                ) : (
-                  <div className="qr-code-placeholder">
-                    <i className="fas fa-qrcode"></i>
-                    <p>QR Code não disponível</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="pix-copy-section">
-                <h3>📋 PIX Copia e Cola</h3>
-                <div className="pix-code-container">
-                  <input
-                    type="text"
-                    value={paymentData.qr_code}
-                    readOnly
-                    className="pix-code-input"
-                  />
-                  <button
-                    className="copy-btn"
-                    onClick={() => {
-                      navigator.clipboard.writeText(paymentData.qr_code)
-                      toast.success('Código PIX copiado!')
-                    }}
-                  >
-                    <i className="fas fa-copy"></i>
-                    Copiar
-                  </button>
-                </div>
-                <p className="pix-instructions">
-                  Cole este código no seu app do banco para fazer o pagamento
-                </p>
-              </div>
-
-              <div className="payment-actions">
-                <button
-                  onClick={handlePaymentVerification}
-                  disabled={verifyingPayment || !currentPayment}
-                  className="verify-payment-btn"
-                >
-                  {verifyingPayment ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      Verificando...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-check-circle"></i>
-                      Já Paguei
-                    </>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => {
-                    setCurrentScreen('feed')
-                    setCurrentPayment(null)
-                    setPaymentStatus('')
-                  }}
-                  className="cancel-payment-btn"
-                >
-                  <i className="fas fa-times"></i>
-                  Cancelar
-                </button>
-              </div>
-              
-              {/* Payment Status Messages */}
-              {paymentStatus && (
-                <div className={`payment-status-message ${
-                  paymentStatus.includes('confirmado') ? 'success' :
-                  paymentStatus.includes('processado') ? 'warning' :
-                  'error'
-                }`}>
-                  <i className={`fas ${
-                    paymentStatus.includes('confirmado') ? 'fa-check-circle' :
-                    paymentStatus.includes('processado') ? 'fa-clock' :
-                    'fa-exclamation-triangle'
-                  }`}></i>
-                  <p>{paymentStatus}</p>
-                </div>
-              )}
-
-              <div className="payment-help">
-                <h4>💡 Como pagar com PIX:</h4>
-                <ol>
-                  <li>📱 Abra o app do seu banco</li>
-                  <li>💳 Escolha a opção PIX</li>
-                  <li>📷 Escaneie o QR Code ou cole o código</li>
-                  <li>✅ Confirme o pagamento de R$ 2,02</li>
-                  <li>🔄 Volte aqui e clique "Já Paguei"</li>
-                  <li>📞 Acesse o WhatsApp!</li>
-                </ol>
-              </div>
-            </>
-          ) : (
-            <div className="payment-error">
-              <i className="fas fa-exclamation-triangle"></i>
-              <h3>❌ Erro no Pagamento</h3>
-              <p>Não foi possível gerar o PIX. Tente novamente.</p>
-              <button 
-                className="back-btn"
-                onClick={() => navigateTo('feed')}
-              >
-                🔄 Voltar
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style jsx>{`
-        .loading-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-        }
-
-        .loading-spinner {
-          width: 50px;
-          height: 50px;
-          border: 4px solid rgba(255, 255, 255, 0.3);
-          border-top: 4px solid white;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .loading-container p {
-          color: rgba(255, 255, 255, 0.8);
-          margin-top: 1rem;
-        }
-
-        .auto-redirect-message {
-          position: fixed;
-          bottom: 2rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.9);
-          border: 1px solid rgba(255, 215, 0, 0.3);
-          border-radius: 12px;
-          padding: 1rem 1.5rem;
-          text-align: center;
-          backdrop-filter: blur(10px);
-          z-index: 1000;
-        }
-
-        .redirect-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .redirect-content p {
-          margin: 0;
-          color: white;
-        }
-
-        .redirect-text {
-          color: rgba(255, 255, 255, 0.7) !important;
-          font-size: 0.9rem;
-        }
-
-        .loading-spinner.small {
-          width: 20px;
-          height: 20px;
-        }
-      `}</style>
-    </div>
-  )
-}
-
-export default App
+                Ao usar o TEX, você concorda

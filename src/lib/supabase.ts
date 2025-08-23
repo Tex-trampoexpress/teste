@@ -16,3 +16,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'X-Client-Info': 'tex-app/1.0.0'
     }
   }
+}
+)
