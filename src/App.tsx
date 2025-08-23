@@ -383,18 +383,15 @@ function App() {
 
   // Payment functions
   const handleContactClick = (user: Usuario) => {
-    if (!currentUser) {
-      toast.error('Faça login para entrar em contato')
-      navigateTo('verify')
-      return
-    }
-
-    // Navigate to payment screen
+    // Gerar ID temporário para cliente não logado
+    const clienteId = currentUser?.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    // Ir direto para tela de pagamento
     navigateTo('payment', {
       prestadorId: user.id,
       prestadorNome: user.nome,
       prestadorWhatsApp: user.whatsapp,
-      clienteId: currentUser.id
+      clienteId: clienteId
     })
   }
 
