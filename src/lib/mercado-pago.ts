@@ -86,22 +86,28 @@ export class MercadoPagoService {
     try {
       console.log('🔍 Verificando status via API direta:', paymentId)
 
-      const response = await fetch(`${this.API_URL}/v1/payments/${paymentId}`, {
+      // Usar Edge Function para evitar CORS
+      const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-payment-status`
+      
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ payment_id: paymentId })
       })
 
       if (!response.ok) {
-        console.error('❌ Erro ao consultar status:', response.status)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ Erro ao consultar status:', errorData)
         return 'pending'
       }
 
-      const paymentData = await response.json()
-      console.log('📊 Status atual:', paymentData.status)
+      const result = await response.json()
+      console.log('📊 Status atual:', result.status)
 
-      return paymentData.status
+      return result.status
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
       return 'pending'

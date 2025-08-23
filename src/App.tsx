@@ -495,9 +495,12 @@ function App() {
       
       setSelectedPrestador(user)
       setLoading(true)
-      console.log('🔐 Iniciando login com WhatsApp:', whatsappNumber)
+      console.log('🔍 Verificando pagamento:', paymentId)
+      toast.loading('Verificando pagamento...', { id: 'payment-check' })
       
-      // Gerar ID único para cliente anônimo se não estiver logado
+      // Verificar status do pagamento
+      const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentId)
+      console.log('📊 Status do pagamento:', paymentStatus)
       const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
@@ -569,24 +572,38 @@ function App() {
         setTimeout(() => {
           // Mostrar mensagem de boas-vindas
           toast.success(`Bem-vindo de volta, ${existingUser.nome}! 🎉`)
-          
-          // Redirecionar baseado no perfil
-          if (existingUser.perfil_completo) {
-            console.log('📱 Perfil completo, indo para feed')
-            navigateTo('feed')
-          } else {
-            console.log('📝 Perfil incompleto, indo para criação')
-            navigateTo('create-profile')
-          }
-        }, 100)
+      if (paymentStatus === 'approved') {
+        toast.success('Pagamento confirmado! Redirecionando...', { id: 'payment-check' })
+        console.log('✅ Pagamento aprovado, liberando acesso')
         
+        // Aguardar um pouco antes de redirecionar
+        setTimeout(() => {
+          const whatsappUrl = `https://wa.me/55${selectedUser.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+          console.log('📱 Redirecionando para WhatsApp:', whatsappUrl)
+          window.open(whatsappUrl, '_blank')
+          
+          // Voltar para o feed
+          setCurrentScreen('feed')
+          setSelectedUser(null)
+          setPaymentData(null)
+        }, 1500)
+        
+      } else if (paymentStatus === 'pending' || paymentStatus === 'in_process') {
+        toast.error('Pagamento ainda não foi processado. Aguarde alguns minutos e tente novamente.', { id: 'payment-check' })
+        console.log('⏳ Pagamento pendente')
+        
+      } else if (paymentStatus === 'rejected' || paymentStatus === 'cancelled') {
+        toast.error('Pagamento foi rejeitado ou cancelado. Tente novamente.', { id: 'payment-check' })
+        console.log('❌ Pagamento rejeitado/cancelado')
+          if (existingUser.perfil_completo) {
       } else {
         console.log('⏳ Pagamento ainda pendente')
-        navigateTo('create-profile')
+        toast.error('Status do pagamento desconhecido. Tente novamente.', { id: 'payment-check' })
+        console.log('❓ Status desconhecido:', paymentStatus)
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('Erro ao verificar pagamento. Tente novamente.')
+      toast.error('Erro ao verificar pagamento. Tente novamente.', { id: 'payment-check' })
     } finally {
       setCheckingPayment(false)
     }
@@ -746,8 +763,10 @@ function App() {
                     </button>
                     <div className="profile-menu-divider"></div>
                     <button 
+                        console.log('❌ Usuário cancelou pagamento')
                       className="profile-menu-item logout"
                       onClick={() => {
+                        setCurrentScreen('feed')
                         setShowProfileMenu(false)
                         handleLogout()
                       }}
