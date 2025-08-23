@@ -1,5 +1,3 @@
-Looking at this React script, I can see several missing closing brackets. Here's the corrected version with all the necessary closing brackets added:
-
 import React, { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { DatabaseService, type Usuario } from './lib/database'
