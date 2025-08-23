@@ -585,23 +585,62 @@ export class DatabaseService {
     return this.updateUsuario(id, { verificado: true })
   }
 
+  // Mock users for when Supabase is not available
+  private static getMockUsers(limit: number): Partial<Usuario>[] {
+    const mockUsers = [
+      {
+        id: '1',
+        nome: 'Ana Silva',
+        foto_url: null,
+        tags: ['design', 'ui/ux'],
+        localizacao: 'São Paulo, SP',
+        status: 'available' as const,
+        ultimo_acesso: new Date().toISOString()
+      },
+      {
+        id: '2', 
+        nome: 'Carlos Santos',
+        foto_url: null,
+        tags: ['programação', 'react'],
+        localizacao: 'Rio de Janeiro, RJ',
+        status: 'available' as const,
+        ultimo_acesso: new Date().toISOString()
+      },
+      {
+        id: '3',
+        nome: 'Maria Oliveira',
+        foto_url: null,
+        tags: ['marketing', 'social media'],
+        localizacao: 'Belo Horizonte, MG',
+        status: 'available' as const,
+        ultimo_acesso: new Date().toISOString()
+      }
+    ]
+    
+    return mockUsers.slice(0, limit)
+  }
+
   // Test database connection
   static async testConnection(): Promise<boolean> {
     try {
+      if (!supabase) {
+        console.warn('⚠️ Supabase não configurado')
+        return false
+      }
+      
       const { data, error } = await supabase
         .from('usuarios')
         .select('count')
         .limit(1)
 
       if (error) {
-        console.error('❌ Erro na conexão:', error)
+        console.warn('⚠️ Erro na conexão:', error.message)
         return false
       }
 
-      console.log('✅ Conexão com banco de dados OK')
       return true
     } catch (error) {
-      console.error('❌ Erro na conexão:', error)
+      console.warn('⚠️ Erro na conexão:', error.message)
       return false
     }
   }
