@@ -365,10 +365,29 @@ export class DatabaseService {
     offset?: number
   }): Promise<Usuario[]> {
     try {
+      // Always check connection first
+      const isConnected = await this.testConnection()
+      if (!isConnected) {
+        console.warn('⚠️ Supabase não disponível, usando dados mock')
+        return this.getMockUsers(filters?.limit || 20) as Usuario[]
+      }
+
       const searchTerm = filters?.search?.trim() || ''
       const filterTags = filters?.tags || []
-      // Usar query direta otimizada em vez de RPC para melhor performance
-      let query = supabase!
+      const filterStatus = filters?.status || 'available'
+      const limitResults = filters?.limit || 20
+      const offsetResults = filters?.offset || 0
+
+      console.log('🔍 Busca otimizada:', { searchTerm, filterTags, filterStatus, limitResults, offsetResults })
+
+      // Try to fetch from Supabase with timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 8000)
+      )
+
+      const buildQuery = () => {
+        // Usar query direta otimizada em vez de RPC para melhor performance
+      let query = supabase
         .from('usuarios')
         .select(`
           id, nome, whatsapp, descricao, tags, foto_url, 
@@ -389,23 +408,21 @@ export class DatabaseService {
         query = query.overlaps('tags', filterTags)
       }
 
-      // Add timeout to prevent hanging requests
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 8000)
-      )
+      return query
+      }
 
-      const { data, error } = await Promise.race([query, timeoutPromise]) as any
+      const { data, error } = await buildQuery()
 
       if (error) {
-        console.warn('⚠️ Erro na busca otimizada, usando dados mock:', error)
-        return this.getMockUsers(limitResults) as Usuario[]
+        console.error('❌ Erro na busca otimizada:', error)
+        throw error
       }
 
       console.log(`✅ Encontrados ${data?.length || 0} usuários`)
-      return data || this.getMockUsers(limitResults) as Usuario[]
+      return data || []
     } catch (error) {
-      console.warn('⚠️ Erro na busca de usuários, usando dados mock:', error)
-      return this.getMockUsers(filters?.limit || 20) as Usuario[]
+      console.error('❌ Erro na busca de usuários:', error)
+      return []
     }
   }
 
@@ -598,77 +615,29 @@ export class DatabaseService {
       {
         id: '1',
         nome: 'Ana Silva',
-        whatsapp: '11999999001',
-        descricao: 'Designer especializada em UI/UX com 5 anos de experiência',
         foto_url: null,
         tags: ['design', 'ui/ux'],
         localizacao: 'São Paulo, SP',
         status: 'available' as const,
-        ultimo_acesso: new Date().toISOString(),
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        perfil_completo: true,
-        verificado: true
+        ultimo_acesso: new Date().toISOString()
       },
       {
         id: '2', 
         nome: 'Carlos Santos',
-        whatsapp: '11999999002',
-        descricao: 'Desenvolvedor Full Stack especializado em React e Node.js',
         foto_url: null,
         tags: ['programação', 'react'],
         localizacao: 'Rio de Janeiro, RJ',
         status: 'available' as const,
-        ultimo_acesso: new Date().toISOString(),
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        perfil_completo: true,
-        verificado: false
+        ultimo_acesso: new Date().toISOString()
       },
       {
         id: '3',
         nome: 'Maria Oliveira',
-        whatsapp: '11999999003',
-        descricao: 'Especialista em Marketing Digital e Redes Sociais',
         foto_url: null,
         tags: ['marketing', 'social media'],
         localizacao: 'Belo Horizonte, MG',
         status: 'available' as const,
-        ultimo_acesso: new Date().toISOString(),
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        perfil_completo: true,
-        verificado: true
-      },
-      {
-        id: '4',
-        nome: 'João Pereira',
-        whatsapp: '11999999004',
-        descricao: 'Consultor em Vendas e Atendimento ao Cliente',
-        foto_url: null,
-        tags: ['vendas', 'atendimento'],
-        localizacao: 'Brasília, DF',
-        status: 'available' as const,
-        ultimo_acesso: new Date().toISOString(),
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        perfil_completo: true,
-        verificado: false
-      },
-      {
-        id: '5',
-        nome: 'Fernanda Costa',
-        whatsapp: '11999999005',
-        descricao: 'Fotógrafa profissional especializada em eventos',
-        foto_url: null,
-        tags: ['fotografia', 'eventos'],
-        localizacao: 'Porto Alegre, RS',
-        status: 'available' as const,
-        ultimo_acesso: new Date().toISOString(),
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        perfil_completo: true,
-        verificado: true
+        ultimo_acesso: new Date().toISOString()
       }
     ]
     
