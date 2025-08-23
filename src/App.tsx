@@ -400,13 +400,17 @@ function App() {
   // Carregamento rápido inicial
   const loadQuickUsers = async () => {
     try {
-      setQuickLoading(true)
-      const quickData = await DatabaseService.getUsuariosRapido(8)
-      setQuickUsers(quickData)
+      setLoading(true)
+      console.log('🔄 Carregando usuários rápidos...')
+      const quickUsers = await DatabaseService.getUsuariosRapido(10)
+      console.log('📊 Usuários carregados:', quickUsers.length)
+      setUsers(quickUsers as Usuario[])
     } catch (error) {
-      console.error('❌ Erro no carregamento rápido:', error)
+      console.error('❌ Erro ao carregar usuários:', error.message)
+      toast.error('Erro ao carregar usuários. Verifique sua conexão.')
+      setUsers([]) // Set empty array on error
     } finally {
-      setQuickLoading(false)
+      setLoading(false)
     }
   }
 
