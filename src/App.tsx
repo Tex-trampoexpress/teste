@@ -9,7 +9,7 @@ const navigationHistory: string[] = []
 
 function App() {
   // State management
-  const [currentScreen, setCurrentScreen] = useState('home')
+  const [currentScreen, setCurrentScreen] = useState('')
   const [currentUser, setCurrentUser] = useState<Usuario | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -19,6 +19,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
+  const [isInitialized, setIsInitialized] = useState(false)
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
@@ -137,6 +138,40 @@ function App() {
       console.log('💾 Sessão salva para:', currentUser.nome)
     }
   }, [currentUser])
+
+  // Initialize app
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        console.log('🚀 Inicializando aplicação...')
+        
+        // Check for existing user session
+        const savedUser = localStorage.getItem('currentUser')
+        if (savedUser) {
+          try {
+            const user = JSON.parse(savedUser)
+            console.log('👤 Usuário encontrado no localStorage:', user.nome)
+            setCurrentUser(user)
+          } catch (error) {
+            console.error('❌ Erro ao parsear usuário salvo:', error)
+            localStorage.removeItem('currentUser')
+          }
+        }
+        
+        // Always start at home screen
+        console.log('🏠 Definindo tela inicial como home')
+        setCurrentScreen('home')
+        setIsInitialized(true)
+        
+      } catch (error) {
+        console.error('❌ Erro na inicialização:', error)
+        setCurrentScreen('home')
+        setIsInitialized(true)
+      }
+    }
+
+    initializeApp()
+  }, [])
 
   // Load user data on mount
   useEffect(() => {
@@ -701,6 +736,147 @@ function App() {
     } finally {
       setStatusLoading(false)
     }
+  }
+
+  // Render current screen
+  const renderScreen = () => {
+    // Show loading until initialized
+    if (!isInitialized) {
+      return (
+        <div className="screen active">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Carregando TEX...</p>
+          </div>
+        </div>
+      )
+    }
+
+    // Always show home screen if no current screen or explicitly home
+    if (currentScreen === 'home') {
+      return (
+        <div className="screen active">
+          {/* Header with login button */}
+          <div className="hero-container">
+            <div className="tex-logo-container-inside">
+              <div className="tex-logo-text-inside">TEX</div>
+            </div>
+            
+            <h1>
+              Do trampo
+              <span>ao encontro</span>
+            </h1>
+
+            <h3 className="trampoexpress-subtitle">TrampoExpress</h3>
+
+            <div className="search-box">
+              <input
+                type="text"
+                placeholder="Buscar serviços ou acompanhantes"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              
+              <button 
+                className="explore-btn"
+                onClick={handleExploreClick}
+              >
+                <i className="fas fa-search"></i>
+                Explorar Profissionais
+              </button>
+            </div>
+
+            {!isLoggedIn && (
+              <button 
+                className="whatsapp-login-btn"
+                onClick={() => navigateTo('verify')}
+              >
+                <i className="fab fa-whatsapp"></i>
+                Entrar com WhatsApp
+              </button>
+            )}
+
+            <div className="location-status">
+              {!userLocation ? (
+                <button 
+                  className="location-enable-btn"
+                  onClick={getUserLocation}
+                  disabled={loading}
+                >
+                  <i className="fas fa-map-marker-alt"></i>
+                  {loading ? 'Obtendo localização...' : 'Ativar localização'}
+                </button>
+              ) : (
+                <p className="location-gps-status">
+                  <i className="fas fa-check-circle"></i>
+                  Localização ativada
+                </p>
+              )}
+            </div>
+
+            <div className="hero-footer-info">
+              <nav className="hero-footer-nav">
+                <button 
+                  onClick={() => {
+                    setCurrentScreen('home')
+                    // setNavigationHistory(['home'])
+                  }}
+                  className={currentScreen === 'home' ? 'active' : ''}
+                >
+                  Home
+                </button>
+                <button onClick={() => navigateTo('about')}>Sobre</button>
+                <button onClick={() => navigateTo('terms')}>Termos</button>
+                <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
+              </nav>
+              <div className="hero-copyright">
+                © 2025 TrampoExpress. Conectando talentos.
+              </div>
+            </div>
+          </div>
+          
+          {/* Auto-redirect for logged users */}
+          {currentUser && (
+            <AutoRedirectMessage />
+          )}
+        </div>
+      )
+    }
+
+    // Other screens would be rendered here based on currentScreen
+    // This is where you'd add your switch statement or conditional rendering
+    // for other screens like 'feed', 'profile-setup', etc.
+  }
+
+  // Auto-redirect message component
+  const AutoRedirectMessage = () => {
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (currentUser?.perfil_completo) {
+          console.log('✅ Auto-redirecionando para feed...')
+          navigateTo('feed')
+        } else {
+          console.log('⚠️ Auto-redirecionando para criação de perfil...')
+          navigateTo('create-profile')
+        }
+      }, 3000) // 3 segundos na tela inicial
+
+      return () => clearTimeout(timer)
+    }, [])
+
+    return (
+      <div className="auto-redirect-message">
+        <div className="redirect-content">
+          <div className="loading-spinner small"></div>
+          <p>Bem-vindo de volta, {currentUser?.nome}!</p>
+          <p className="redirect-text">
+            {currentUser?.perfil_completo 
+              ? 'Redirecionando para o feed...' 
+              : 'Redirecionando para completar perfil...'}
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1772,6 +1948,73 @@ function App() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        .loading-spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid rgba(255, 255, 255, 0.3);
+          border-top: 4px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .loading-container p {
+          color: rgba(255, 255, 255, 0.8);
+          margin-top: 1rem;
+        }
+
+        .auto-redirect-message {
+          position: fixed;
+          bottom: 2rem;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.9);
+          border: 1px solid rgba(255, 215, 0, 0.3);
+          border-radius: 12px;
+          padding: 1rem 1.5rem;
+          text-align: center;
+          backdrop-filter: blur(10px);
+          z-index: 1000;
+        }
+
+        .redirect-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .redirect-content p {
+          margin: 0;
+          color: white;
+        }
+
+        .redirect-text {
+          color: rgba(255, 255, 255, 0.7) !important;
+          font-size: 0.9rem;
+        }
+
+        .loading-spinner.small {
+          width: 20px;
+          height: 20px;
+        }
+      `}</style>
     </div>
   )
 }
