@@ -601,13 +601,14 @@ function App() {
       <div className="phone-input">
         <span className="country-code">+55</span>
         <input
-          type="number"
+          type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
           onChange={(e) => setWhatsappNumber(e.target.value)}
-          maxLength={11}
           inputMode="numeric"
           pattern="[0-9]*"
+          autoComplete="tel"
+          onFocus={(e) => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })}
         />
       </div>
 

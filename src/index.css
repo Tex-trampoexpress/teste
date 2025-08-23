@@ -398,6 +398,11 @@ input, textarea {
   color: var(--white);
   outline: none;
   transition: all 0.3s ease;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
 }
 
 input::placeholder, textarea::placeholder {
@@ -407,6 +412,8 @@ input::placeholder, textarea::placeholder {
 input:focus, textarea:focus {
   border-color: var(--cyan);
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .explore-btn {
@@ -1094,6 +1101,11 @@ input:focus, textarea:focus {
   font-size: 1rem;
   color: var(--white);
   outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
 }
 
 .search-bar input::placeholder {
