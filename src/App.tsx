@@ -20,6 +20,7 @@ function App() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false)
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
@@ -41,13 +42,18 @@ function App() {
   const [profileData, setProfileData] = useState({
     nome: '',
     descricao: '',
-    tags: [] as string[],
+    tags: [] as string[], 
     foto_url: '',
     localizacao: '',
     status: 'available' as 'available' | 'busy',
     latitude: null as number | null,
     longitude: null as number | null
   })
+
+  // Profile creation states
+  const [profileStep, setProfileStep] = useState(0) // Começar em 0 para não mostrar nada
+  const [isCreatingUser, setIsCreatingUser] = useState(false)
+  const [profileError, setProfileError] = useState('')
 
   // Navigation functions
   const navigateTo = (screen: string) => {
@@ -235,6 +241,9 @@ function App() {
     }
 
     setLoading(true)
+    setIsCreatingProfile(false)
+    setProfileStep(0)
+
     try {
       // Limpar o número (manter apenas dígitos)
       const cleanNumber = whatsappNumber.replace(/\D/g, '')
@@ -288,7 +297,17 @@ function App() {
           perfil_completo: existingUser2.perfil_completo,
           verificado: existingUser2.verificado
         })
-        navigateTo('profile-setup')
+        if (existingUser2.perfil_completo) {
+          setTimeout(() => {
+            setCurrentScreen('feed')
+            setNavigationHistory(['home', 'feed'])
+          }, 2000)
+        } else {
+          setIsCreatingProfile(true)
+          setCurrentScreen('profile-creation')
+          setNavigationHistory(['home', 'profile-creation'])
+          setProfileStep(1) // Iniciar criação
+        }
       } else {
         console.log('🆕 Usuário novo - indo para criação')
         const newUserId = crypto.randomUUID()
@@ -320,7 +339,10 @@ function App() {
           latitude: null,
           longitude: null
         })
-        navigateTo('profile-setup')
+        setIsCreatingProfile(true)
+        setCurrentScreen('profile-creation')
+        setNavigationHistory(['home', 'profile-creation'])
+        setProfileStep(1) // Iniciar criação
         toast.success('Vamos criar seu perfil profissional!')
       }
     } catch (error) {
@@ -454,6 +476,124 @@ function App() {
         setLoading(false)
       }
     )
+  }
+
+  // Handle photo upload
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione apenas arquivos de imagem')
+      return
+    }
+
+    // Validar tamanho (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
+      setProfileData(prev => ({ ...prev, foto_url: result }))
+      toast.success('Foto adicionada com sucesso!')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle tag input
+  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      const input = e.currentTarget
+      const tag = input.value.trim().toLowerCase()
+      
+      if (tag && !profileData.tags.includes(tag) && profileData.tags.length < 10) {
+        setProfileData(prev => ({
+          ...prev,
+          tags: [...prev.tags, tag]
+        }))
+        input.value = ''
+        toast.success(`Especialidade "${tag}" adicionada!`)
+      } else if (profileData.tags.length >= 10) {
+        toast.error('Máximo de 10 especialidades permitidas')
+      } else if (profileData.tags.includes(tag)) {
+        toast.error('Esta especialidade já foi adicionada')
+      }
+    }
+  }
+
+  // Remove tag
+  const removeTag = (tagToRemove: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }))
+    toast.success(`Especialidade "${tagToRemove}" removida`)
+  }
+
+  // Handle profile creation
+  const handleCreateProfile = async () => {
+    // Validações
+    if (!profileData.nome.trim()) {
+      toast.error('Nome é obrigatório')
+      return
+    }
+    
+    if (!profileData.descricao.trim()) {
+      toast.error('Descrição é obrigatória')
+      return
+    }
+    
+    if (profileData.tags.length === 0) {
+      toast.error('Adicione pelo menos uma especialidade')
+      return
+    }
+
+    setIsCreatingUser(true)
+    setProfileError('')
+
+    try {
+      const userData = {
+        id: crypto.randomUUID(),
+        nome: profileData.nome.trim(),
+        whatsapp: whatsappNumber.replace(/\D/g, ''),
+        descricao: profileData.descricao.trim(),
+        tags: profileData.tags,
+        foto_url: profileData.foto_url || undefined,
+        localizacao: profileData.localizacao.trim() || undefined,
+        status: profileData.status,
+        latitude: profileData.latitude || undefined,
+        longitude: profileData.longitude || undefined
+      }
+
+      console.log('📝 Criando perfil:', userData)
+      
+      const createdUser = await DatabaseService.createUsuario(userData)
+      
+      console.log('✅ Perfil criado:', createdUser)
+      
+      setCurrentUser(createdUser)
+      setIsCreatingProfile(false)
+      
+      toast.success(`Perfil criado com sucesso! Bem-vindo, ${createdUser.nome}!`)
+      
+      // Redirecionar para o feed
+      setTimeout(() => {
+        setCurrentScreen('feed')
+        setNavigationHistory(['home', 'profile-creation', 'feed'])
+      }, 2000)
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar perfil:', error)
+      setProfileError(error.message || 'Erro ao criar perfil')
+      toast.error('Erro ao criar perfil. Tente novamente.')
+    } finally {
+      setIsCreatingUser(false)
+    }
   }
 
   // Save profile
@@ -766,14 +906,6 @@ function App() {
     }
   }
 
-  // Remove tag
-  const removeTag = (tagToRemove: string) => {
-    setProfileData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }))
-  }
-
   // Filter by tag
   const filterByTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -957,6 +1089,331 @@ function App() {
     <div className="App">
       <Toaster position="top-center" />
       <PWAInstallPrompt />
+
+      {/* Header */}
+      <div className="app-container">
+        <header className="header">
+          <div className="header-content">
+            <button 
+              className="logo" 
+              onClick={() => navigateTo('home')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              TEX
+            </button>
+            
+            <div className="header-actions">
+              {currentUser && !isCreatingProfile ? (
+                <div className="user-menu">
+                  <button 
+                    className="user-avatar"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                  >
+                    {currentUser.foto_url ? (
+                      <img src={currentUser.foto_url} alt={currentUser.nome} />
+                    ) : (
+                      <i className="fas fa-user"></i>
+                    )}
+                  </button>
+                  
+                  {showUserMenu && (
+                    <div className="user-dropdown">
+                      <div className="user-info">
+                        <span className="user-name">{currentUser.nome}</span>
+                        <span className="user-phone">{currentUser.whatsapp}</span>
+                      </div>
+                      <div className="dropdown-divider"></div>
+                      <button onClick={() => navigateTo('profile')}>
+                        <i className="fas fa-user"></i>
+                        Meu Perfil
+                      </button>
+                      <button onClick={() => navigateTo('profile-edit')}>
+                        <i className="fas fa-edit"></i>
+                        Editar Perfil
+                      </button>
+                      <div className="dropdown-divider"></div>
+                      <button onClick={handleLogout} className="logout-btn">
+                        <i className="fas fa-sign-out-alt"></i>
+                        Sair
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button 
+                  className="login-btn"
+                  onClick={() => navigateTo('login')}
+                >
+                  <i className="fas fa-sign-in-alt"></i>
+                  Entrar
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="main-content">
+          {/* Profile Creation Screen */}
+          {currentScreen === 'profile-creation' && (
+            <div className="screen profile-creation-screen">
+              <div className="profile-creation-container">
+                <div className="profile-creation-header">
+                  <h2>Criar Perfil Profissional</h2>
+                  <p>Complete seu perfil para começar a receber contatos</p>
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${(profileStep / 4) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="progress-text">Passo {profileStep} de 4</span>
+                </div>
+
+                {profileError && (
+                  <div className="error-message">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    {profileError}
+                  </div>
+                )}
+
+                {/* Step 1: Photo Upload */}
+                {profileStep === 1 && (
+                  <div className="profile-step">
+                    <h3>Adicione uma foto (opcional)</h3>
+                    <p>Uma foto ajuda a criar confiança com seus clientes</p>
+                    
+                    <div className="photo-upload-container">
+                      <div className="photo-preview">
+                        {profileData.foto_url ? (
+                          <img src={profileData.foto_url} alt="Preview" />
+                        ) : (
+                          <div className="photo-placeholder">
+                            <i className="fas fa-camera"></i>
+                            <span>Adicionar Foto</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <input
+                        type="file"
+                        id="photo-upload"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        style={{ display: 'none' }}
+                      />
+                      
+                      <div className="photo-actions">
+                        <label htmlFor="photo-upload" className="btn btn-secondary">
+                          <i className="fas fa-upload"></i>
+                          {profileData.foto_url ? 'Trocar Foto' : 'Escolher Foto'}
+                        </label>
+                        
+                        {profileData.foto_url && (
+                          <button 
+                            className="btn btn-outline"
+                            onClick={() => setProfileData(prev => ({ ...prev, foto_url: '' }))}
+                          >
+                            <i className="fas fa-trash"></i>
+                            Remover
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="step-actions">
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => setProfileStep(2)}
+                      >
+                        Continuar
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Basic Info */}
+                {profileStep === 2 && (
+                  <div className="profile-step">
+                    <h3>Informações Básicas</h3>
+                    <p>Como você gostaria de ser conhecido?</p>
+                    
+                    <div className="form-group">
+                      <label>Nome Completo *</label>
+                      <input
+                        type="text"
+                        value={profileData.nome}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, nome: e.target.value }))}
+                        placeholder="Seu nome completo"
+                        maxLength={100}
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Descrição Profissional *</label>
+                      <textarea
+                        value={profileData.descricao}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, descricao: e.target.value }))}
+                        placeholder="Descreva seus serviços e experiência..."
+                        rows={4}
+                        maxLength={500}
+                      />
+                      <small>{profileData.descricao.length}/500 caracteres</small>
+                    </div>
+                    
+                    <div className="step-actions">
+                      <button 
+                        className="btn btn-outline"
+                        onClick={() => setProfileStep(1)}
+                      >
+                        <i className="fas fa-arrow-left"></i>
+                        Voltar
+                      </button>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => setProfileStep(3)}
+                        disabled={!profileData.nome.trim() || !profileData.descricao.trim()}
+                      >
+                        Continuar
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Specialties */}
+                {profileStep === 3 && (
+                  <div className="profile-step">
+                    <h3>Suas Especialidades</h3>
+                    <p>Adicione suas áreas de atuação (mínimo 1, máximo 10)</p>
+                    
+                    <div className="form-group">
+                      <label>Especialidades *</label>
+                      <input
+                        type="text"
+                        placeholder="Digite uma especialidade e pressione Enter"
+                        onKeyDown={handleTagInput}
+                        maxLength={30}
+                      />
+                      <small>Pressione Enter ou vírgula para adicionar</small>
+                    </div>
+                    
+                    <div className="tags-container">
+                      {profileData.tags.map((tag, index) => (
+                        <span key={index} className="tag">
+                          #{tag}
+                          <button onClick={() => removeTag(tag)}>
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    
+                    {profileData.tags.length === 0 && (
+                      <div className="empty-tags">
+                        <i className="fas fa-tags"></i>
+                        <p>Nenhuma especialidade adicionada ainda</p>
+                      </div>
+                    )}
+                    
+                    <div className="step-actions">
+                      <button 
+                        className="btn btn-outline"
+                        onClick={() => setProfileStep(2)}
+                      >
+                        <i className="fas fa-arrow-left"></i>
+                        Voltar
+                      </button>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => setProfileStep(4)}
+                        disabled={profileData.tags.length === 0}
+                      >
+                        Continuar
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: Location & Status */}
+                {profileStep === 4 && (
+                  <div className="profile-step">
+                    <h3>Localização e Status</h3>
+                    <p>Finalize seu perfil com informações de localização</p>
+                    
+                    <div className="form-group">
+                      <label>Localização (opcional)</label>
+                      <input
+                        type="text"
+                        value={profileData.localizacao}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, localizacao: e.target.value }))}
+                        placeholder="Cidade, Estado"
+                        maxLength={100}
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Status Inicial</label>
+                      <div className="status-options">
+                        <label className="status-option">
+                          <input
+                            type="radio"
+                            name="status"
+                            value="available"
+                            checked={profileData.status === 'available'}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, status: e.target.value as 'available' | 'busy' }))}
+                          />
+                          <span className="status-indicator available"></span>
+                          Disponível para novos trabalhos
+                        </label>
+                        <label className="status-option">
+                          <input
+                            type="radio"
+                            name="status"
+                            value="busy"
+                            checked={profileData.status === 'busy'}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, status: e.target.value as 'available' | 'busy' }))}
+                          />
+                          <span className="status-indicator busy"></span>
+                          Ocupado no momento
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="step-actions">
+                      <button 
+                        className="btn btn-outline"
+                        onClick={() => setProfileStep(3)}
+                      >
+                        <i className="fas fa-arrow-left"></i>
+                        Voltar
+                      </button>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={handleCreateProfile}
+                        disabled={isCreatingUser}
+                      >
+                        {isCreatingUser ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin"></i>
+                            Criando Perfil...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-check"></i>
+                            Criar Perfil
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Profile Header Button */}
       {isLoggedIn && currentUser && (
