@@ -1103,48 +1103,6 @@ function App() {
             <button 
               className="logo" 
               onClick={() => navigateTo('home')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              TEX
-            </button>
-            
-            <div className="header-actions">
-              {currentUser && !isCreatingProfile ? (
-                <div className="user-menu">
-                  <button 
-                    className="user-avatar"
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                  >
-                    <div className="user-dropdown">
-                      <div className="user-info">
-                        <span className="user-name">{currentUser.nome}</span>
-                        <span className="user-phone">{currentUser.whatsapp}</span>
-                      </div>
-                      <div className="dropdown-divider"></div>
-                      <button onClick={() => navigateTo('profile')}>
-                        <i className="fas fa-user"></i>
-                        Meu Perfil
-                      </button>
-                      <button onClick={() => navigateTo('profile-edit')}>
-                        <i className="fas fa-edit"></i>
-                        Editar Perfil
-                      </button>
-                      <div className="dropdown-divider"></div>
-                      <button onClick={handleLogout} className="logout-btn">
-                        <i className="fas fa-sign-out-alt"></i>
-                        Sair
-                      </button>
-                    </div>
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  className="login-btn"
-                  onClick={() => navigateTo('login')}
-                >
-                  <i className="fas fa-sign-in-alt"></i>
-                  Entrar
-                </button>
               )}
             </div>
           </div>
