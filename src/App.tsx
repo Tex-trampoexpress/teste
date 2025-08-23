@@ -525,7 +525,7 @@ function App() {
   }
 
   // Screen components
-  const HomeScreen = useMemo(() => (
+  const HomeScreen = () => (
     <div className="hero-container">
       <div className="tex-logo-container-inside">
         <div className="tex-logo-text-inside">TEX</div>
@@ -594,9 +594,9 @@ function App() {
         </div>
       </div>
     </div>
-  ), [searchTerm, locationStatus, userLocation])
+  )
 
-  const VerifyScreen = useMemo(() => (
+  const VerifyScreen = () => (
     <div className="form-container">
       {renderBackButton()}
       <h2>Entrar com WhatsApp</h2>
@@ -639,7 +639,7 @@ function App() {
         )}
       </button>
     </div>
-  ), [whatsappNumber, isVerifying, handleWhatsAppVerification, navigationHistory])
+  )
 
   const ProfileSetupScreen = () => (
     <div className="form-container profile-setup">
@@ -786,7 +786,7 @@ function App() {
     </div>
   )
 
-  const FeedScreen = useMemo(() => (
+  const FeedScreen = () => (
     <div className="feed">
       {renderBackButton()}
       
@@ -945,7 +945,7 @@ function App() {
         </div>
       )}
     </div>
-  ), [loading, users, searchTerm, proximityEnabled, userLocation, proximityRadius])
+  )
 
   const MyProfileScreen = () => {
     if (!currentUser) {
