@@ -218,6 +218,7 @@ function App() {
     } finally {
       setIsVerifying(false)
     }
+  }
 
   // Profile management
   const handleProfileSave = async () => {
@@ -316,6 +317,7 @@ function App() {
     } finally {
       setLoading(false)
     }
+  }
 
   const handleTagClick = (tag: string) => {
     setSearchTerm(tag)
@@ -412,6 +414,7 @@ function App() {
     if (currentScreen === 'feed') {
       searchUsers()
     }
+  }, [currentScreen])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -675,7 +678,10 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, nome: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, nome: value }))
+          }}
         />
       </div>
 
@@ -684,7 +690,10 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, descricao: value }))
+          }}
           rows={4}
         />
       </div>
@@ -1117,7 +1126,10 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, nome: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, nome: value }))
+          }}
         />
       </div>
 
@@ -1126,7 +1138,10 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, descricao: value }))
+          }}
           rows={4}
         />
       </div>
@@ -1137,7 +1152,6 @@ function App() {
           <input
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
-            key={`edit-tags-input-${profileForm.tags.length}`}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -1163,7 +1177,10 @@ function App() {
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, localizacao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, localizacao: value }))
+          }}
         />
       </div>
 
