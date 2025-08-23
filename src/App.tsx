@@ -1107,7 +1107,6 @@ function App() {
               TEX
             </button>
             </div>
-            </div>
           </div>
         </header>
 
