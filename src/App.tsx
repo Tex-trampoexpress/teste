@@ -216,9 +216,10 @@ function App() {
 
       // Buscar usuário existente
       const existingUser2 = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
-      
+          // Delay maior para garantir que funcione no Chrome
+          setTimeout(() => navigateTo('feed'), 1500)
       if (cleanNumber.length < 10) {
-        console.log('✅ Usuário existente encontrado:', existingUser2.nome)
+          setTimeout(() => navigateTo('profile'), 1500)
         return
       }
       
@@ -286,7 +287,7 @@ function App() {
           longitude: null
         })
         navigateTo('profile-setup')
-        toast.success('Vamos criar seu perfil profissional!')
+        setTimeout(() => navigateTo('create-profile'), 1500)
       }
     } catch (error) {
       console.error('❌ Erro no login:', error)
