@@ -1099,7 +1099,6 @@ function App() {
       {/* Header */}
       <div className="app-container">
         <header className="header">
-            </div>
         </header>
 
         <main className="main-content">
