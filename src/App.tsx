@@ -871,19 +871,26 @@ function App() {
   const handleSimulatePayment = () => {
     if (!selectedPrestador) return
     
-    toast.success('🎉 Pagamento simulado! Redirecionando...')
-    
-    const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-    const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    
-    setTimeout(() => {
-      window.open(whatsappUrl, '_blank')
-      navigateTo('feed')
-      setPaymentData(null)
-      setSelectedPrestador(null)
-    }, 1000)
-  }
 
+      console.log('🔍 Verificando pagamento:', paymentId)
+      
+      // Verificar status do pagamento via Mercado Pago
+      const isApproved = await MercadoPagoService.isPaymentApproved(paymentId)
+      
+      if (isApproved) {
+        // Pagamento aprovado - redirecionar para WhatsApp
+        const whatsappUrl = `https://wa.me/55${prestadorWhatsApp.replace(/\D/g, '')}?text=Olá! Realizei o pagamento via TEX e gostaria de conversar sobre seus serviços.`
+        window.open(whatsappUrl, '_blank')
+        
+        toast.success('Pagamento confirmado! Redirecionando para WhatsApp...')
+        setCurrentPayment(null)
+      } else {
+        // Pagamento ainda não foi efetuado
+        toast.error('Pagamento ainda não foi efetuado. Por favor, realize o pagamento via PIX primeiro.')
+      }
+    }, 1000)
+      console.error('❌ Erro na verificação do pagamento:', error)
+      toast.error('Erro ao verificar pagamento. Tente novamente.')
   // Cancel payment
   const handleCancelPayment = () => {
     if (paymentData) {
