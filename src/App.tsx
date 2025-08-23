@@ -1099,13 +1099,6 @@ function App() {
       {/* Header */}
       <div className="app-container">
         <header className="header">
-          <div className="header-content">
-            <button 
-              className="logo" 
-              onClick={() => navigateTo('home')}
-            >
-              TEX
-            </button>
             </div>
         </header>
 
