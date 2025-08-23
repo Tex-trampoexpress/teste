@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import { DatabaseService, type Usuario, type CreateUsuarioData, type UpdateUsuarioData } from './lib/database'
+import { supabase } from './lib/supabase'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import PaymentScreen from './components/PaymentScreen'
 
 // Types
-type Screen = 'home' | 'verify' | 'profile-setup' | 'feed' | 'my-profile' | 'edit-profile' | 'about' | 'terms'
+type Screen = 'home' | 'verify' | 'profile-setup' | 'feed' | 'my-profile' | 'edit-profile' | 'about' | 'terms' | 'payment'
 
 interface NavigationState {
   screen: Screen
@@ -376,6 +378,35 @@ function App() {
         console.error('Delete profile error:', error)
         toast.error('Erro ao excluir perfil. Tente novamente.')
       }
+    }
+  }
+
+  // Payment functions
+  const handleContactClick = (user: Usuario) => {
+    if (!currentUser) {
+      toast.error('Faça login para entrar em contato')
+      navigateTo('verify')
+      return
+    }
+
+    // Navigate to payment screen
+    navigateTo('payment', {
+      prestadorId: user.id,
+      prestadorNome: user.nome,
+      prestadorWhatsApp: user.whatsapp,
+      clienteId: currentUser.id
+    })
+  }
+
+  const handlePaymentSuccess = () => {
+    const paymentData = navigationHistory[navigationHistory.length - 1]?.data
+    if (paymentData) {
+      // Redirect to WhatsApp
+      const whatsappUrl = `https://wa.me/55${paymentData.prestadorWhatsApp.replace(/\D/g, '')}?text=Olá! Paguei a taxa no TEX e gostaria de conversar sobre seus serviços.`
+      window.open(whatsappUrl, '_blank')
+      
+      toast.success('Redirecionando para WhatsApp...')
+      navigateTo('feed')
     }
   }
 
@@ -889,15 +920,13 @@ function App() {
                 </div>
               )}
               
-              <a
-                href={`https://wa.me/55${user.whatsapp.replace(/\D/g, '')}?text=Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 className="whatsapp-btn"
+                onClick={() => handleContactClick(user)}
               >
                 <i className="fab fa-whatsapp"></i>
                 Entrar em Contato
-              </a>
+              </button>
             </div>
           ))}
         </div>
@@ -1292,6 +1321,30 @@ function App() {
     </div>
   )
 
+  const PaymentScreenComponent = () => {
+    const paymentData = navigationHistory[navigationHistory.length - 1]?.data
+    
+    if (!paymentData) {
+      return (
+        <div className="payment-error">
+          <h3>Erro nos dados de pagamento</h3>
+          <button onClick={goBack}>Voltar</button>
+        </div>
+      )
+    }
+
+    return (
+      <PaymentScreen
+        prestadorId={paymentData.prestadorId}
+        prestadorNome={paymentData.prestadorNome}
+        prestadorWhatsApp={paymentData.prestadorWhatsApp}
+        clienteId={paymentData.clienteId}
+        onBack={goBack}
+        onSuccess={handlePaymentSuccess}
+      />
+    )
+  }
+
   // Main render
   return (
     <div className="App">
@@ -1341,6 +1394,9 @@ function App() {
         <TermsScreen />
       </div>
 
+      <div className={`screen ${currentScreen === 'payment' ? 'active' : ''}`}>
+        <PaymentScreenComponent />
+      </div>
       <PWAInstallPrompt />
     </div>
   )
