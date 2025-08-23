@@ -802,16 +802,13 @@ function App() {
             type="text"
             placeholder="Buscar profissionais..."
             value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value
-              setSearchTerm(value)
-            }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 searchUsers()
               }
             }}
-            key="feed-search-input"
+            key="search-input"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
