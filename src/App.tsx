@@ -29,7 +29,6 @@ function App() {
 
   // Search and feed state
   const [searchTerm, setSearchTerm] = useState('')
-  const [searchInputValue, setSearchInputValue] = useState('')
   const [users, setUsers] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(false)
   const [proximityEnabled, setProximityEnabled] = useState(false)
@@ -37,7 +36,6 @@ function App() {
 
   // Form states
   const [whatsappNumber, setWhatsappNumber] = useState('')
-  const [phoneInputValue, setPhoneInputValue] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
 
@@ -59,15 +57,6 @@ function App() {
     setupBackButtonHandler()
   }, [])
 
-  // Sync search input with search term
-  useEffect(() => {
-    setSearchInputValue(searchTerm)
-  }, [searchTerm])
-
-  // Sync phone input with whatsapp number
-  useEffect(() => {
-    setPhoneInputValue(whatsappNumber)
-  }, [whatsappNumber])
   const initializeApp = async () => {
     // Check for existing session
     const savedUser = localStorage.getItem('tex-current-user')
@@ -155,14 +144,14 @@ function App() {
   }
 
   // WhatsApp verification
-  const handleWhatsAppVerification = useCallback(async () => {
-    if (!phoneInputValue.trim()) {
+  const handleWhatsAppVerification = async () => {
+    if (!whatsappNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
       return
     }
 
     // Format WhatsApp number
-    const formattedNumber = phoneInputValue.replace(/\D/g, '')
+    const formattedNumber = whatsappNumber.replace(/\D/g, '')
     if (formattedNumber.length < 10) {
       toast.error('Número do WhatsApp inválido')
       return
@@ -229,7 +218,6 @@ function App() {
     } finally {
       setIsVerifying(false)
     }
-  }, [phoneInputValue])
 
   // Profile management
   const handleProfileSave = async () => {
@@ -302,7 +290,7 @@ function App() {
   }
 
   // Search and feed functions
-  const searchUsers = useCallback(async () => {
+  const searchUsers = async () => {
     setLoading(true)
     try {
       let results: Usuario[] = []
@@ -328,7 +316,6 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [proximityEnabled, userLocation, proximityRadius, searchTerm])
 
   const handleTagClick = (tag: string) => {
     setSearchTerm(tag)
@@ -425,28 +412,6 @@ function App() {
     if (currentScreen === 'feed') {
       searchUsers()
     }
-  }, [currentScreen, searchUsers])
-
-  // Handle search input change
-  const handleSearchInputChange = useCallback((value: string) => {
-    setSearchInputValue(value)
-  }, [])
-
-  // Handle search submit
-  const handleSearchSubmit = useCallback(() => {
-    setSearchTerm(searchInputValue)
-    if (currentScreen === 'home') {
-      navigateTo('feed')
-    } else {
-      searchUsers()
-    }
-  }, [searchInputValue, currentScreen])
-
-  // Handle phone input change
-  const handlePhoneInputChange = useCallback((value: string) => {
-    setPhoneInputValue(value)
-    setWhatsappNumber(value)
-  }, [])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -574,12 +539,16 @@ function App() {
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value
+            setSearchTerm(value)
+          }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               navigateTo('feed')
             }
           }}
+          key="home-search-input"
         />
         
         <button 
@@ -639,11 +608,13 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value
+            setWhatsappNumber(value)
+          }}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="whatsapp-input"
         />
       </div>
 
@@ -828,13 +799,16 @@ function App() {
             type="text"
             placeholder="Buscar profissionais..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              setSearchTerm(value)
+            }}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 searchUsers()
               }
             }}
-            key="search-input"
+            key="feed-search-input"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
