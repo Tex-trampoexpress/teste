@@ -427,26 +427,6 @@ function App() {
     }
   }, [currentScreen, searchUsers])
 
-  // Handle search input change
-  const handleSearchInputChange = useCallback((value: string) => {
-    setSearchInputValue(value)
-  }, [])
-
-  // Handle search submit
-  const handleSearchSubmit = useCallback(() => {
-    setSearchTerm(searchInputValue)
-    if (currentScreen === 'home') {
-      navigateTo('feed')
-    } else {
-      searchUsers()
-    }
-  }, [searchInputValue, currentScreen])
-
-  // Handle phone input change
-  const handlePhoneInputChange = useCallback((value: string) => {
-    setPhoneInputValue(value)
-    setWhatsappNumber(value)
-  }, [])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -573,19 +553,18 @@ function App() {
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
-          value={searchInputValue}
-          onChange={(e) => handleSearchInputChange(e.target.value)}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
-              handleSearchSubmit()
+              navigateTo('feed')
             }
           }}
-          key="home-search-input"
         />
         
         <button 
           className="explore-btn"
-          onClick={handleSearchSubmit}
+          onClick={() => navigateTo('feed')}
         >
           <i className="fas fa-search"></i>
           Explorar Profissionais
@@ -639,12 +618,12 @@ function App() {
         <input
           type="tel"
           placeholder="11999887766"
-          value={phoneInputValue}
-          onChange={(e) => handlePhoneInputChange(e.target.value)}
+          value={whatsappNumber}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="phone-input-verify"
+          key="whatsapp-input"
         />
       </div>
 
@@ -828,20 +807,17 @@ function App() {
           <input
             type="text"
             placeholder="Buscar profissionais..."
-            value={searchInputValue}
-            onChange={(e) => handleSearchInputChange(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                handleSearchSubmit()
+                searchUsers()
               }
             }}
-            key="feed-search-input"
+            key="search-input"
           />
-          {searchInputValue && (
-            <button className="clear-search" onClick={() => {
-              setSearchInputValue('')
-              setSearchTerm('')
-            }}>
+          {searchTerm && (
+            <button className="clear-search" onClick={() => setSearchTerm('')}>
               <i className="fas fa-times"></i>
             </button>
           )}
@@ -883,7 +859,7 @@ function App() {
           )}
         </div>
 
-        <button className="explore-btn" onClick={handleSearchSubmit}>
+        <button className="explore-btn" onClick={searchUsers}>
           <i className="fas fa-search"></i>
           Buscar
         </button>
