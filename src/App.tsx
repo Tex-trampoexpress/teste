@@ -605,10 +605,7 @@ function App() {
           placeholder="11999887766"
           value={whatsappNumber}
           onChange={(e) => setWhatsappNumber(e.target.value)}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          autoComplete="tel"
-          onFocus={(e) => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          maxLength={11}
         />
       </div>
 
