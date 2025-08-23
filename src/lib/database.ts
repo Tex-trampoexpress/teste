@@ -365,13 +365,6 @@ export class DatabaseService {
     offset?: number
   }): Promise<Usuario[]> {
     try {
-      // Always check connection first
-      const isConnected = await this.testConnection()
-      if (!isConnected) {
-        console.warn('⚠️ Supabase não disponível, usando dados mock')
-        return this.getMockUsers(filters?.limit || 20) as Usuario[]
-      }
-
       const searchTerm = filters?.search?.trim() || ''
       const filterTags = filters?.tags || []
       const filterStatus = filters?.status || 'available'
@@ -380,14 +373,7 @@ export class DatabaseService {
 
       console.log('🔍 Busca otimizada:', { searchTerm, filterTags, filterStatus, limitResults, offsetResults })
 
-      // Try to fetch from Supabase with timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 8000)
-      )
-
-      const buildQuery = () => {
-        // Usar query direta otimizada em vez de RPC para melhor performance
-      let query = supabase
+      let query = supabase!
         .from('usuarios')
         .select(`
           id, nome, whatsapp, descricao, tags, foto_url, 
@@ -399,19 +385,16 @@ export class DatabaseService {
         .order('ultimo_acesso', { ascending: false })
         .range(offsetResults, offsetResults + limitResults - 1)
 
-      // Aplicar filtros condicionalmente
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
-      }
+        // Aplicar filtros condicionalmente
+        if (searchTerm) {
+          query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
+        }
 
-      if (filterTags.length > 0) {
-        query = query.overlaps('tags', filterTags)
-      }
+        if (filterTags.length > 0) {
+          query = query.overlaps('tags', filterTags)
+        }
 
-      return query
-      }
-
-      const { data, error } = await buildQuery()
+      const { data, error } = await query
 
       if (error) {
         console.error('❌ Erro na busca otimizada:', error)
@@ -422,26 +405,14 @@ export class DatabaseService {
       return data || []
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      return []
+      throw error
     }
   }
 
   // Busca rápida apenas com campos essenciais
   static async getUsuariosRapido(limit: number = 10): Promise<Partial<Usuario>[]> {
     try {
-      // Always check connection first
-      const isConnected = await this.testConnection()
-      if (!isConnected) {
-        console.warn('⚠️ Supabase não disponível, usando dados mock')
-        return this.getMockUsers(limit)
-      }
-
-      // Try to fetch from Supabase with timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
-      )
-
-      const fetchPromise = supabase!
+      const { data, error } = await supabase!
         .from('usuarios')
         .select('id, nome, foto_url, tags, localizacao, status, ultimo_acesso')
         .eq('status', 'available')
@@ -449,17 +420,16 @@ export class DatabaseService {
         .order('ultimo_acesso', { ascending: false })
         .limit(limit)
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any
 
       if (error) {
-        console.warn('⚠️ Erro na busca, usando dados mock:', error.message)
-        return this.getMockUsers(limit)
+        console.error('❌ Erro na busca rápida:', error)
+        throw error
       }
 
-      return data || this.getMockUsers(limit)
+      return data || []
     } catch (error) {
-      console.warn('⚠️ Erro na busca, usando dados mock:', error)
-      return this.getMockUsers(limit)
+      console.error('❌ Erro na busca rápida:', error)
+      throw error
     }
   }
 
@@ -609,63 +579,4 @@ export class DatabaseService {
     return this.updateUsuario(id, { verificado: true })
   }
 
-  // Mock users for when Supabase is not available
-  private static getMockUsers(limit: number): Partial<Usuario>[] {
-    const mockUsers = [
-      {
-        id: '1',
-        nome: 'Ana Silva',
-        foto_url: null,
-        tags: ['design', 'ui/ux'],
-        localizacao: 'São Paulo, SP',
-        status: 'available' as const,
-        ultimo_acesso: new Date().toISOString()
-      },
-      {
-        id: '2', 
-        nome: 'Carlos Santos',
-        foto_url: null,
-        tags: ['programação', 'react'],
-        localizacao: 'Rio de Janeiro, RJ',
-        status: 'available' as const,
-        ultimo_acesso: new Date().toISOString()
-      },
-      {
-        id: '3',
-        nome: 'Maria Oliveira',
-        foto_url: null,
-        tags: ['marketing', 'social media'],
-        localizacao: 'Belo Horizonte, MG',
-        status: 'available' as const,
-        ultimo_acesso: new Date().toISOString()
-      }
-    ]
-    
-    return mockUsers.slice(0, limit)
-  }
-
-  // Test database connection
-  static async testConnection(): Promise<boolean> {
-    try {
-      if (!supabase) {
-        console.warn('⚠️ Supabase não configurado')
-        return false
-      }
-      
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('count')
-        .limit(1)
-
-      if (error) {
-        console.warn('⚠️ Erro na conexão:', error.message)
-        return false
-      }
-
-      return true
-    } catch (error) {
-      console.warn('⚠️ Erro na conexão:', error.message)
-      return false
-    }
-  }
 }
