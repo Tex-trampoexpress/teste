@@ -291,7 +291,7 @@ function App() {
   }
 
   // Search and feed functions
-  const searchUsers = useCallback(async () => {
+  const searchUsers = async () => {
     setLoading(true)
     try {
       let results: Usuario[] = []
@@ -317,7 +317,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [proximityEnabled, userLocation, proximityRadius, searchTerm])
+  }
 
   const handleTagClick = (tag: string) => {
     setSearchTerm(tag)
@@ -414,28 +414,7 @@ function App() {
     if (currentScreen === 'feed') {
       searchUsers()
     }
-  }, [currentScreen, searchUsers])
-
-  // Handle search input change
-  const handleSearchInputChange = useCallback((value: string) => {
-    setSearchInputValue(value)
-  }, [])
-
-  // Handle search submit
-  const handleSearchSubmit = useCallback(() => {
-    setSearchTerm(searchInputValue)
-    if (currentScreen === 'home') {
-      navigateTo('feed')
-    } else {
-      searchUsers()
-    }
-  }, [searchInputValue, currentScreen])
-
-  // Handle phone input change
-  const handlePhoneInputChange = useCallback((value: string) => {
-    setPhoneInputValue(value)
-    setWhatsappNumber(value)
-  }, [])
+  }, [currentScreen])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -563,12 +542,16 @@ function App() {
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value
+            setSearchTerm(value)
+          }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               navigateTo('feed')
             }
           }}
+          key="home-search-input"
         />
         
         <button 
@@ -628,11 +611,13 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value
+            setWhatsappNumber(value)
+          }}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="whatsapp-input"
         />
       </div>
 
@@ -817,13 +802,16 @@ function App() {
             type="text"
             placeholder="Buscar profissionais..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              setSearchTerm(value)
+            }}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 searchUsers()
               }
             }}
-            key="search-input"
+            key="feed-search-input"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
