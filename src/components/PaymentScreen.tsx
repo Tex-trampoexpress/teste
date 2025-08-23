@@ -80,104 +80,74 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
     try {
       setChecking(true)
-      console.log('🔍 Verificando status do pagamento...')
+      console.log('🔍 Verificando status do pagamento:', paymentData.id)
 
-      // 1. Verificar no banco de dados primeiro
-      console.log('📊 Verificando no banco de dados...')
+      // 1. Verificar via Edge Function (resolve CORS e é mais confiável)
+      console.log('🔧 Verificando via Edge Function...')
+      const edgeResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-payment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          payment_id: paymentData.id
+        })
+      })
+
+      if (edgeResponse.ok) {
+        const edgeData = await edgeResponse.json()
+        console.log('🔧 Resposta Edge Function:', edgeData)
+        
+        if (edgeData.status === 'approved') {
+          console.log('✅ Pagamento aprovado via Edge Function!')
+          toast.success('Pagamento confirmado!')
+          onSuccess()
+          return
+        } else if (edgeData.status === 'pending') {
+          toast.error('Pagamento ainda pendente. Aguarde alguns instantes após efetuar o PIX.')
+        } else if (edgeData.status === 'rejected') {
+          toast.error('Pagamento rejeitado. Verifique os dados e tente novamente.')
+        } else if (edgeData.status === 'cancelled') {
+          toast.error('Pagamento cancelado.')
+        } else {
+          toast.error(`Status: ${edgeData.status}. Aguarde alguns instantes e tente novamente.`)
+        }
+      } else {
+        console.error('❌ Erro na Edge Function:', edgeResponse.status)
+        // Fallback: verificar diretamente no banco
+        await this.checkPaymentFromDatabase()
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao verificar pagamento:', error)
+      // Fallback: verificar no banco local
+      await this.checkPaymentFromDatabase()
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  // Método auxiliar para verificar no banco como fallback
+  const checkPaymentFromDatabase = async () => {
+    try {
+      console.log('📊 Verificando no banco de dados como fallback...')
       const { data: transacao, error: dbError } = await supabase
         .from('transacoes')
         .select('status')
         .eq('mp_payment_id', paymentData.id)
         .single()
 
-      if (dbError) {
-        console.log('⚠️ Erro no banco ou transação não encontrada:', dbError.message)
-      } else {
-        console.log('💾 Status no banco:', transacao?.status)
-      }
-
-      if (transacao?.status === 'approved') {
-        console.log('✅ Pagamento aprovado no banco!')
+      if (!dbError && transacao?.status === 'approved') {
+        console.log('✅ Pagamento aprovado encontrado no banco!')
         toast.success('Pagamento confirmado!')
         onSuccess()
-        return
-      }
-
-      // 2. Verificar diretamente na API do Mercado Pago
-      console.log('🔍 Verificando na API do Mercado Pago...')
-      const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentData.id}`, {
-        headers: {
-          'Authorization': 'Bearer APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050',
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (mpResponse.ok) {
-        const mpData = await mpResponse.json()
-        console.log('📊 Status na API:', mpData.status)
-        console.log('💰 Dados completos:', JSON.stringify(mpData, null, 2))
-
-        if (mpData.status === 'approved') {
-          // Atualizar no banco se aprovado
-          console.log('💾 Atualizando status no banco...')
-          await supabase
-            .from('transacoes')
-            .upsert({
-              mp_payment_id: paymentData.id,
-              status: 'approved',
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'mp_payment_id'
-            })
-
-          toast.success('Pagamento confirmado!')
-          onSuccess()
-        } else if (mpData.status === 'pending') {
-          toast.error('Pagamento pendente. Aguarde alguns instantes após efetuar o PIX e tente novamente.')
-        } else if (mpData.status === 'rejected') {
-          toast.error('Pagamento foi rejeitado. Tente novamente.')
-        } else if (mpData.status === 'cancelled') {
-          toast.error('Pagamento foi cancelado.')
-        } else {
-          toast.error(`Pagamento ${mpData.status}. Aguarde alguns instantes e tente novamente.`)
-        }
       } else {
-        console.error('❌ Erro na API MP:', mpResponse.status, mpResponse.statusText)
-        toast.error('Erro ao verificar pagamento. Aguarde alguns instantes e tente novamente.')
+        toast.error('Pagamento ainda não processado. Aguarde alguns instantes e tente novamente.')
       }
-
-      // 3. Tentar via Edge Function como fallback
-      console.log('🔄 Tentando verificação via Edge Function...')
-      try {
-        const edgeResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-payment`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            payment_id: paymentData.id
-          })
-        })
-
-        if (edgeResponse.ok) {
-          const edgeData = await edgeResponse.json()
-          console.log('🔧 Resposta Edge Function:', edgeData)
-          
-          if (edgeData.status === 'approved') {
-            toast.success('Pagamento confirmado via verificação adicional!')
-            onSuccess()
-          }
-        }
-      } catch (edgeError) {
-        console.log('⚠️ Edge Function não disponível:', edgeError.message)
-      }
-
     } catch (error) {
-      console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('Erro na verificação. Aguarde alguns instantes após o pagamento e tente novamente.')
-    } finally {
-      setChecking(false)
+      console.error('❌ Erro ao verificar no banco:', error)
+      toast.error('Erro na verificação. Tente novamente em alguns instantes.')
     }
   }
 

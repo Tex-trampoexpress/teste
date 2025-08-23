@@ -36,15 +36,15 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔔 Webhook do Mercado Pago recebido')
+    console.log('🔔 [WEBHOOK] Webhook do Mercado Pago recebido')
     
     // Parse webhook payload
     const webhook: MercadoPagoWebhook = await req.json()
-    console.log('📦 Payload:', JSON.stringify(webhook, null, 2))
+    console.log('📦 [WEBHOOK] Payload:', JSON.stringify(webhook, null, 2))
 
     // Verificar se é notificação de pagamento
     if (webhook.type !== 'payment') {
-      console.log('ℹ️ Tipo de notificação ignorado:', webhook.type)
+      console.log('ℹ️ [WEBHOOK] Tipo de notificação ignorado:', webhook.type)
       return new Response('OK - Ignored', { 
         status: 200, 
         headers: corsHeaders 
@@ -52,7 +52,7 @@ serve(async (req) => {
     }
 
     const paymentId = webhook.data.id
-    console.log('💳 ID do Pagamento:', paymentId)
+    console.log('💳 [WEBHOOK] ID do Pagamento:', paymentId)
 
     // Buscar detalhes do pagamento no Mercado Pago
     const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
@@ -62,11 +62,13 @@ serve(async (req) => {
     })
 
     if (!mpResponse.ok) {
+      console.error('❌ [WEBHOOK] Erro ao buscar pagamento:', mpResponse.status)
       throw new Error(`Erro ao buscar pagamento: ${mpResponse.status}`)
     }
 
     const paymentData = await mpResponse.json()
-    console.log('💰 Dados do Pagamento:', JSON.stringify(paymentData, null, 2))
+    console.log('💰 [WEBHOOK] Status do Pagamento:', paymentData.status)
+    console.log('📊 [WEBHOOK] Dados completos:', JSON.stringify(paymentData, null, 2))
 
     // Conectar ao Supabase
     const supabase = createClient(
@@ -87,10 +89,10 @@ serve(async (req) => {
       .select()
 
     if (updateError) {
-      console.error('❌ Erro ao atualizar transação:', updateError)
+      console.error('❌ [WEBHOOK] Erro ao atualizar transação:', updateError)
       
       // Tentar criar transação se não existir
-      console.log('⚠️ Tentando criar transação...')
+      console.log('⚠️ [WEBHOOK] Tentando criar transação...')
       
       const externalRef = paymentData.external_reference
       if (externalRef && externalRef.startsWith('tex_')) {
@@ -107,21 +109,23 @@ serve(async (req) => {
             })
           
           if (insertError) {
-            console.error('❌ Erro ao criar transação:', insertError)
+            console.error('❌ [WEBHOOK] Erro ao criar transação:', insertError)
           } else {
-            console.log('✅ Transação criada via webhook')
+            console.log('✅ [WEBHOOK] Transação criada via webhook')
           }
         }
       }
     } else {
-      console.log('✅ Transação upsert realizado:', updatedTransaction)
+      console.log('✅ [WEBHOOK] Transação upsert realizado:', updatedTransaction)
     }
 
     // Log do status para debug
-    console.log(`📊 Status do pagamento: ${paymentData.status}`)
+    console.log(`📊 [WEBHOOK] Status final do pagamento: ${paymentData.status}`)
     
     if (paymentData.status === 'approved') {
-      console.log('🎉 Pagamento aprovado! Cliente pode acessar WhatsApp')
+      console.log('🎉 [WEBHOOK] Pagamento aprovado! Cliente pode acessar WhatsApp')
+    } else {
+      console.log(`⏳ [WEBHOOK] Pagamento ainda ${paymentData.status}`)
     }
 
     return new Response('OK', { 
@@ -130,7 +134,7 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('❌ Erro no webhook:', error)
+    console.error('❌ [WEBHOOK] Erro no webhook:', error)
     
     return new Response(
       JSON.stringify({ 
@@ -148,5 +152,5 @@ serve(async (req) => {
   }
 })
 
-console.log('🚀 Webhook do Mercado Pago iniciado!')
-console.log('📍 URL: https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook')
+console.log('🚀 [WEBHOOK] Webhook do Mercado Pago iniciado!')
+console.log('📍 [WEBHOOK] URL: https://rengkrhtidgfaycutnqn.supabase.co/functions/v1/mercado-pago-webhook')
