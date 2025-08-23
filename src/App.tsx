@@ -291,7 +291,7 @@ function App() {
   }
 
   // Search and feed functions
-  const searchUsers = async () => {
+  const searchUsers = useCallback(async () => {
     setLoading(true)
     try {
       let results: Usuario[] = []
@@ -317,7 +317,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [proximityEnabled, userLocation, proximityRadius, searchTerm])
 
   const handleTagClick = (tag: string) => {
     setSearchTerm(tag)
@@ -414,7 +414,28 @@ function App() {
     if (currentScreen === 'feed') {
       searchUsers()
     }
-  }, [currentScreen])
+  }, [currentScreen, searchUsers])
+
+  // Handle search input change
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInputValue(value)
+  }, [])
+
+  // Handle search submit
+  const handleSearchSubmit = useCallback(() => {
+    setSearchTerm(searchInputValue)
+    if (currentScreen === 'home') {
+      navigateTo('feed')
+    } else {
+      searchUsers()
+    }
+  }, [searchInputValue, currentScreen])
+
+  // Handle phone input change
+  const handlePhoneInputChange = useCallback((value: string) => {
+    setPhoneInputValue(value)
+    setWhatsappNumber(value)
+  }, [])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -542,16 +563,12 @@ function App() {
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
-          onChange={(e) => {
-            const value = e.target.value
-            setSearchTerm(value)
-          }}
+          onChange={(e) => setSearchTerm(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               navigateTo('feed')
             }
           }}
-          key="home-search-input"
         />
         
         <button 
@@ -611,13 +628,11 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => {
-            const value = e.target.value
-            setWhatsappNumber(value)
-          }}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
+          key="whatsapp-input"
         />
       </div>
 
