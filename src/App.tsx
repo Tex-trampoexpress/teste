@@ -1114,14 +1114,6 @@ function App() {
                     className="user-avatar"
                     onClick={() => setShowUserMenu(!showUserMenu)}
                   >
-                    {currentUser.foto_url ? (
-                      <img src={currentUser.foto_url} alt={currentUser.nome} />
-                    ) : (
-                      <i className="fas fa-user"></i>
-                    )}
-                  </button>
-                  
-                  {showUserMenu && (
                     <div className="user-dropdown">
                       <div className="user-info">
                         <span className="user-name">{currentUser.nome}</span>
