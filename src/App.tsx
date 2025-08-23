@@ -1447,6 +1447,7 @@ function App() {
                       <p>{currentUser.whatsapp}</p>
                     </div>
                   </div>
+                </button>
                   <div className="profile-menu-actions">
                     <button 
                       className="profile-menu-item"
