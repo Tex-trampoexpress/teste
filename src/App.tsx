@@ -1105,6 +1105,7 @@ function App() {
               onClick={() => navigateTo('home')}
             >
               TEX
+            </button>
             </div>
             </div>
           </div>
