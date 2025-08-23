@@ -427,6 +427,26 @@ function App() {
     }
   }, [currentScreen, searchUsers])
 
+  // Handle search input change
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInputValue(value)
+  }, [])
+
+  // Handle search submit
+  const handleSearchSubmit = useCallback(() => {
+    setSearchTerm(searchInputValue)
+    if (currentScreen === 'home') {
+      navigateTo('feed')
+    } else {
+      searchUsers()
+    }
+  }, [searchInputValue, currentScreen])
+
+  // Handle phone input change
+  const handlePhoneInputChange = useCallback((value: string) => {
+    setPhoneInputValue(value)
+    setWhatsappNumber(value)
+  }, [])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -553,18 +573,19 @@ function App() {
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={searchInputValue}
+          onChange={(e) => handleSearchInputChange(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
-              navigateTo('feed')
+              handleSearchSubmit()
             }
           }}
+          key="home-search-input"
         />
         
         <button 
           className="explore-btn"
-          onClick={() => navigateTo('feed')}
+          onClick={handleSearchSubmit}
         >
           <i className="fas fa-search"></i>
           Explorar Profissionais
