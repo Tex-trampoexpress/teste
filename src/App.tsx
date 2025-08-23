@@ -37,9 +37,6 @@ function App() {
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
-  // Memoizar estados para evitar re-renders desnecessários
-  const [searchInputValue, setSearchInputValue] = useState('')
-  const [phoneInputValue, setPhoneInputValue] = useState('')
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -57,10 +54,6 @@ function App() {
   useEffect(() => {
     initializeApp()
     setupBackButtonHandler()
-    
-    // Limpar estados de input ao inicializar
-    setSearchInputValue('')
-    setPhoneInputValue('')
   }, [])
 
   const initializeApp = async () => {
@@ -151,13 +144,13 @@ function App() {
 
   // WhatsApp verification
   const handleWhatsAppVerification = async () => {
-    if (!phoneInputValue.trim()) {
+    if (!whatsappNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
       return
     }
 
     // Format WhatsApp number
-    const formattedNumber = phoneInputValue.replace(/\D/g, '')
+    const formattedNumber = whatsappNumber.replace(/\D/g, '')
     if (formattedNumber.length < 10) {
       toast.error('Número do WhatsApp inválido')
       return
@@ -422,18 +415,6 @@ function App() {
     }
   }, [currentScreen, proximityEnabled, proximityRadius])
 
-  // Sincronizar valores de input com estados principais
-  useEffect(() => {
-    if (searchTerm !== searchInputValue) {
-      setSearchInputValue(searchTerm)
-    }
-  }, [searchTerm])
-
-  useEffect(() => {
-    if (whatsappNumber !== phoneInputValue) {
-      setPhoneInputValue(whatsappNumber)
-    }
-  }, [whatsappNumber])
 
   // Render functions
   const renderProfileHeader = () => {
@@ -560,14 +541,10 @@ function App() {
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
-          value={searchInputValue}
-          onChange={(e) => {
-            setSearchInputValue(e.target.value)
-            setSearchTerm(e.target.value)
-          }}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
-              setSearchTerm(searchInputValue)
               navigateTo('feed')
             }
           }}
@@ -575,10 +552,7 @@ function App() {
         
         <button 
           className="explore-btn"
-          onClick={() => {
-            setSearchTerm(searchInputValue)
-            navigateTo('feed')
-          }}
+          onClick={() => navigateTo('feed')}
         >
           <i className="fas fa-search"></i>
           Explorar Profissionais
@@ -632,8 +606,8 @@ function App() {
         <input
           type="tel"
           placeholder="11999887766"
-          value={phoneInputValue}
-          onChange={(e) => setPhoneInputValue(e.target.value)}
+          value={whatsappNumber}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
         />
       </div>
@@ -818,23 +792,16 @@ function App() {
           <input
             type="text"
             placeholder="Buscar profissionais..."
-            value={searchInputValue}
-            onChange={(e) => {
-              setSearchInputValue(e.target.value)
-              setSearchTerm(e.target.value)
-            }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                setSearchTerm(searchInputValue)
                 searchUsers()
               }
             }}
           />
-          {searchInputValue && (
-            <button className="clear-search" onClick={() => {
-              setSearchInputValue('')
-              setSearchTerm('')
-            }}>
+          {searchTerm && (
+            <button className="clear-search" onClick={() => setSearchTerm('')}>
               <i className="fas fa-times"></i>
             </button>
           )}
