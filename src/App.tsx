@@ -2270,30 +2270,36 @@ function App() {
               <p>
                 Ao usar o TEX, você concorda com estes termos de uso.
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tela de Sobre */}
+      {currentScreen === 'about' && (
+        <div className="screen active">
+          <div className="screen-header">
+            <button 
+              className="back-button"
+              onClick={() => navigateTo('home')}
+            >
+              <i className="fas fa-arrow-left"></i>
+              Voltar
+            </button>
+            <h1>Sobre o TEX</h1>
+          </div>
+          <div className="content-container">
+            <section className="about-section">
+              <h2>Nossa Missão</h2>
+              <p>
+                O TEX conecta profissionais qualificados a pessoas que precisam de serviços de qualidade.
+              </p>
             </section>
           </div>
-        )}
+        </div>
+      )}
+    </div>
+  )
+}
 
-        {/* Tela de Sobre */}
-        {currentScreen === 'about' && (
-          <div className="screen active">
-            <div className="screen-header">
-              <button 
-                className="back-button"
-                onClick={() => navigateTo('home')}
-              >
-                <i className="fas fa-arrow-left"></i>
-                Voltar
-              </button>
-              <h1>Sobre o TEX</h1>
-            </div>
-            <div className="content-container">
-              <section className="about-section">
-                <h2>Nossa Missão</h2>
-                <p>
-                  O TEX conecta profissionais qualificados a pessoas que precisam de serviços de qualidade.
-                </p>
-              </section>
-            </div>
-          </div>
-        )}
+export default App
