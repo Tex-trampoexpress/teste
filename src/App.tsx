@@ -607,8 +607,13 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value
+            setWhatsappNumber(value)
+          }}
           maxLength={11}
+          autoComplete="tel"
+          inputMode="numeric"
         />
       </div>
 
