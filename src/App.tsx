@@ -343,47 +343,88 @@ function App() {
       setCheckingPayment(true)
       console.log('🔍 Verificando pagamento:', paymentData.id)
       
-      const isApproved = await MercadoPagoService.isPaymentApproved(paymentData.id)
+      // Verificar primeiro no banco de dados (mais confiável)
+      console.log('📊 Verificando status no banco...')
+      const isApprovedDB = await MercadoPagoService.isPaymentApprovedFromDB(paymentData.id)
       
-      if (isApproved) {
-        toast.success('🎉 Pagamento confirmado! Redirecionando...')
-        
-        // Redirect to WhatsApp
-        const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-        const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-        
-        setTimeout(() => {
-          window.open(whatsappUrl, '_blank')
-          navigateTo('feed')
-          setPaymentData(null)
-          setSelectedPrestador(null)
-        }, 1000)
+      if (isApprovedDB) {
+        console.log('✅ Pagamento aprovado no banco!')
+        handleSuccessfulPayment()
+        return
+      }
+      
+      // Se não aprovado no banco, verificar na API do MP
+      console.log('🔍 Verificando na API do Mercado Pago...')
+      const isApprovedAPI = await MercadoPagoService.isPaymentApproved(paymentData.id)
+      
+      if (isApprovedAPI) {
+        console.log('✅ Pagamento aprovado na API!')
+        handleSuccessfulPayment()
       } else {
-        toast.error('Pagamento ainda não confirmado. Aguarde e tente novamente.')
+        // Mostrar mensagem específica na mesma tela
+        console.log('⏳ Pagamento ainda pendente')
+        toast.error('⏳ Pagamento ainda não foi confirmado.\n\nPor favor, complete o pagamento PIX e tente novamente em alguns segundos.', {
+          duration: 5000,
+          style: {
+            background: 'rgba(255, 193, 7, 0.1)',
+            border: '1px solid rgba(255, 193, 7, 0.3)',
+            color: '#fff',
+            fontSize: '14px',
+            lineHeight: '1.4'
+          }
+        })
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('Erro ao verificar pagamento. Tente novamente.')
+      toast.error('❌ Erro ao verificar pagamento.\n\nVerifique sua conexão e tente novamente.', {
+        duration: 4000,
+        style: {
+          background: 'rgba(244, 67, 54, 0.1)',
+          border: '1px solid rgba(244, 67, 54, 0.3)',
+          color: '#fff'
+        }
+      })
     } finally {
       setCheckingPayment(false)
     }
+  }
+
+  // Função para lidar com pagamento aprovado
+  const handleSuccessfulPayment = () => {
+    if (!selectedPrestador) return
+    
+    toast.success('🎉 Pagamento confirmado! Redirecionando para WhatsApp...', {
+      duration: 3000,
+      style: {
+        background: 'rgba(76, 175, 80, 0.1)',
+        border: '1px solid rgba(76, 175, 80, 0.3)',
+        color: '#fff'
+      }
+    })
+    
+    // Redirect to WhatsApp
+    const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
+    const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    
+    setTimeout(() => {
+      window.open(whatsappUrl, '_blank')
+      
+      // Limpar dados e voltar ao feed
+      setTimeout(() => {
+        navigateTo('feed')
+        setPaymentData(null)
+        setSelectedPrestador(null)
+        toast.success('✅ Contato liberado! Verifique o WhatsApp.')
+      }, 1000)
+    }, 1500)
   }
 
   // Simulate payment approval (for testing)
   const handleSimulatePayment = () => {
     if (!selectedPrestador) return
     
-    toast.success('🎉 Pagamento simulado! Redirecionando...')
-    
-    const message = `Olá! Vi seu perfil no TEX e gostaria de conversar sobre seus serviços.`
-    const whatsappUrl = `https://wa.me/55${selectedPrestador.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
-    
-    setTimeout(() => {
-      window.open(whatsappUrl, '_blank')
-      navigateTo('feed')
-      setPaymentData(null)
-      setSelectedPrestador(null)
-    }, 1000)
+    console.log('🧪 Simulando pagamento aprovado...')
+    handleSuccessfulPayment()
   }
 
   // Cancel payment
@@ -1306,16 +1347,37 @@ function App() {
                   disabled={checkingPayment}
                 >
                   <i className={`fas ${checkingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'}`}></i>
-                  {checkingPayment ? 'Verificando...' : '✅ Já Paguei - Verificar'}
+                  {checkingPayment ? 'Verificando pagamento...' : '✅ Já Paguei - Verificar'}
                 </button>
                 
                 <button
                   className="payment-cancel-btn"
                   onClick={handleCancelPayment}
+                  disabled={checkingPayment}
                 >
                   <i className="fas fa-times"></i>
                   ❌ Cancelar
                 </button>
+                
+                {/* Botão de teste apenas em desenvolvimento */}
+                {import.meta.env.DEV && (
+                  <button
+                    className="payment-simulate-btn"
+                    onClick={handleSimulatePayment}
+                    style={{
+                      background: 'rgba(156, 39, 176, 0.1)',
+                      border: '1px solid rgba(156, 39, 176, 0.3)',
+                      color: '#9C27B0',
+                      padding: '0.8rem 1rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      marginTop: '0.5rem'
+                    }}
+                  >
+                    🧪 Simular Pagamento (DEV)
+                  </button>
+                )}
               </div>
 
               <div className="payment-help">

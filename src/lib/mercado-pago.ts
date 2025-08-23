@@ -110,7 +110,43 @@ export class MercadoPagoService {
 
   // Verificar se pagamento foi aprovado
   static async isPaymentApproved(paymentId: string): Promise<boolean> {
-    const status = await this.checkPaymentStatus(paymentId)
+    try {
+      const status = await this.checkPaymentStatus(paymentId)
+      console.log('🔍 Status verificado:', status)
+      return status === 'approved'
+    } catch (error) {
+      console.error('❌ Erro ao verificar aprovação:', error)
+      return false
+    }
+  }
+
+  // Verificar status via banco de dados (mais confiável)
+  static async checkPaymentStatusFromDB(paymentId: string): Promise<string> {
+    try {
+      console.log('🔍 Verificando status no banco:', paymentId)
+
+      const { data, error } = await supabase
+        .from('transacoes')
+        .select('status')
+        .eq('mp_payment_id', paymentId)
+        .single()
+
+      if (error) {
+        console.error('❌ Erro ao consultar banco:', error)
+        return 'pending'
+      }
+
+      console.log('📊 Status no banco:', data.status)
+      return data.status
+    } catch (error) {
+      console.error('❌ Erro ao verificar status no banco:', error)
+      return 'pending'
+    }
+  }
+
+  // Verificar aprovação via banco (mais confiável que API)
+  static async isPaymentApprovedFromDB(paymentId: string): Promise<boolean> {
+    const status = await this.checkPaymentStatusFromDB(paymentId)
     return status === 'approved'
   }
 }
