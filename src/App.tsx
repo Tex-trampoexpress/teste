@@ -639,12 +639,12 @@ function App() {
         <input
           type="tel"
           placeholder="11999887766"
-          value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          value={phoneInputValue}
+          onChange={(e) => handlePhoneInputChange(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="whatsapp-input"
+          key="phone-input-verify"
         />
       </div>
 
