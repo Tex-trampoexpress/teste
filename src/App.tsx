@@ -568,6 +568,7 @@ function App() {
         toast.error('❌ Pagamento rejeitado. Tente fazer um novo pagamento.')
       } else {
         toast.error('❌ Pagamento não confirmado. Verifique se realizou o pagamento.')
+      }
       toast.success('💳 QR Code gerado! Complete o pagamento PIX')
       
     } catch (error) {
