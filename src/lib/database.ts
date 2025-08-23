@@ -413,7 +413,11 @@ export class DatabaseService {
   // Busca rápida apenas com campos essenciais
   static async getUsuariosRapido(limit: number = 10): Promise<Partial<Usuario>[]> {
     try {
-      console.log('⚡ Iniciando busca rápida...')
+      // Check if supabase is available
+      if (!supabase) {
+        console.warn('⚠️ Supabase não configurado, retornando dados mock')
+        return this.getMockUsers(limit)
+      }
       
       const { data, error } = await supabase
         .from('usuarios')
@@ -424,19 +428,14 @@ export class DatabaseService {
         .limit(limit)
 
       if (error) {
-        console.error('❌ Erro na busca rápida:', error.message)
-        console.error('❌ Detalhes do erro:', error)
-        throw error
+        console.warn('⚠️ Erro na busca, usando dados mock:', error.message)
+        return this.getMockUsers(limit)
       }
 
-      console.log(`⚡ Busca rápida: ${data?.length || 0} usuários`)
       return data || []
     } catch (error) {
-      console.error('❌ Erro na busca rápida:', error.message)
-      console.error('❌ Stack trace:', error.stack)
-      
-      // Return empty array instead of throwing to prevent app crash
-      return []
+      console.warn('⚠️ Erro na busca, usando dados mock:', error.message)
+      return this.getMockUsers(limit)
     }
   }
 
