@@ -529,28 +529,38 @@ function App() {
       console.log('💳 [PRODUÇÃO] Iniciando pagamento para:', user.nome)
       
       setSelectedPrestador(user)
-      setLoading(true)
+      console.log('🔍 Verificando pagamento:', currentPayment.id)
+      const result = await MercadoPagoService.checkPaymentStatus(currentPayment.id)
+      console.log('📊 Resultado da verificação:', result)
       console.log('🔍 Verificando pagamento:', paymentId)
-      toast.loading('Verificando pagamento...', { id: 'payment-check' })
-      
+      if (result.status === 'approved') {
+        toast.success('✅ Pagamento confirmado! Abrindo WhatsApp...')
       // Verificar status do pagamento
-      const paymentStatus = await MercadoPagoService.checkPaymentStatus(paymentId)
+        // Limpar dados de pagamento
+        setCurrentPayment(null)
+        setShowPayment(false)
+        
+        // Abrir WhatsApp imediatamente
       console.log('📊 Status do pagamento:', paymentStatus)
+          console.log('📱 Abrindo WhatsApp para:', selectedUser?.nome)
       const clienteId = currentUser?.id || crypto.randomUUID()
       
       console.log('🔑 Cliente ID:', clienteId)
       console.log('🔑 Prestador ID:', user.id)
-      
-      // Criar pagamento PIX
-      const payment = await MercadoPagoService.createPixPayment({
-        cliente_id: clienteId,
-        prestador_id: user.id,
-        amount: 2.02
+        }, 500)
       })
-      
-      console.log('✅ Pagamento criado com sucesso:', payment)
-      setPaymentData(payment)
-      navigateTo('payment')
+        // Voltar ao feed após 2 segundos
+        setTimeout(() => {
+          setCurrentScreen('feed')
+          setSelectedUser(null)
+        }, 2000)
+        
+      } else if (result.status === 'pending' || result.status === 'in_process') {
+        toast.error('⏳ Pagamento ainda sendo processado. Aguarde e tente novamente.')
+      } else if (result.status === 'rejected' || result.status === 'cancelled') {
+        toast.error('❌ Pagamento rejeitado. Tente fazer um novo pagamento.')
+      } else {
+        toast.error('❌ Pagamento não confirmado. Verifique se realizou o pagamento.')
       toast.success('💳 QR Code gerado! Complete o pagamento PIX')
       
     } catch (error) {
@@ -641,7 +651,7 @@ function App() {
       }
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('Erro ao verificar pagamento. Tente novamente.', { id: 'payment-check' })
+      toast.error('❌ Erro ao verificar pagamento. Tente novamente em alguns segundos.')
     } finally {
       setCheckingPayment(false)
     }
@@ -944,6 +954,7 @@ function App() {
                     <button 
                       className="profile-menu-item logout"
                       onClick={() => {
+                        setCurrentScreen('feed')
                         setShowProfileMenu(false)
                         handleLogout()
                       }}

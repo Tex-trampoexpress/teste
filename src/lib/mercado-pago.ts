@@ -82,7 +82,13 @@ export class MercadoPagoService {
   }
 
   // Verificar status do pagamento
-  static async checkPaymentStatus(paymentId: string): Promise<string> {
+  static async checkPaymentStatus(paymentId: string): Promise<{
+    status: string
+    status_detail: string
+    transaction_amount: number
+    date_created: string
+    date_approved?: string
+  }> {
     try {
       console.log('🔍 Verificando status via API direta:', paymentId)
 
@@ -101,7 +107,7 @@ export class MercadoPagoService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         console.error('❌ Erro ao consultar status:', errorData)
-        return 'pending'
+        throw new Error(errorData.message || `HTTP ${response.status}`)
       }
 
       const result = await response.json()
@@ -110,13 +116,13 @@ export class MercadoPagoService {
       return result.status
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
-      return 'pending'
+      throw error
     }
   }
 
   // Verificar se pagamento foi aprovado
   static async isPaymentApproved(paymentId: string): Promise<boolean> {
-    const status = await this.checkPaymentStatus(paymentId)
-    return status === 'approved'
+    const result = await this.checkPaymentStatus(paymentId)
+    return result.status === 'approved'
   }
 }

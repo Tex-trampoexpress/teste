@@ -32,6 +32,10 @@ serve(async (req) => {
     
     console.log('💳 Payment ID:', paymentId)
 
+    if (!paymentId) {
+      throw new Error('Payment ID é obrigatório')
+    }
+
     // CREDENCIAIS DE PRODUÇÃO MERCADO PAGO
     const ACCESS_TOKEN = 'APP_USR-4728982243585143-081621-b2dc4884ccf718292015c3b9990e924e-2544542050'
 
@@ -47,7 +51,12 @@ serve(async (req) => {
     })
 
     if (!mpResponse.ok) {
-      console.error('❌ Erro MP:', mpResponse.status)
+      console.error('❌ Erro MP:', mpResponse.status, mpResponse.statusText)
+      
+      if (mpResponse.status === 404) {
+        throw new Error('Pagamento não encontrado')
+      }
+      
       throw new Error(`Mercado Pago Error: ${mpResponse.status}`)
     }
 
@@ -55,17 +64,20 @@ serve(async (req) => {
     console.log('📥 Dados do pagamento:', {
       id: paymentData.id,
       status: paymentData.status,
-      status_detail: paymentData.status_detail
+      status_detail: paymentData.status_detail,
+      transaction_amount: paymentData.transaction_amount,
+      date_created: paymentData.date_created,
+      date_approved: paymentData.date_approved
     })
 
-    // Resposta de sucesso
+    // Resposta padronizada
     const result = {
       id: paymentData.id.toString(),
       status: paymentData.status,
       status_detail: paymentData.status_detail,
       transaction_amount: paymentData.transaction_amount,
       date_created: paymentData.date_created,
-      date_approved: paymentData.date_approved
+      date_approved: paymentData.date_approved || null
     }
 
     return new Response(
