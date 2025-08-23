@@ -414,7 +414,28 @@ function App() {
     if (currentScreen === 'feed') {
       searchUsers()
     }
-  }, [currentScreen])
+  }, [currentScreen, searchUsers])
+
+  // Handle search input change
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInputValue(value)
+  }, [])
+
+  // Handle search submit
+  const handleSearchSubmit = useCallback(() => {
+    setSearchTerm(searchInputValue)
+    if (currentScreen === 'home') {
+      navigateTo('feed')
+    } else {
+      searchUsers()
+    }
+  }, [searchInputValue, currentScreen])
+
+  // Handle phone input change
+  const handlePhoneInputChange = useCallback((value: string) => {
+    setPhoneInputValue(value)
+    setWhatsappNumber(value)
+  }, [])
 
   // Render functions
   const renderProfileHeader = () => {
