@@ -21,6 +21,7 @@ function App() {
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['home'])
   const [isInitialized, setIsInitialized] = useState(false)
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [proximityEnabled, setProximityEnabled] = useState(false)
   const [proximityRadius, setProximityRadius] = useState(10)
