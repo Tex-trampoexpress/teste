@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import { DatabaseService, type Usuario, type CreateUsuarioData, type UpdateUsuarioData } from './lib/database'
 import { supabase } from './lib/supabase'
@@ -143,7 +144,7 @@ function App() {
   }
 
   // WhatsApp verification
-  const handleWhatsAppVerification = async () => {
+  const handleWhatsAppVerification = useCallback(async () => {
     if (!whatsappNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
       return
@@ -217,7 +218,7 @@ function App() {
     } finally {
       setIsVerifying(false)
     }
-  }
+  }, [whatsappNumber])
 
   // Profile management
   const handleProfileSave = async () => {
@@ -290,7 +291,7 @@ function App() {
   }
 
   // Search and feed functions
-  const searchUsers = async () => {
+  const searchUsers = useCallback(async () => {
     setLoading(true)
     try {
       let results: Usuario[] = []
@@ -316,7 +317,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [proximityEnabled, userLocation, proximityRadius, searchTerm])
 
   const handleTagClick = (tag: string) => {
     setSearchTerm(tag)
@@ -413,7 +414,7 @@ function App() {
     if (currentScreen === 'feed') {
       searchUsers()
     }
-  }, [currentScreen, proximityEnabled, proximityRadius])
+  }, [currentScreen, searchUsers])
 
 
   // Render functions
@@ -524,7 +525,7 @@ function App() {
   }
 
   // Screen components
-  const HomeScreen = () => (
+  const HomeScreen = useMemo(() => (
     <div className="hero-container">
       <div className="tex-logo-container-inside">
         <div className="tex-logo-text-inside">TEX</div>
@@ -593,9 +594,9 @@ function App() {
         </div>
       </div>
     </div>
-  )
+  ), [searchTerm, locationStatus, userLocation])
 
-  const VerifyScreen = () => (
+  const VerifyScreen = useMemo(() => (
     <div className="form-container">
       {renderBackButton()}
       <h2>Entrar com WhatsApp</h2>
@@ -607,13 +608,11 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => {
-            const value = e.target.value
-            setWhatsappNumber(value)
-          }}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
+          key="whatsapp-input"
         />
       </div>
 
@@ -640,7 +639,7 @@ function App() {
         )}
       </button>
     </div>
-  )
+  ), [whatsappNumber, isVerifying, handleWhatsAppVerification, navigationHistory])
 
   const ProfileSetupScreen = () => (
     <div className="form-container profile-setup">
@@ -787,7 +786,7 @@ function App() {
     </div>
   )
 
-  const FeedScreen = () => (
+  const FeedScreen = useMemo(() => (
     <div className="feed">
       {renderBackButton()}
       
@@ -804,6 +803,7 @@ function App() {
                 searchUsers()
               }
             }}
+            key="search-input"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
@@ -945,7 +945,18 @@ function App() {
         </div>
       )}
     </div>
-  )
+  ), [
+    navigationHistory, 
+    searchTerm, 
+    proximityEnabled, 
+    userLocation, 
+    proximityRadius, 
+    loading, 
+    users, 
+    searchUsers, 
+    handleTagClick, 
+    handleContactClick
+  ])
 
   const MyProfileScreen = () => {
     if (!currentUser) {
