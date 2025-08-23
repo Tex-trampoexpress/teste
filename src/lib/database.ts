@@ -413,6 +413,8 @@ export class DatabaseService {
   // Busca rápida apenas com campos essenciais
   static async getUsuariosRapido(limit: number = 10): Promise<Partial<Usuario>[]> {
     try {
+      console.log('⚡ Iniciando busca rápida...')
+      
       const { data, error } = await supabase
         .from('usuarios')
         .select('id, nome, foto_url, tags, localizacao, status, ultimo_acesso')
@@ -422,14 +424,18 @@ export class DatabaseService {
         .limit(limit)
 
       if (error) {
-        console.error('❌ Erro na busca rápida:', error)
+        console.error('❌ Erro na busca rápida:', error.message)
+        console.error('❌ Detalhes do erro:', error)
         throw error
       }
 
       console.log(`⚡ Busca rápida: ${data?.length || 0} usuários`)
       return data || []
     } catch (error) {
-      console.error('❌ Erro na busca rápida:', error)
+      console.error('❌ Erro na busca rápida:', error.message)
+      console.error('❌ Stack trace:', error.stack)
+      
+      // Return empty array instead of throwing to prevent app crash
       return []
     }
   }
