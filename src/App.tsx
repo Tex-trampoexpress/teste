@@ -542,16 +542,12 @@ function App() {
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
-          onChange={(e) => {
-            const value = e.target.value
-            setSearchTerm(value)
-          }}
+          onChange={(e) => setSearchTerm(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               navigateTo('feed')
             }
           }}
-          key="home-search-input"
         />
         
         <button 
@@ -611,13 +607,11 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => {
-            const value = e.target.value
-            setWhatsappNumber(value)
-          }}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
+          key="whatsapp-input"
         />
       </div>
 
@@ -802,16 +796,13 @@ function App() {
             type="text"
             placeholder="Buscar profissionais..."
             value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value
-              setSearchTerm(value)
-            }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 searchUsers()
               }
             }}
-            key="feed-search-input"
+            key="search-input"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
