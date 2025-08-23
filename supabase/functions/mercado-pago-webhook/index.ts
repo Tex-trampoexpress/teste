@@ -77,50 +77,44 @@ serve(async (req) => {
     // Atualizar status da transação no banco
     const { data: updatedTransaction, error: updateError } = await supabase
       .from('transacoes')
-      .update({ 
+      .upsert({ 
+        mp_payment_id: paymentId,
         status: paymentData.status,
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'mp_payment_id'
       })
-      .eq('mp_payment_id', paymentId)
       .select()
 
     if (updateError) {
       console.error('❌ Erro ao atualizar transação:', updateError)
       
-      // Se não encontrou a transação, criar uma nova entrada
-      if (updateError.code === 'PGRST116') {
-        console.log('⚠️ Transação não encontrada, tentando criar nova entrada...')
-        
-        // Extrair IDs da referência externa se possível
-        const externalRef = paymentData.external_reference
-        if (externalRef && externalRef.startsWith('tex_')) {
-          const parts = externalRef.split('_')
-          if (parts.length >= 3) {
-            const clienteId = parts[1]
-            const prestadorId = parts[2]
-            
-            const { error: insertError } = await supabase
-              .from('transacoes')
-              .insert({
-                cliente_id: clienteId,
-                prestador_id: prestadorId,
-                mp_payment_id: paymentId,
-                status: paymentData.status,
-                amount: paymentData.transaction_amount || 2.02
-              })
-            
-            if (insertError) {
-              console.error('❌ Erro ao criar transação:', insertError)
-            } else {
-              console.log('✅ Transação criada via webhook')
-            }
+      // Tentar criar transação se não existir
+      console.log('⚠️ Tentando criar transação...')
+      
+      const externalRef = paymentData.external_reference
+      if (externalRef && externalRef.startsWith('tex_')) {
+        const parts = externalRef.split('_')
+        if (parts.length >= 3) {
+          const { error: insertError } = await supabase
+            .from('transacoes')
+            .insert({
+              cliente_id: parts[1],
+              prestador_id: parts[2],
+              mp_payment_id: paymentId,
+              status: paymentData.status,
+              amount: paymentData.transaction_amount || 2.02
+            })
+          
+          if (insertError) {
+            console.error('❌ Erro ao criar transação:', insertError)
+          } else {
+            console.log('✅ Transação criada via webhook')
           }
         }
-      } else {
-        throw updateError
       }
     } else {
-      console.log('✅ Transação atualizada:', updatedTransaction)
+      console.log('✅ Transação upsert realizado:', updatedTransaction)
     }
 
     // Log do status para debug
