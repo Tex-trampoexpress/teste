@@ -83,14 +83,45 @@ serve(async (req) => {
       })
       .eq('mp_payment_id', paymentId)
       .select()
-      .single()
 
     if (updateError) {
       console.error('❌ Erro ao atualizar transação:', updateError)
-      throw updateError
+      
+      // Se não encontrou a transação, criar uma nova entrada
+      if (updateError.code === 'PGRST116') {
+        console.log('⚠️ Transação não encontrada, tentando criar nova entrada...')
+        
+        // Extrair IDs da referência externa se possível
+        const externalRef = paymentData.external_reference
+        if (externalRef && externalRef.startsWith('tex_')) {
+          const parts = externalRef.split('_')
+          if (parts.length >= 3) {
+            const clienteId = parts[1]
+            const prestadorId = parts[2]
+            
+            const { error: insertError } = await supabase
+              .from('transacoes')
+              .insert({
+                cliente_id: clienteId,
+                prestador_id: prestadorId,
+                mp_payment_id: paymentId,
+                status: paymentData.status,
+                amount: paymentData.transaction_amount || 2.02
+              })
+            
+            if (insertError) {
+              console.error('❌ Erro ao criar transação:', insertError)
+            } else {
+              console.log('✅ Transação criada via webhook')
+            }
+          }
+        }
+      } else {
+        throw updateError
+      }
+    } else {
+      console.log('✅ Transação atualizada:', updatedTransaction)
     }
-
-    console.log('✅ Transação atualizada:', updatedTransaction)
 
     // Log do status para debug
     console.log(`📊 Status do pagamento: ${paymentData.status}`)

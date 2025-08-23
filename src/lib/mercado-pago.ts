@@ -94,17 +94,25 @@ export class MercadoPagoService {
       })
 
       if (!response.ok) {
-        console.error('❌ Erro ao consultar status:', response.status)
-        return 'pending'
+        console.error('❌ Erro ao consultar status na API:', response.status, response.statusText)
+        
+        if (response.status === 404) {
+          console.log('⚠️ Pagamento não encontrado na API')
+          return 'not_found'
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       const paymentData = await response.json()
-      console.log('📊 Status atual:', paymentData.status)
+      console.log('📊 Status atual na API:', paymentData.status)
+      console.log('🔍 Dados completos:', JSON.stringify(paymentData, null, 2))
 
       return paymentData.status
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
-      return 'pending'
+      // Em caso de erro, retornar 'error' para distinguir de 'pending'
+      return 'error'
     }
   }
 
@@ -133,14 +141,20 @@ export class MercadoPagoService {
 
       if (error) {
         console.error('❌ Erro ao consultar banco:', error)
-        return 'pending'
+        
+        if (error.code === 'PGRST116') {
+          console.log('⚠️ Transação não encontrada no banco')
+          return 'not_found'
+        }
+        
+        throw error
       }
 
       console.log('📊 Status no banco:', data.status)
       return data.status
     } catch (error) {
       console.error('❌ Erro ao verificar status no banco:', error)
-      return 'pending'
+      return 'error'
     }
   }
 
