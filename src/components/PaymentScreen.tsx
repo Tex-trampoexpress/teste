@@ -82,8 +82,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       setChecking(true)
       console.log('🔍 Verificando status do pagamento:', paymentData.id)
 
-      // 1. Verificar via Edge Function (resolve CORS e é mais confiável)
-      console.log('🔧 Verificando via Edge Function...')
+      // Verificar via Edge Function otimizada
+      console.log('🔧 Consultando status via API...')
       const edgeResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-payment`, {
         method: 'POST',
         headers: {
@@ -97,57 +97,28 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
       if (edgeResponse.ok) {
         const edgeData = await edgeResponse.json()
-        console.log('🔧 Resposta Edge Function:', edgeData)
+        console.log('🔧 Resposta da API:', responseData)
         
-        if (edgeData.status === 'approved') {
-          console.log('✅ Pagamento aprovado via Edge Function!')
-          toast.success('Pagamento confirmado!')
+        if (responseData.approved === true) {
+          console.log('✅ Pagamento aprovado!')
+          toast.success('Pagamento confirmado! Redirecionando para WhatsApp...')
           onSuccess()
           return
-        } else if (edgeData.status === 'pending') {
-          toast.error('Pagamento ainda pendente. Aguarde alguns instantes após efetuar o PIX.')
-        } else if (edgeData.status === 'rejected') {
-          toast.error('Pagamento rejeitado. Verifique os dados e tente novamente.')
-        } else if (edgeData.status === 'cancelled') {
-          toast.error('Pagamento cancelado.')
         } else {
-          toast.error(`Status: ${edgeData.status}. Aguarde alguns instantes e tente novamente.`)
+          // Usar mensagem personalizada da API
+          const message = responseData.message || 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente de novo.'
+          toast.error(message)
         }
       } else {
-        console.error('❌ Erro na Edge Function:', edgeResponse.status)
-        // Fallback: verificar diretamente no banco
-        await this.checkPaymentFromDatabase()
+        console.error('❌ Erro na consulta:', edgeResponse.status, edgeResponse.statusText)
+        toast.error('Erro na verificação. Tente novamente em alguns instantes.')
       }
 
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
-      // Fallback: verificar no banco local
-      await this.checkPaymentFromDatabase()
+      toast.error('Erro na verificação. Tente novamente em alguns instantes.')
     } finally {
       setChecking(false)
-    }
-  }
-
-  // Método auxiliar para verificar no banco como fallback
-  const checkPaymentFromDatabase = async () => {
-    try {
-      console.log('📊 Verificando no banco de dados como fallback...')
-      const { data: transacao, error: dbError } = await supabase
-        .from('transacoes')
-        .select('status')
-        .eq('mp_payment_id', paymentData.id)
-        .single()
-
-      if (!dbError && transacao?.status === 'approved') {
-        console.log('✅ Pagamento aprovado encontrado no banco!')
-        toast.success('Pagamento confirmado!')
-        onSuccess()
-      } else {
-        toast.error('Pagamento ainda não processado. Aguarde alguns instantes e tente novamente.')
-      }
-    } catch (error) {
-      console.error('❌ Erro ao verificar no banco:', error)
-      toast.error('Erro na verificação. Tente novamente em alguns instantes.')
     }
   }
 

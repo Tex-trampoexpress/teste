@@ -36,31 +36,50 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. Verificar no banco primeiro
-    console.log('📊 [CHECK-PAYMENT] Verificando no banco...')
+    // 1. Verificar no banco primeiro (mais confiável)
+    console.log('📊 [CHECK-PAYMENT] Verificando no banco de dados...')
     const { data: transaction, error: dbError } = await supabase
       .from('transacoes')
       .select('*')
       .eq('mp_payment_id', payment_id)
       .single()
 
-    if (!dbError && transaction?.status === 'approved') {
-      console.log('✅ [CHECK-PAYMENT] Pagamento já aprovado no banco')
-      return new Response(
-        JSON.stringify({ 
-          status: 'approved',
-          source: 'database',
-          transaction,
-          message: 'Pagamento confirmado no banco de dados'
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    if (!dbError && transaction) {
+      console.log('📋 [CHECK-PAYMENT] Transação encontrada no banco:', transaction.status)
+      
+      if (transaction.status === 'approved') {
+        console.log('✅ [CHECK-PAYMENT] Pagamento aprovado no banco!')
+        return new Response(
+          JSON.stringify({ 
+            status: 'approved',
+            approved: true,
+            source: 'database',
+            transaction: transaction,
+            message: 'Pagamento confirmado! Redirecionando para WhatsApp...'
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      } else {
+        console.log('⏳ [CHECK-PAYMENT] Pagamento ainda não aprovado no banco:', transaction.status)
+        return new Response(
+          JSON.stringify({ 
+            status: transaction.status,
+            approved: false,
+            source: 'database',
+            message: 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente de novo.'
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
     }
 
-    // 2. Verificar na API do Mercado Pago
+    // 2. Se não encontrou no banco, verificar na API do Mercado Pago
     console.log('🔍 [CHECK-PAYMENT] Consultando API Mercado Pago...')
     const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${payment_id}`, {
       headers: {
@@ -70,14 +89,14 @@ serve(async (req) => {
     })
 
     if (!mpResponse.ok) {
-      console.error('❌ [CHECK-PAYMENT] Erro MP API:', mpResponse.status)
+      console.error('❌ [CHECK-PAYMENT] Erro MP API:', mpResponse.status, mpResponse.statusText)
       
-      // Se não conseguir acessar a API, retornar status do banco
       return new Response(
         JSON.stringify({ 
-          status: transaction?.status || 'pending',
-          source: 'database_fallback',
-          message: 'API indisponível, consultando banco de dados'
+          status: 'error',
+          approved: false,
+          source: 'api_error',
+          message: 'Erro ao consultar status. Tente novamente em alguns instantes.'
         }),
         {
           status: 200,
@@ -87,62 +106,46 @@ serve(async (req) => {
     }
 
     const paymentData = await mpResponse.json()
-    console.log('💰 [CHECK-PAYMENT] Status MP:', paymentData.status)
-    console.log('📊 [CHECK-PAYMENT] Dados completos:', JSON.stringify(paymentData, null, 2))
+    console.log('💰 [CHECK-PAYMENT] Status na API:', paymentData.status)
 
-    // 3. Atualizar banco se necessário
-    if (paymentData.status === 'approved' && (!transaction || transaction.status !== 'approved')) {
-      console.log('💾 [CHECK-PAYMENT] Atualizando status no banco...')
+    // 3. Atualizar/criar transação no banco com dados da API
+    if (paymentData.status === 'approved') {
+      console.log('💾 [CHECK-PAYMENT] Salvando aprovação no banco...')
       
-      const updateData = {
-        status: paymentData.status,
-        updated_at: new Date().toISOString()
-      }
-
-      if (!transaction) {
-        // Criar nova transação se não existir
-        const externalRef = paymentData.external_reference
-        if (externalRef && externalRef.startsWith('tex_')) {
-          const parts = externalRef.split('_')
-          if (parts.length >= 3) {
-            const { error: insertError } = await supabase.from('transacoes').insert({
+      const externalRef = paymentData.external_reference
+      if (externalRef && externalRef.startsWith('tex_')) {
+        const parts = externalRef.split('_')
+        if (parts.length >= 3) {
+          const { error: upsertError } = await supabase
+            .from('transacoes')
+            .upsert({
               cliente_id: parts[1],
               prestador_id: parts[2],
               mp_payment_id: payment_id,
               status: paymentData.status,
-              amount: paymentData.transaction_amount || 2.02
+              amount: paymentData.transaction_amount || 2.02,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'mp_payment_id'
             })
-            
-            if (insertError) {
-              console.error('❌ [CHECK-PAYMENT] Erro ao criar transação:', insertError)
-            } else {
-              console.log('✅ [CHECK-PAYMENT] Transação criada')
-            }
-          }
-        }
-      } else {
-        // Atualizar existente
-        const { error: updateError } = await supabase
-          .from('transacoes')
-          .update(updateData)
-          .eq('mp_payment_id', payment_id)
           
-        if (updateError) {
-          console.error('❌ [CHECK-PAYMENT] Erro ao atualizar transação:', updateError)
-        } else {
-          console.log('✅ [CHECK-PAYMENT] Transação atualizada')
+          if (upsertError) {
+            console.error('❌ [CHECK-PAYMENT] Erro ao salvar no banco:', upsertError)
+          } else {
+            console.log('✅ [CHECK-PAYMENT] Transação salva/atualizada no banco')
+          }
         }
       }
     }
 
-    // 4. Retornar resposta final
-    const finalStatus = paymentData.status
-    console.log('📤 [CHECK-PAYMENT] Retornando status final:', finalStatus)
-
+    // 4. Retornar resposta baseada no status da API
+    const isApproved = paymentData.status === 'approved'
+    
     return new Response(
       JSON.stringify({ 
-        status: finalStatus,
-        source: 'mercado_pago',
+        status: paymentData.status,
+        approved: isApproved,
+        source: 'mercado_pago_api',
         payment_data: {
           id: paymentData.id,
           status: paymentData.status,
@@ -151,7 +154,9 @@ serve(async (req) => {
           date_created: paymentData.date_created,
           date_approved: paymentData.date_approved
         },
-        message: `Status atual: ${finalStatus}`
+        message: isApproved 
+          ? 'Pagamento confirmado! Redirecionando para WhatsApp...'
+          : 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente de novo.'
       }),
       {
         status: 200,
@@ -164,12 +169,14 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: 'Erro na verificação',
-        message: error.message,
-        status: 'error'
+        status: 'error',
+        approved: false,
+        source: 'internal_error',
+        message: 'Erro na verificação. Tente novamente em alguns instantes.',
+        error: error.message
       }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
