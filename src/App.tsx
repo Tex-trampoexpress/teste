@@ -409,14 +409,21 @@ function App() {
     }
   }
 
-  // Load users on feed screen
+  // Memoize searchUsers to prevent re-renders
+  const memoizedSearchUsers = useCallback(searchUsers, [
+    searchTerm, 
+    proximityEnabled, 
+    userLocation, 
+    proximityRadius
+  ])
+
+  // Update search users effect
   useEffect(() => {
     if (currentScreen === 'feed') {
-      searchUsers()
+      memoizedSearchUsers()
     }
-  }, [currentScreen, searchUsers])
+  }, [currentScreen, memoizedSearchUsers])
 
-  // Handle search input change
   // Render functions
   const renderProfileHeader = () => {
     if (!isLoggedIn || !currentUser) {
@@ -540,6 +547,7 @@ function App() {
       
       <div className="search-box">
         <input
+          key="home-search-input"
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
@@ -605,6 +613,7 @@ function App() {
       <div className="phone-input">
         <span className="country-code">+55</span>
         <input
+          key="whatsapp-input-field"
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
@@ -612,7 +621,6 @@ function App() {
           maxLength={11}
           autoComplete="tel"
           inputMode="numeric"
-          key="whatsapp-input"
         />
       </div>
 
@@ -670,6 +678,7 @@ function App() {
       <div className="form-group">
         <label>Nome Completo *</label>
         <input
+          key="profile-name-input"
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
@@ -680,6 +689,7 @@ function App() {
       <div className="form-group">
         <label>Descrição Profissional *</label>
         <textarea
+          key="profile-description-input"
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
           onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
@@ -691,9 +701,9 @@ function App() {
         <label>Especialidades *</label>
         <div className="tags-input">
           <input
+            key={`profile-tags-input-${profileForm.tags.length}`}
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
-            key={`tags-input-${profileForm.tags.length}`}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -716,6 +726,7 @@ function App() {
       <div className="form-group">
         <label>Localização</label>
         <input
+          key="profile-location-input"
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
@@ -794,16 +805,16 @@ function App() {
         <div className="search-bar">
           <i className="fas fa-search"></i>
           <input
+            key="feed-search-input"
             type="text"
             placeholder="Buscar profissionais..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                searchUsers()
+                memoizedSearchUsers()
               }
             }}
-            key="search-input"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
@@ -848,7 +859,7 @@ function App() {
           )}
         </div>
 
-        <button className="explore-btn" onClick={searchUsers}>
+        <button className="explore-btn" onClick={memoizedSearchUsers}>
           <i className="fas fa-search"></i>
           Buscar
         </button>
@@ -1109,6 +1120,7 @@ function App() {
       <div className="form-group">
         <label>Nome Completo *</label>
         <input
+          key="edit-profile-name-input"
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
@@ -1119,6 +1131,7 @@ function App() {
       <div className="form-group">
         <label>Descrição Profissional *</label>
         <textarea
+          key="edit-profile-description-input"
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
           onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
@@ -1130,9 +1143,9 @@ function App() {
         <label>Especialidades *</label>
         <div className="tags-input">
           <input
+            key={`edit-profile-tags-input-${profileForm.tags.length}`}
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
-            key={`edit-tags-input-${profileForm.tags.length}`}
             onKeyPress={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -1155,6 +1168,7 @@ function App() {
       <div className="form-group">
         <label>Localização</label>
         <input
+          key="edit-profile-location-input"
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
