@@ -82,8 +82,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       setChecking(true)
       console.log('🔍 Verificando status do pagamento:', paymentData.id)
 
-      // Verificar via Edge Function otimizada
-      console.log('🔧 Consultando status via API...')
+      // Verificar via Edge Function
+      console.log('🔧 Consultando status via Edge Function...')
       const edgeResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-payment`, {
         method: 'POST',
         headers: {
@@ -96,27 +96,34 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       })
 
       if (edgeResponse.ok) {
-        const edgeData = await edgeResponse.json()
-        console.log('🔧 Resposta da API:', responseData)
+        const responseData = await edgeResponse.json()
+        console.log('🔧 Resposta da Edge Function:', responseData)
         
         if (responseData.approved === true) {
           console.log('✅ Pagamento aprovado!')
           toast.success('Pagamento confirmado! Redirecionando para WhatsApp...')
+          
+          // Aguardar um pouco para o usuário ver a mensagem
+          setTimeout(() => {
+            onSuccess()
+          }, 1500)
           onSuccess()
           return
         } else {
           // Usar mensagem personalizada da API
-          const message = responseData.message || 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente de novo.'
+          const message = responseData.message || 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente novamente.'
           toast.error(message)
+          console.log('⏳ Status atual:', responseData.status)
         }
       } else {
-        console.error('❌ Erro na consulta:', edgeResponse.status, edgeResponse.statusText)
-        toast.error('Erro na verificação. Tente novamente em alguns instantes.')
+        const errorData = await edgeResponse.json().catch(() => ({}))
+        console.error('❌ Erro na consulta Edge Function:', edgeResponse.status, errorData)
+        toast.error('Erro na verificação. Aguarde alguns segundos e tente novamente.')
       }
 
     } catch (error) {
       console.error('❌ Erro ao verificar pagamento:', error)
-      toast.error('Erro na verificação. Tente novamente em alguns instantes.')
+      toast.error('Erro na verificação. Aguarde alguns segundos e tente novamente.')
     } finally {
       setChecking(false)
     }

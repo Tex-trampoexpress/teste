@@ -399,12 +399,22 @@ function App() {
   const handlePaymentSuccess = () => {
     const paymentData = navigationHistory[navigationHistory.length - 1]?.data
     if (paymentData) {
+      console.log('🎉 Pagamento aprovado! Dados:', paymentData)
+      
       // Redirect to WhatsApp
-      const whatsappUrl = `https://wa.me/55${paymentData.prestadorWhatsApp.replace(/\D/g, '')}?text=Olá! Paguei a taxa no TEX e gostaria de conversar sobre seus serviços.`
+      const cleanPhone = paymentData.prestadorWhatsApp.replace(/\D/g, '')
+      const phoneNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Olá! Paguei a taxa no TEX e gostaria de conversar sobre seus serviços.')}`
+      
+      console.log('📱 Redirecionando para WhatsApp:', whatsappUrl)
       window.open(whatsappUrl, '_blank')
       
       toast.success('Redirecionando para WhatsApp...')
-      navigateTo('feed')
+      
+      // Voltar para o feed após um pequeno delay
+      setTimeout(() => {
+        navigateTo('feed')
+      }, 2000)
     }
   }
 

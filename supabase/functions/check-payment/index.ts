@@ -64,19 +64,11 @@ serve(async (req) => {
         )
       } else {
         console.log('⏳ [CHECK-PAYMENT] Pagamento ainda não aprovado no banco:', transaction.status)
-        return new Response(
-          JSON.stringify({ 
-            status: transaction.status,
-            approved: false,
-            source: 'database',
-            message: 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente de novo.'
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        )
+        // Não retornar ainda, vamos verificar na API também
+        console.log('🔄 [CHECK-PAYMENT] Verificando também na API do MP...')
       }
+    } else {
+      console.log('⚠️ [CHECK-PAYMENT] Transação não encontrada no banco, consultando API...')
     }
 
     // 2. Se não encontrou no banco, verificar na API do Mercado Pago
@@ -91,12 +83,30 @@ serve(async (req) => {
     if (!mpResponse.ok) {
       console.error('❌ [CHECK-PAYMENT] Erro MP API:', mpResponse.status, mpResponse.statusText)
       
+      // Se temos dados do banco mas API falhou, usar dados do banco
+      if (transaction) {
+        return new Response(
+          JSON.stringify({ 
+            status: transaction.status,
+            approved: transaction.status === 'approved',
+            source: 'database_fallback',
+            message: transaction.status === 'approved' 
+              ? 'Pagamento confirmado! Redirecionando para WhatsApp...'
+              : 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente novamente.'
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+      
       return new Response(
         JSON.stringify({ 
           status: 'error',
           approved: false,
           source: 'api_error',
-          message: 'Erro ao consultar status. Tente novamente em alguns instantes.'
+          message: 'Erro ao consultar status. Aguarde alguns segundos e tente novamente.'
         }),
         {
           status: 200,
@@ -107,6 +117,7 @@ serve(async (req) => {
 
     const paymentData = await mpResponse.json()
     console.log('💰 [CHECK-PAYMENT] Status na API:', paymentData.status)
+    console.log('📊 [CHECK-PAYMENT] Dados completos da API:', JSON.stringify(paymentData, null, 2))
 
     // 3. Atualizar/criar transação no banco com dados da API
     if (paymentData.status === 'approved') {
@@ -156,7 +167,7 @@ serve(async (req) => {
         },
         message: isApproved 
           ? 'Pagamento confirmado! Redirecionando para WhatsApp...'
-          : 'Pagamento ainda não confirmado. Aguarde alguns segundos e tente de novo.'
+          : `Pagamento ainda não confirmado (${paymentData.status}). Aguarde alguns segundos e tente novamente.`
       }),
       {
         status: 200,
@@ -172,7 +183,7 @@ serve(async (req) => {
         status: 'error',
         approved: false,
         source: 'internal_error',
-        message: 'Erro na verificação. Tente novamente em alguns instantes.',
+        message: 'Erro na verificação. Aguarde alguns segundos e tente novamente.',
         error: error.message
       }),
       {
