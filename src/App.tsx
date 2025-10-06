@@ -425,6 +425,19 @@ function App() {
     }
   }, [currentScreen])
 
+  // Memoize handlers
+  const handleSearchTermChange = useCallback((value: string) => {
+    setSearchTerm(value)
+  }, [])
+
+  const handleWhatsappChange = useCallback((value: string) => {
+    setWhatsappNumber(value)
+  }, [])
+
+  const handleProfileFormChange = useCallback((field: string, value: any) => {
+    setProfileForm(prev => ({ ...prev, [field]: value }))
+  }, [])
+
   // Render functions
   const renderProfileHeader = () => {
     if (!isLoggedIn || !currentUser) {
@@ -551,7 +564,7 @@ function App() {
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => handleSearchTermChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               navigateTo('feed')
@@ -617,7 +630,7 @@ function App() {
           type="tel"
           placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
+          onChange={(e) => handleWhatsappChange(e.target.value)}
           maxLength={11}
           autoComplete="off"
           inputMode="numeric"
@@ -681,10 +694,7 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, nome: value }))
-          }}
+          onChange={(e) => handleProfileFormChange('nome', e.target.value)}
           autoComplete="off"
         />
       </div>
@@ -694,10 +704,7 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, descricao: value }))
-          }}
+          onChange={(e) => handleProfileFormChange('descricao', e.target.value)}
           rows={4}
           autoComplete="off"
         />
@@ -736,10 +743,7 @@ function App() {
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, localizacao: value }))
-          }}
+          onChange={(e) => handleProfileFormChange('localizacao', e.target.value)}
           autoComplete="off"
         />
         <div className="location-gps-option">
@@ -818,7 +822,7 @@ function App() {
             type="text"
             placeholder="Buscar profissionais..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchTermChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 searchUsers()
@@ -1133,10 +1137,7 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, nome: value }))
-          }}
+          onChange={(e) => handleProfileFormChange('nome', e.target.value)}
           autoComplete="off"
         />
       </div>
@@ -1146,10 +1147,7 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, descricao: value }))
-          }}
+          onChange={(e) => handleProfileFormChange('descricao', e.target.value)}
           rows={4}
           autoComplete="off"
         />
@@ -1188,10 +1186,7 @@ function App() {
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
-          onChange={(e) => {
-            const value = e.target.value
-            setProfileForm(prev => ({ ...prev, localizacao: value }))
-          }}
+          onChange={(e) => handleProfileFormChange('localizacao', e.target.value)}
           autoComplete="off"
         />
       </div>
