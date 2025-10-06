@@ -14,6 +14,76 @@ interface NavigationState {
   data?: any
 }
 
+interface ProfileFormData {
+  nome: string
+  descricao: string
+  tags: string[]
+  foto_url: string
+  localizacao: string
+  status: 'available' | 'busy'
+  latitude: number | null
+  longitude: number | null
+}
+
+// Memoized Input Components
+const SearchInput = React.memo(({ value, onChange, onEnter, placeholder }: {
+  value: string
+  onChange: (value: string) => void
+  onEnter: () => void
+  placeholder: string
+}) => {
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          onEnter()
+        }
+      }}
+      autoComplete="off"
+    />
+  )
+})
+
+const TextInput = React.memo(({ value, onChange, placeholder, type = 'text', maxLength }: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  type?: string
+  maxLength?: number
+}) => {
+  return (
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      maxLength={maxLength}
+      autoComplete="off"
+    />
+  )
+})
+
+const TextArea = React.memo(({ value, onChange, placeholder, rows }: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  rows: number
+}) => {
+  return (
+    <textarea
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      rows={rows}
+      autoComplete="off"
+    />
+  )
+})
+
 // Main App Component
 function App() {
   // State management
@@ -425,17 +495,33 @@ function App() {
     }
   }, [currentScreen])
 
-  // Memoize handlers
+  // Stable handlers
   const handleSearchTermChange = useCallback((value: string) => {
     setSearchTerm(value)
+  }, [])
+
+  const handleSearchEnter = useCallback(() => {
+    navigateTo('feed')
+  }, [])
+
+  const handleSearchUsersEnter = useCallback(() => {
+    searchUsers()
   }, [])
 
   const handleWhatsappChange = useCallback((value: string) => {
     setWhatsappNumber(value)
   }, [])
 
-  const handleProfileFormChange = useCallback((field: string, value: any) => {
-    setProfileForm(prev => ({ ...prev, [field]: value }))
+  const handleNomeChange = useCallback((value: string) => {
+    setProfileForm(prev => ({ ...prev, nome: value }))
+  }, [])
+
+  const handleDescricaoChange = useCallback((value: string) => {
+    setProfileForm(prev => ({ ...prev, descricao: value }))
+  }, [])
+
+  const handleLocalizacaoChange = useCallback((value: string) => {
+    setProfileForm(prev => ({ ...prev, localizacao: value }))
   }, [])
 
   // Render functions
@@ -560,17 +646,11 @@ function App() {
       <div className="trampoexpress-subtitle">TrampoExpress</div>
 
       <div className="search-box">
-        <input
-          type="text"
-          placeholder="Buscar profissionais, serviços ou localização..."
+        <SearchInput
           value={searchTerm}
-          onChange={(e) => handleSearchTermChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              navigateTo('feed')
-            }
-          }}
-          autoComplete="off"
+          onChange={handleSearchTermChange}
+          onEnter={handleSearchEnter}
+          placeholder="Buscar profissionais, serviços ou localização..."
         />
         
         <button 
@@ -626,14 +706,12 @@ function App() {
       
       <div className="phone-input">
         <span className="country-code">+55</span>
-        <input
+        <TextInput
           type="tel"
-          placeholder="11999887766"
           value={whatsappNumber}
-          onChange={(e) => handleWhatsappChange(e.target.value)}
+          onChange={handleWhatsappChange}
+          placeholder="11999887766"
           maxLength={11}
-          autoComplete="off"
-          inputMode="numeric"
         />
       </div>
 
@@ -690,23 +768,20 @@ function App() {
 
       <div className="form-group">
         <label>Nome Completo *</label>
-        <input
-          type="text"
-          placeholder="Seu nome completo"
+        <TextInput
           value={profileForm.nome}
-          onChange={(e) => handleProfileFormChange('nome', e.target.value)}
-          autoComplete="off"
+          onChange={handleNomeChange}
+          placeholder="Seu nome completo"
         />
       </div>
 
       <div className="form-group">
         <label>Descrição Profissional *</label>
-        <textarea
-          placeholder="Descreva seus serviços e experiência..."
+        <TextArea
           value={profileForm.descricao}
-          onChange={(e) => handleProfileFormChange('descricao', e.target.value)}
+          onChange={handleDescricaoChange}
+          placeholder="Descreva seus serviços e experiência..."
           rows={4}
-          autoComplete="off"
         />
       </div>
 
@@ -739,12 +814,10 @@ function App() {
 
       <div className="form-group">
         <label>Localização</label>
-        <input
-          type="text"
-          placeholder="Cidade, Estado"
+        <TextInput
           value={profileForm.localizacao}
-          onChange={(e) => handleProfileFormChange('localizacao', e.target.value)}
-          autoComplete="off"
+          onChange={handleLocalizacaoChange}
+          placeholder="Cidade, Estado"
         />
         <div className="location-gps-option">
           {userLocation ? (
@@ -818,17 +891,11 @@ function App() {
       <div className="search-header">
         <div className="search-bar">
           <i className="fas fa-search"></i>
-          <input
-            type="text"
-            placeholder="Buscar profissionais..."
+          <SearchInput
             value={searchTerm}
-            onChange={(e) => handleSearchTermChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                searchUsers()
-              }
-            }}
-            autoComplete="off"
+            onChange={handleSearchTermChange}
+            onEnter={handleSearchUsersEnter}
+            placeholder="Buscar profissionais..."
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
@@ -1133,23 +1200,20 @@ function App() {
 
       <div className="form-group">
         <label>Nome Completo *</label>
-        <input
-          type="text"
-          placeholder="Seu nome completo"
+        <TextInput
           value={profileForm.nome}
-          onChange={(e) => handleProfileFormChange('nome', e.target.value)}
-          autoComplete="off"
+          onChange={handleNomeChange}
+          placeholder="Seu nome completo"
         />
       </div>
 
       <div className="form-group">
         <label>Descrição Profissional *</label>
-        <textarea
-          placeholder="Descreva seus serviços e experiência..."
+        <TextArea
           value={profileForm.descricao}
-          onChange={(e) => handleProfileFormChange('descricao', e.target.value)}
+          onChange={handleDescricaoChange}
+          placeholder="Descreva seus serviços e experiência..."
           rows={4}
-          autoComplete="off"
         />
       </div>
 
@@ -1182,12 +1246,10 @@ function App() {
 
       <div className="form-group">
         <label>Localização</label>
-        <input
-          type="text"
-          placeholder="Cidade, Estado"
+        <TextInput
           value={profileForm.localizacao}
-          onChange={(e) => handleProfileFormChange('localizacao', e.target.value)}
-          autoComplete="off"
+          onChange={handleLocalizacaoChange}
+          placeholder="Cidade, Estado"
         />
       </div>
 
