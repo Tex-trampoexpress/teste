@@ -538,25 +538,26 @@ function App() {
       <div className="tex-logo-container-inside">
         <div className="tex-logo-text-inside">TEX</div>
       </div>
-      
+
       <h1>
         Do trampo
         <span>ao encontro</span>
       </h1>
-      
+
       <div className="trampoexpress-subtitle">TrampoExpress</div>
-      
+
       <div className="search-box">
         <input
           type="text"
           placeholder="Buscar profissionais, serviços ou localização..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === 'Enter') {
               navigateTo('feed')
             }
           }}
+          autoComplete="off"
         />
         
         <button 
@@ -618,7 +619,7 @@ function App() {
           value={whatsappNumber}
           onChange={(e) => setWhatsappNumber(e.target.value)}
           maxLength={11}
-          autoComplete="tel"
+          autoComplete="off"
           inputMode="numeric"
         />
       </div>
@@ -680,7 +681,11 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, nome: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, nome: value }))
+          }}
+          autoComplete="off"
         />
       </div>
 
@@ -689,8 +694,12 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, descricao: value }))
+          }}
           rows={4}
+          autoComplete="off"
         />
       </div>
 
@@ -700,13 +709,15 @@ function App() {
           <input
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                addTag(e.currentTarget.value)
-                e.currentTarget.value = ''
+                const input = e.currentTarget
+                addTag(input.value)
+                input.value = ''
               }
             }}
+            autoComplete="off"
           />
           <div className="tags-container">
             {profileForm.tags.map((tag, index) => (
@@ -725,7 +736,11 @@ function App() {
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, localizacao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, localizacao: value }))
+          }}
+          autoComplete="off"
         />
         <div className="location-gps-option">
           {userLocation ? (
@@ -804,11 +819,12 @@ function App() {
             placeholder="Buscar profissionais..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 searchUsers()
               }
             }}
+            autoComplete="off"
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => setSearchTerm('')}>
@@ -1117,7 +1133,11 @@ function App() {
           type="text"
           placeholder="Seu nome completo"
           value={profileForm.nome}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, nome: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, nome: value }))
+          }}
+          autoComplete="off"
         />
       </div>
 
@@ -1126,8 +1146,12 @@ function App() {
         <textarea
           placeholder="Descreva seus serviços e experiência..."
           value={profileForm.descricao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, descricao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, descricao: value }))
+          }}
           rows={4}
+          autoComplete="off"
         />
       </div>
 
@@ -1137,13 +1161,15 @@ function App() {
           <input
             type="text"
             placeholder="Digite uma especialidade e pressione Enter"
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                addTag(e.currentTarget.value)
-                e.currentTarget.value = ''
+                const input = e.currentTarget
+                addTag(input.value)
+                input.value = ''
               }
             }}
+            autoComplete="off"
           />
           <div className="tags-container">
             {profileForm.tags.map((tag, index) => (
@@ -1162,7 +1188,11 @@ function App() {
           type="text"
           placeholder="Cidade, Estado"
           value={profileForm.localizacao}
-          onChange={(e) => setProfileForm(prev => ({ ...prev, localizacao: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value
+            setProfileForm(prev => ({ ...prev, localizacao: value }))
+          }}
+          autoComplete="off"
         />
       </div>
 
