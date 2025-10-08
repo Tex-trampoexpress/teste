@@ -25,8 +25,8 @@ interface ProfileFormData {
   longitude: number | null
 }
 
-// Memoized Input Components
-const SearchInput = React.memo(({ value, onChange, onEnter, placeholder }: {
+// Input Components - NO React.memo to prevent focus loss
+const SearchInput = ({ value, onChange, onEnter, placeholder }: {
   value: string
   onChange: (value: string) => void
   onEnter: () => void
@@ -46,9 +46,9 @@ const SearchInput = React.memo(({ value, onChange, onEnter, placeholder }: {
       autoComplete="off"
     />
   )
-})
+}
 
-const TextInput = React.memo(({ value, onChange, placeholder, type = 'text', maxLength }: {
+const TextInput = ({ value, onChange, placeholder, type = 'text', maxLength }: {
   value: string
   onChange: (value: string) => void
   placeholder: string
@@ -65,9 +65,9 @@ const TextInput = React.memo(({ value, onChange, placeholder, type = 'text', max
       autoComplete="off"
     />
   )
-})
+}
 
-const TextArea = React.memo(({ value, onChange, placeholder, rows }: {
+const TextArea = ({ value, onChange, placeholder, rows }: {
   value: string
   onChange: (value: string) => void
   placeholder: string
@@ -82,7 +82,7 @@ const TextArea = React.memo(({ value, onChange, placeholder, rows }: {
       autoComplete="off"
     />
   )
-})
+}
 
 // Main App Component
 function App() {
@@ -495,34 +495,34 @@ function App() {
     }
   }, [currentScreen])
 
-  // Stable handlers
-  const handleSearchTermChange = useCallback((value: string) => {
+  // Direct inline handlers - no useCallback needed without React.memo
+  const handleSearchTermChange = (value: string) => {
     setSearchTerm(value)
-  }, [])
+  }
 
-  const handleSearchEnter = useCallback(() => {
+  const handleSearchEnter = () => {
     navigateTo('feed')
-  }, [])
+  }
 
-  const handleSearchUsersEnter = useCallback(() => {
+  const handleSearchUsersEnter = () => {
     searchUsers()
-  }, [])
+  }
 
-  const handleWhatsappChange = useCallback((value: string) => {
+  const handleWhatsappChange = (value: string) => {
     setWhatsappNumber(value)
-  }, [])
+  }
 
-  const handleNomeChange = useCallback((value: string) => {
+  const handleNomeChange = (value: string) => {
     setProfileForm(prev => ({ ...prev, nome: value }))
-  }, [])
+  }
 
-  const handleDescricaoChange = useCallback((value: string) => {
+  const handleDescricaoChange = (value: string) => {
     setProfileForm(prev => ({ ...prev, descricao: value }))
-  }, [])
+  }
 
-  const handleLocalizacaoChange = useCallback((value: string) => {
+  const handleLocalizacaoChange = (value: string) => {
     setProfileForm(prev => ({ ...prev, localizacao: value }))
-  }, [])
+  }
 
   // Render functions
   const renderProfileHeader = () => {
