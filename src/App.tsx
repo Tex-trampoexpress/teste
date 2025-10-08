@@ -1450,10 +1450,36 @@ function App() {
     )
   }
 
+  // Render function - only render current screen
+  const renderCurrentScreen = () => {
+    switch (currentScreen) {
+      case 'home':
+        return <HomeScreen />
+      case 'verify':
+        return <VerifyScreen />
+      case 'profile-setup':
+        return <ProfileSetupScreen />
+      case 'feed':
+        return <FeedScreen />
+      case 'my-profile':
+        return <MyProfileScreen />
+      case 'edit-profile':
+        return <EditProfileScreen />
+      case 'about':
+        return <AboutScreen />
+      case 'terms':
+        return <TermsScreen />
+      case 'payment':
+        return <PaymentScreenComponent />
+      default:
+        return <HomeScreen />
+    }
+  }
+
   // Main render
   return (
     <div className="App">
-      <Toaster 
+      <Toaster
         position="top-center"
         toastOptions={{
           duration: 3000,
@@ -1466,42 +1492,11 @@ function App() {
           }
         }}
       />
-      
-      <div className={`screen ${currentScreen === 'home' ? 'active' : ''}`}>
-        <HomeScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'verify' ? 'active' : ''}`}>
-        <VerifyScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'profile-setup' ? 'active' : ''}`}>
-        <ProfileSetupScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'feed' ? 'active' : ''}`}>
-        <FeedScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'my-profile' ? 'active' : ''}`}>
-        <MyProfileScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'edit-profile' ? 'active' : ''}`}>
-        <EditProfileScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'about' ? 'active' : ''}`}>
-        <AboutScreen />
-      </div>
-      
-      <div className={`screen ${currentScreen === 'terms' ? 'active' : ''}`}>
-        <TermsScreen />
+
+      <div className="screen active">
+        {renderCurrentScreen()}
       </div>
 
-      <div className={`screen ${currentScreen === 'payment' ? 'active' : ''}`}>
-        <PaymentScreenComponent />
-      </div>
       <PWAInstallPrompt />
     </div>
   )
