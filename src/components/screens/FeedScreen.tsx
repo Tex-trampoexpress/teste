@@ -18,6 +18,10 @@ interface FeedScreenProps {
   handleContactClick: (user: Usuario) => void
   navigateTo: (screen: string) => void
   renderBackButton: () => React.ReactNode
+  loadMoreUsers: () => void
+  hasMore: boolean
+  isLoadingMore: boolean
+  totalUsers: number
 }
 
 const SearchInput = ({ value, onChange, onEnter, placeholder }: {
@@ -75,12 +79,38 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   handleTagClick,
   handleContactClick,
   navigateTo,
-  renderBackButton
+  renderBackButton,
+  loadMoreUsers,
+  hasMore,
+  isLoadingMore,
+  totalUsers
 }) => {
   const observerTarget = useRef<HTMLDivElement>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [touchStart, setTouchStart] = useState(0)
   const [pullDistance, setPullDistance] = useState(0)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
+          console.log('🔍 Fim da lista detectado - carregando mais...')
+          loadMoreUsers()
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    )
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current)
+      }
+    }
+  }, [hasMore, isLoadingMore, loading, loadMoreUsers])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -225,10 +255,13 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
       ) : (
         <div>
           <div className="search-results-info">
-            {proximityEnabled && userLocation ?
-              `${users.length} profissionais próximos` :
+            {proximityEnabled && userLocation ? (
+              `${users.length} profissionais próximos`
+            ) : totalUsers > 0 ? (
+              `${users.length} de ${totalUsers} profissionais`
+            ) : (
               `${users.length} profissionais encontrados`
-            }
+            )}
           </div>
 
           {users.map((user, index) => (
@@ -292,6 +325,20 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
               </button>
             </div>
           ))}
+
+          {isLoadingMore && (
+            <div className="loading-more">
+              <i className="fas fa-spinner fa-spin"></i>
+              <span>Carregando mais profissionais...</span>
+            </div>
+          )}
+
+          {!hasMore && users.length > 0 && (
+            <div className="end-of-list">
+              <i className="fas fa-check-circle"></i>
+              <span>Todos os {totalUsers} profissionais carregados</span>
+            </div>
+          )}
 
           <div ref={observerTarget} style={{ height: '20px' }}></div>
         </div>

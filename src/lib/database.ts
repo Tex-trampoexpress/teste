@@ -397,6 +397,9 @@ export class DatabaseService {
       const limitResults = filters?.limit || 20
       const page = filters?.page || 1
       const offset = (page - 1) * limitResults
+      const rangeEnd = offset + limitResults - 1
+
+      console.log(`🔍 Busca página ${page}: offset=${offset}, rangeEnd=${rangeEnd}, limit=${limitResults}`)
 
       let query = supabase
         .from('usuarios')
@@ -404,7 +407,7 @@ export class DatabaseService {
         .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
         .order('criado_em', { ascending: false })
-        .range(offset, offset + limitResults)
+        .range(offset, rangeEnd)
 
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
@@ -420,7 +423,9 @@ export class DatabaseService {
 
       const users = data || []
       const total = count || 0
-      const hasMore = offset + limitResults < total
+      const hasMore = (offset + users.length) < total
+
+      console.log(`✅ Página ${page}: ${users.length} usuários (total: ${total}, hasMore: ${hasMore})`)
 
       return { users, hasMore, total }
     } catch (error) {

@@ -55,6 +55,10 @@ function App() {
     latitude: null,
     longitude: null
   })
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [totalUsers, setTotalUsers] = useState(0)
 
   useEffect(() => {
     initializeApp()
@@ -256,31 +260,86 @@ function App() {
     }
   }
 
-  const searchUsers = async () => {
-    setLoading(true)
+  const searchUsers = async (resetPage: boolean = true) => {
+    if (resetPage) {
+      setLoading(true)
+      setPage(1)
+      setUsers([])
+    }
+
     try {
       let results: Usuario[] = []
+      let hasMoreResults = false
+      let total = 0
+
       if (proximityEnabled && userLocation) {
         results = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
           proximityRadius
         )
+        hasMoreResults = false
+        total = results.length
       } else {
         const response = await DatabaseService.getUsuarios({
           search: searchTerm,
           status: 'available',
           limit: 20,
-          page: 1
+          page: resetPage ? 1 : page
         })
         results = response.users
+        hasMoreResults = response.hasMore
+        total = response.total
       }
-      setUsers(results)
+
+      if (resetPage) {
+        setUsers(results)
+      } else {
+        setUsers(prev => [...prev, ...results])
+      }
+
+      setHasMore(hasMoreResults)
+      setTotalUsers(total)
+
+      console.log(`📊 Total: ${total}, Carregados: ${results.length}, Mais: ${hasMoreResults}`)
     } catch (error) {
       console.error('Search error:', error)
       toast.error('Erro na busca. Tente novamente.')
     } finally {
       setLoading(false)
+      setIsLoadingMore(false)
+    }
+  }
+
+  const loadMoreUsers = async () => {
+    if (isLoadingMore || !hasMore || loading || proximityEnabled) return
+
+    console.log(`⬇️ Carregando mais usuários... Página ${page + 1}`)
+    setIsLoadingMore(true)
+    const nextPage = page + 1
+    setPage(nextPage)
+
+    try {
+      const response = await DatabaseService.getUsuarios({
+        search: searchTerm,
+        status: 'available',
+        limit: 20,
+        page: nextPage
+      })
+
+      if (response.users.length > 0) {
+        setUsers(prev => [...prev, ...response.users])
+        setHasMore(response.hasMore)
+        console.log(`✅ +${response.users.length} usuários carregados (Total: ${users.length + response.users.length}/${response.total})`)
+      } else {
+        setHasMore(false)
+        console.log('📭 Nenhum usuário adicional encontrado')
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar mais:', error)
+      toast.error('Erro ao carregar mais profissionais')
+    } finally {
+      setIsLoadingMore(false)
     }
   }
 
@@ -446,7 +505,7 @@ function App() {
       case 'profile-setup':
         return <ProfileSetupScreen profileForm={profileForm} onNomeChange={(v) => setProfileForm(prev => ({ ...prev, nome: v }))} onDescricaoChange={(v) => setProfileForm(prev => ({ ...prev, descricao: v }))} onLocalizacaoChange={(v) => setProfileForm(prev => ({ ...prev, localizacao: v }))} setProfileForm={setProfileForm} addTag={addTag} removeTag={removeTag} handlePhotoUpload={handlePhotoUpload} handleProfileSave={handleProfileSave} currentUser={currentUser} userLocation={userLocation} requestLocation={requestLocation} renderBackButton={renderBackButton} />
       case 'feed':
-        return <FeedScreen searchTerm={searchTerm} onSearchTermChange={setSearchTerm} onSearchUsersEnter={searchUsers} proximityEnabled={proximityEnabled} setProximityEnabled={setProximityEnabled} userLocation={userLocation} requestLocation={requestLocation} proximityRadius={proximityRadius} setProximityRadius={setProximityRadius} searchUsers={searchUsers} loading={loading} users={users} handleTagClick={handleTagClick} handleContactClick={handleContactClick} navigateTo={navigateTo} renderBackButton={renderBackButton} />
+        return <FeedScreen searchTerm={searchTerm} onSearchTermChange={setSearchTerm} onSearchUsersEnter={searchUsers} proximityEnabled={proximityEnabled} setProximityEnabled={setProximityEnabled} userLocation={userLocation} requestLocation={requestLocation} proximityRadius={proximityRadius} setProximityRadius={setProximityRadius} searchUsers={searchUsers} loading={loading} users={users} handleTagClick={handleTagClick} handleContactClick={handleContactClick} navigateTo={navigateTo} renderBackButton={renderBackButton} loadMoreUsers={loadMoreUsers} hasMore={hasMore} isLoadingMore={isLoadingMore} totalUsers={totalUsers} />
       case 'my-profile':
         return <MyProfileScreen currentUser={currentUser} setCurrentUser={setCurrentUser} setProfileForm={setProfileForm} navigateTo={navigateTo} handleDeleteProfile={handleDeleteProfile} renderBackButton={renderBackButton} />
       case 'edit-profile':
