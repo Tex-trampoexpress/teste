@@ -258,16 +258,6 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
         </div>
       ) : (
         <div>
-          <div className="search-results-info">
-            {proximityEnabled && userLocation ? (
-              `Profissionais Próximos`
-            ) : totalUsers > 0 ? (
-              `${users.length} de ${totalUsers} profissionais`
-            ) : (
-              `${users.length} profissionais encontrados`
-            )}
-          </div>
-
           {users.map((user, index) => (
             <div
               key={user.id}
