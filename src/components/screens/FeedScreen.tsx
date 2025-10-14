@@ -340,7 +340,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           {!hasMore && users.length > 0 && (
             <div className="end-of-list">
               <i className="fas fa-check-circle"></i>
-              <span>Todos os {totalUsers} profissionais carregados</span>
+              <span>Todos os Profissionais carregados</span>
             </div>
           )}
 
