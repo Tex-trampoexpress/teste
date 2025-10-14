@@ -350,40 +350,7 @@ export class DatabaseService {
     limit?: number
     page?: number
   }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
-    try {
-      const searchTerm = filters?.search?.trim() || ''
-      const filterTags = filters?.tags || []
-      const filterStatus = filters?.status || 'available'
-      const limitResults = filters?.limit || 20
-      const page = filters?.page || 1
-      const offset = (page - 1) * limitResults
-
-      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults, page, offset })
-
-      const { data, error } = await supabase
-        .rpc('search_usuarios', {
-          search_term: searchTerm,
-          filter_tags: filterTags,
-          filter_status: filterStatus,
-          limit_results: limitResults + 1
-        })
-
-      if (error) {
-        console.error('❌ Erro na busca de usuários:', error)
-        console.log('🔄 Tentando busca simples como fallback...')
-        return this.getUsuariosSimple(filters)
-      }
-
-      const users = (data || []).slice(offset, offset + limitResults)
-      const hasMore = (data || []).length > offset + limitResults
-      const total = data?.length || 0
-
-      console.log(`✅ Encontrados ${users.length} usuários (página ${page}, mais: ${hasMore})`)
-      return { users, hasMore, total }
-    } catch (error) {
-      console.error('❌ Erro na busca de usuários:', error)
-      return this.getUsuariosSimple(filters)
-    }
+    return this.getUsuariosSimple(filters)
   }
 
   // Fallback simple search
@@ -396,10 +363,10 @@ export class DatabaseService {
     try {
       const limitResults = filters?.limit || 20
       const page = filters?.page || 1
-      const offset = (page - 1) * limitResults
-      const rangeEnd = offset + limitResults - 1
+      const from = (page - 1) * limitResults
+      const to = from + limitResults - 1
 
-      console.log(`🔍 Busca página ${page}: offset=${offset}, rangeEnd=${rangeEnd}, limit=${limitResults}`)
+      console.log(`🔍 [PÁGINA ${page}] Buscando range: ${from}-${to} (limite: ${limitResults})`)
 
       let query = supabase
         .from('usuarios')
@@ -407,7 +374,7 @@ export class DatabaseService {
         .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
         .order('criado_em', { ascending: false })
-        .range(offset, rangeEnd)
+        .range(from, to)
 
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
@@ -417,15 +384,16 @@ export class DatabaseService {
       const { data, error, count } = await query
 
       if (error) {
-        console.error('❌ Erro na busca simples:', error)
+        console.error('❌ Erro na busca:', error)
         throw error
       }
 
       const users = data || []
       const total = count || 0
-      const hasMore = (offset + users.length) < total
+      const loadedSoFar = from + users.length
+      const hasMore = loadedSoFar < total
 
-      console.log(`✅ Página ${page}: ${users.length} usuários (total: ${total}, hasMore: ${hasMore})`)
+      console.log(`✅ [PÁGINA ${page}] Retornados: ${users.length} | Carregados até agora: ${loadedSoFar}/${total} | Mais disponível: ${hasMore}`)
 
       return { users, hasMore, total }
     } catch (error) {

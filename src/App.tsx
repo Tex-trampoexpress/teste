@@ -312,11 +312,15 @@ function App() {
   }
 
   const loadMoreUsers = async () => {
-    if (isLoadingMore || !hasMore || loading || proximityEnabled) return
+    if (isLoadingMore || !hasMore || loading || proximityEnabled) {
+      console.log(`⏸️ loadMoreUsers bloqueado: isLoadingMore=${isLoadingMore}, hasMore=${hasMore}, loading=${loading}, proximity=${proximityEnabled}`)
+      return
+    }
 
-    console.log(`⬇️ Carregando mais usuários... Página ${page + 1}`)
-    setIsLoadingMore(true)
     const nextPage = page + 1
+    console.log(`⬇️ [LOAD MORE] Carregando página ${nextPage}... (Usuários atuais: ${users.length})`)
+
+    setIsLoadingMore(true)
     setPage(nextPage)
 
     try {
@@ -327,17 +331,24 @@ function App() {
         page: nextPage
       })
 
+      console.log(`📦 [LOAD MORE] Resposta: ${response.users.length} usuários, hasMore=${response.hasMore}, total=${response.total}`)
+
       if (response.users.length > 0) {
-        setUsers(prev => [...prev, ...response.users])
+        setUsers(prev => {
+          const newUsers = [...prev, ...response.users]
+          console.log(`✅ [LOAD MORE] Total após concatenação: ${newUsers.length}/${response.total}`)
+          return newUsers
+        })
         setHasMore(response.hasMore)
-        console.log(`✅ +${response.users.length} usuários carregados (Total: ${users.length + response.users.length}/${response.total})`)
+        setTotalUsers(response.total)
       } else {
         setHasMore(false)
-        console.log('📭 Nenhum usuário adicional encontrado')
+        console.log('📭 [LOAD MORE] Nenhum usuário adicional encontrado')
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar mais:', error)
+      console.error('❌ [LOAD MORE] Erro:', error)
       toast.error('Erro ao carregar mais profissionais')
+      setPage(page)
     } finally {
       setIsLoadingMore(false)
     }

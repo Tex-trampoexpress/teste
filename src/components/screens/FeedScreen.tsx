@@ -91,26 +91,30 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   const [pullDistance, setPullDistance] = useState(0)
 
   useEffect(() => {
+    const currentTarget = observerTarget.current
+    if (!currentTarget) return
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !loading) {
-          console.log('🔍 Fim da lista detectado - carregando mais...')
+        const entry = entries[0]
+        console.log(`👁️ Observer: intersecting=${entry.isIntersecting}, hasMore=${hasMore}, loading=${isLoadingMore || loading}`)
+
+        if (entry.isIntersecting && hasMore && !isLoadingMore && !loading) {
+          console.log('🔍 [OBSERVER] Fim da lista detectado - disparando loadMoreUsers()')
           loadMoreUsers()
         }
       },
-      { threshold: 0.1, rootMargin: '100px' }
+      { threshold: 0.1, rootMargin: '200px' }
     )
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current)
-    }
+    observer.observe(currentTarget)
+    console.log('👁️ Observer inicializado')
 
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current)
-      }
+      observer.disconnect()
+      console.log('👁️ Observer desconectado')
     }
-  }, [hasMore, isLoadingMore, loading, loadMoreUsers])
+  }, [hasMore, isLoadingMore, loading])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
