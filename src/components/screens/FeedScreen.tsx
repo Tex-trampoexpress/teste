@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { Usuario } from '../../lib/database'
 
 interface FeedScreenProps {
@@ -42,6 +42,23 @@ const SearchInput = ({ value, onChange, onEnter, placeholder }: {
   )
 }
 
+const SkeletonCard = () => (
+  <div className="profile-card skeleton-card">
+    <div className="skeleton-header">
+      <div className="skeleton-avatar"></div>
+      <div className="skeleton-info">
+        <div className="skeleton-line skeleton-title"></div>
+        <div className="skeleton-line skeleton-subtitle"></div>
+      </div>
+    </div>
+    <div className="skeleton-tags">
+      <div className="skeleton-tag"></div>
+      <div className="skeleton-tag"></div>
+      <div className="skeleton-tag"></div>
+    </div>
+  </div>
+)
+
 const FeedScreen: React.FC<FeedScreenProps> = ({
   searchTerm,
   onSearchTermChange,
@@ -60,8 +77,66 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   navigateTo,
   renderBackButton
 }) => {
+  const observerTarget = useRef<HTMLDivElement>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [touchStart, setTouchStart] = useState(0)
+  const [pullDistance, setPullDistance] = useState(0)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await searchUsers()
+    setTimeout(() => {
+      setIsRefreshing(false)
+      setPullDistance(0)
+    }, 500)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      setTouchStart(e.touches[0].clientY)
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStart > 0 && window.scrollY === 0) {
+      const distance = e.touches[0].clientY - touchStart
+      if (distance > 0) {
+        setPullDistance(Math.min(distance, 100))
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 60) {
+      handleRefresh()
+    } else {
+      setPullDistance(0)
+    }
+    setTouchStart(0)
+  }
+
   return (
-    <div className="feed">
+    <div
+      className="feed"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {pullDistance > 0 && (
+        <div
+          className="pull-to-refresh-indicator"
+          style={{
+            height: `${pullDistance}px`,
+            opacity: pullDistance / 100
+          }}
+        >
+          <div className="refresh-spinner">
+            <i className={`fas fa-${pullDistance > 60 ? 'sync-alt' : 'arrow-down'} ${isRefreshing ? 'fa-spin' : ''}`}></i>
+          </div>
+          <span>{pullDistance > 60 ? 'Solte para atualizar' : 'Puxe para atualizar'}</span>
+        </div>
+      )}
+
       {renderBackButton()}
 
       <div className="search-header">
@@ -122,10 +197,11 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
         </button>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--cyan)' }}></i>
-          <p>Buscando profissionais...</p>
+      {loading && users.length === 0 ? (
+        <div className="skeleton-container">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       ) : users.length === 0 ? (
         <div className="no-results">
@@ -155,8 +231,14 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
             }
           </div>
 
-          {users.map((user) => (
-            <div key={user.id} className="profile-card">
+          {users.map((user, index) => (
+            <div
+              key={user.id}
+              className="profile-card"
+              style={{
+                animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
+              }}
+            >
               <div className="profile-header">
                 <div className="profile-pic">
                   {user.foto_url ? (
@@ -210,6 +292,8 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
               </button>
             </div>
           ))}
+
+          <div ref={observerTarget} style={{ height: '20px' }}></div>
         </div>
       )}
     </div>

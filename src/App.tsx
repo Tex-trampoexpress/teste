@@ -267,11 +267,13 @@ function App() {
           proximityRadius
         )
       } else {
-        results = await DatabaseService.getUsuarios({
+        const response = await DatabaseService.getUsuarios({
           search: searchTerm,
           status: 'available',
-          limit: 20
+          limit: 20,
+          page: 1
         })
+        results = response.users
       }
       setUsers(results)
     } catch (error) {

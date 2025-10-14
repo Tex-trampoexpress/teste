@@ -342,41 +342,46 @@ export class DatabaseService {
     }
   }
 
-  // Get all users with optional filters
+  // Get all users with optional filters and pagination
   static async getUsuarios(filters?: {
     status?: 'available' | 'busy'
     tags?: string[]
     search?: string
     limit?: number
-  }): Promise<Usuario[]> {
+    page?: number
+  }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
       const searchTerm = filters?.search?.trim() || ''
       const filterTags = filters?.tags || []
       const filterStatus = filters?.status || 'available'
-      const limitResults = filters?.limit || 50
+      const limitResults = filters?.limit || 20
+      const page = filters?.page || 1
+      const offset = (page - 1) * limitResults
 
-      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults })
+      console.log('🔍 Buscando usuários com filtros:', { searchTerm, filterTags, filterStatus, limitResults, page, offset })
 
       const { data, error } = await supabase
         .rpc('search_usuarios', {
           search_term: searchTerm,
           filter_tags: filterTags,
           filter_status: filterStatus,
-          limit_results: limitResults
+          limit_results: limitResults + 1
         })
 
       if (error) {
         console.error('❌ Erro na busca de usuários:', error)
-        // Fallback para busca simples se a função RPC falhar
         console.log('🔄 Tentando busca simples como fallback...')
         return this.getUsuariosSimple(filters)
       }
 
-      console.log(`✅ Encontrados ${data?.length || 0} usuários`)
-      return data || []
+      const users = (data || []).slice(offset, offset + limitResults)
+      const hasMore = (data || []).length > offset + limitResults
+      const total = data?.length || 0
+
+      console.log(`✅ Encontrados ${users.length} usuários (página ${page}, mais: ${hasMore})`)
+      return { users, hasMore, total }
     } catch (error) {
       console.error('❌ Erro na busca de usuários:', error)
-      // Fallback para busca simples
       return this.getUsuariosSimple(filters)
     }
   }
@@ -386,35 +391,41 @@ export class DatabaseService {
     status?: 'available' | 'busy'
     search?: string
     limit?: number
-  }): Promise<Usuario[]> {
+    page?: number
+  }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
+      const limitResults = filters?.limit || 20
+      const page = filters?.page || 1
+      const offset = (page - 1) * limitResults
+
       let query = supabase
         .from('usuarios')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
-        .order('ultimo_acesso', { ascending: false })
+        .order('criado_em', { ascending: false })
+        .range(offset, offset + limitResults)
 
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
         query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
       }
 
-      if (filters?.limit) {
-        query = query.limit(filters.limit)
-      }
-
-      const { data, error } = await query
+      const { data, error, count } = await query
 
       if (error) {
         console.error('❌ Erro na busca simples:', error)
         throw error
       }
 
-      return data || []
+      const users = data || []
+      const total = count || 0
+      const hasMore = offset + limitResults < total
+
+      return { users, hasMore, total }
     } catch (error) {
       console.error('❌ Erro na busca simples:', error)
-      return []
+      return { users: [], hasMore: false, total: 0 }
     }
   }
 
