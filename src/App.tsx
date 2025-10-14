@@ -66,8 +66,11 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (currentScreen === 'feed') {
-      searchUsers()
+    if (currentScreen === 'feed' && !proximityEnabled) {
+      if (userLocation) {
+        setProximityEnabled(true)
+        setProximityRadius(100)
+      }
     }
   }, [currentScreen])
 

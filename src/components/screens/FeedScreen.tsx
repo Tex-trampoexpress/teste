@@ -91,6 +91,19 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   const [pullDistance, setPullDistance] = useState(0)
 
   useEffect(() => {
+    if (!userLocation) {
+      requestLocation()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (userLocation && !proximityEnabled) {
+      setProximityEnabled(true)
+      searchUsers()
+    }
+  }, [userLocation])
+
+  useEffect(() => {
     const currentTarget = observerTarget.current
     if (!currentTarget) return
 
@@ -180,55 +193,17 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
             value={searchTerm}
             onChange={onSearchTermChange}
             onEnter={onSearchUsersEnter}
-            placeholder="Buscar profissionais..."
+            placeholder="Buscar serviços..."
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => onSearchTermChange('')}>
               <i className="fas fa-times"></i>
             </button>
           )}
+          <button className="explore-btn" onClick={searchUsers}>
+            BUSCAR
+          </button>
         </div>
-
-        <div className="proximity-filters">
-          <div className="filter-row">
-            <button
-              className={`proximity-toggle ${proximityEnabled ? 'active' : ''}`}
-              onClick={() => setProximityEnabled(!proximityEnabled)}
-              disabled={!userLocation}
-            >
-              <i className="fas fa-map-marker-alt"></i>
-              Busca por Proximidade
-            </button>
-
-            {!userLocation && (
-              <button className="enable-location-btn" onClick={requestLocation}>
-                <i className="fas fa-location-arrow"></i>
-                Ativar GPS
-              </button>
-            )}
-          </div>
-
-          {proximityEnabled && userLocation && (
-            <div className="radius-selector">
-              <label>Raio:</label>
-              <select
-                value={proximityRadius}
-                onChange={(e) => setProximityRadius(Number(e.target.value))}
-              >
-                <option value={5}>5 km</option>
-                <option value={10}>10 km</option>
-                <option value={25}>25 km</option>
-                <option value={50}>50 km</option>
-                <option value={100}>100 km</option>
-              </select>
-            </div>
-          )}
-        </div>
-
-        <button className="explore-btn" onClick={searchUsers}>
-          <i className="fas fa-search"></i>
-          Buscar
-        </button>
       </div>
 
       {loading && users.length === 0 ? (
