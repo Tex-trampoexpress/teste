@@ -200,10 +200,11 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
               <i className="fas fa-times"></i>
             </button>
           )}
-          <button className="explore-btn" onClick={searchUsers}>
-            BUSCAR
-          </button>
         </div>
+        <button className="explore-btn" onClick={searchUsers}>
+          <i className="fas fa-search"></i>
+          BUSCAR
+        </button>
       </div>
 
       {loading && users.length === 0 ? (

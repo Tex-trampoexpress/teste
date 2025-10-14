@@ -1167,13 +1167,15 @@ input:-webkit-autofill:active {
   color: var(--white);
 }
 
-.search-bar .explore-btn {
-  flex-shrink: 0;
-  padding: 0.6rem 1rem;
-  font-size: 0.85rem;
+.search-header .explore-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
   font-weight: 600;
-  margin: 0;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 /* Proximity Filters */
