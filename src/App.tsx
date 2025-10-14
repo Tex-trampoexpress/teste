@@ -279,7 +279,8 @@ function App() {
         results = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
-          proximityRadius
+          proximityRadius,
+          searchTerm
         )
         hasMoreResults = false
         total = results.length

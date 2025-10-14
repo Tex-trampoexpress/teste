@@ -404,12 +404,13 @@ export class DatabaseService {
 
   // Get users by proximity
   static async getUsersByProximity(
-    latitude: number, 
-    longitude: number, 
-    radiusKm: number = 10
+    latitude: number,
+    longitude: number,
+    radiusKm: number = 10,
+    searchTerm?: string
   ): Promise<Usuario[]> {
     try {
-      console.log('📍 Buscando usuários por proximidade:', { latitude, longitude, radiusKm })
+      console.log('📍 Buscando usuários por proximidade:', { latitude, longitude, radiusKm, searchTerm })
 
       const { data, error } = await supabase
         .rpc('get_users_by_proximity', {
@@ -420,22 +421,32 @@ export class DatabaseService {
 
       if (error) {
         console.error('❌ Erro na busca por proximidade:', error)
-        // Fallback para busca simples
-        return this.getUsuarios({ status: 'available', limit: 20 })
+        const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20 })
+        return fallbackResponse.users
       }
 
-      // Map the distance_km field to distancia for consistency
-      const users = (data || []).map((user: any) => ({
+      let users = (data || []).map((user: any) => ({
         ...user,
         distancia: user.distance_km
       }))
+
+      if (searchTerm?.trim()) {
+        const term = searchTerm.trim().toLowerCase()
+        users = users.filter((user: Usuario) => {
+          const matchesDescription = user.descricao?.toLowerCase().includes(term)
+          const matchesTags = user.tags?.some(tag => tag.toLowerCase().includes(term))
+          const matchesName = user.nome?.toLowerCase().includes(term)
+          const matchesLocation = user.localizacao?.toLowerCase().includes(term)
+          return matchesDescription || matchesTags || matchesName || matchesLocation
+        })
+      }
 
       console.log(`✅ Encontrados ${users.length} usuários próximos`)
       return users
     } catch (error) {
       console.error('❌ Erro na busca por proximidade:', error)
-      // Fallback para busca simples
-      return this.getUsuarios({ status: 'available', limit: 20 })
+      const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20 })
+      return fallbackResponse.users
     }
   }
 
