@@ -1,0 +1,219 @@
+import React from 'react'
+import type { Usuario } from '../../lib/database'
+
+interface FeedScreenProps {
+  searchTerm: string
+  onSearchTermChange: (value: string) => void
+  onSearchUsersEnter: () => void
+  proximityEnabled: boolean
+  setProximityEnabled: (enabled: boolean) => void
+  userLocation: {latitude: number, longitude: number} | null
+  requestLocation: () => void
+  proximityRadius: number
+  setProximityRadius: (radius: number) => void
+  searchUsers: () => void
+  loading: boolean
+  users: Usuario[]
+  handleTagClick: (tag: string) => void
+  handleContactClick: (user: Usuario) => void
+  navigateTo: (screen: string) => void
+  renderBackButton: () => React.ReactNode
+}
+
+const SearchInput = ({ value, onChange, onEnter, placeholder }: {
+  value: string
+  onChange: (value: string) => void
+  onEnter: () => void
+  placeholder: string
+}) => {
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          onEnter()
+        }
+      }}
+      autoComplete="off"
+    />
+  )
+}
+
+const FeedScreen: React.FC<FeedScreenProps> = ({
+  searchTerm,
+  onSearchTermChange,
+  onSearchUsersEnter,
+  proximityEnabled,
+  setProximityEnabled,
+  userLocation,
+  requestLocation,
+  proximityRadius,
+  setProximityRadius,
+  searchUsers,
+  loading,
+  users,
+  handleTagClick,
+  handleContactClick,
+  navigateTo,
+  renderBackButton
+}) => {
+  return (
+    <div className="feed">
+      {renderBackButton()}
+
+      <div className="search-header">
+        <div className="search-bar">
+          <i className="fas fa-search"></i>
+          <SearchInput
+            value={searchTerm}
+            onChange={onSearchTermChange}
+            onEnter={onSearchUsersEnter}
+            placeholder="Buscar profissionais..."
+          />
+          {searchTerm && (
+            <button className="clear-search" onClick={() => onSearchTermChange('')}>
+              <i className="fas fa-times"></i>
+            </button>
+          )}
+        </div>
+
+        <div className="proximity-filters">
+          <div className="filter-row">
+            <button
+              className={`proximity-toggle ${proximityEnabled ? 'active' : ''}`}
+              onClick={() => setProximityEnabled(!proximityEnabled)}
+              disabled={!userLocation}
+            >
+              <i className="fas fa-map-marker-alt"></i>
+              Busca por Proximidade
+            </button>
+
+            {!userLocation && (
+              <button className="enable-location-btn" onClick={requestLocation}>
+                <i className="fas fa-location-arrow"></i>
+                Ativar GPS
+              </button>
+            )}
+          </div>
+
+          {proximityEnabled && userLocation && (
+            <div className="radius-selector">
+              <label>Raio:</label>
+              <select
+                value={proximityRadius}
+                onChange={(e) => setProximityRadius(Number(e.target.value))}
+              >
+                <option value={5}>5 km</option>
+                <option value={10}>10 km</option>
+                <option value={25}>25 km</option>
+                <option value={50}>50 km</option>
+                <option value={100}>100 km</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        <button className="explore-btn" onClick={searchUsers}>
+          <i className="fas fa-search"></i>
+          Buscar
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--cyan)' }}></i>
+          <p>Buscando profissionais...</p>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="no-results">
+          <i className="fas fa-search"></i>
+          <h3>Nenhum profissional encontrado</h3>
+          <p>Tente ajustar sua busca ou localização</p>
+          <div className="no-results-actions">
+            <button className="explore-all-btn" onClick={() => {
+              onSearchTermChange('')
+              setProximityEnabled(false)
+              searchUsers()
+            }}>
+              Ver Todos os Profissionais
+            </button>
+            <button className="back-home-btn" onClick={() => navigateTo('home')}>
+              <i className="fas fa-home"></i>
+              Voltar ao Início
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="search-results-info">
+            {proximityEnabled && userLocation ?
+              `${users.length} profissionais próximos` :
+              `${users.length} profissionais encontrados`
+            }
+          </div>
+
+          {users.map((user) => (
+            <div key={user.id} className="profile-card">
+              <div className="profile-header">
+                <div className="profile-pic">
+                  {user.foto_url ? (
+                    <img src={user.foto_url} alt={user.nome} />
+                  ) : (
+                    <i className="fas fa-user"></i>
+                  )}
+                </div>
+                <div className="profile-info">
+                  <div className="profile-name-distance">
+                    <h2>{user.nome}</h2>
+                    {user.distancia && (
+                      <span className="distance-badge">
+                        <i className="fas fa-map-marker-alt"></i>
+                        {user.distancia.toFixed(1)} km
+                      </span>
+                    )}
+                  </div>
+                  <p className="description">{user.descricao}</p>
+                  {user.localizacao && (
+                    <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>
+                      <i className="fas fa-map-marker-alt"></i> {user.localizacao}
+                    </p>
+                  )}
+                  <span className={`status status-${user.status}`}>
+                    {user.status === 'available' ? 'Disponível' : 'Ocupado'}
+                  </span>
+                </div>
+              </div>
+
+              {user.tags && user.tags.length > 0 && (
+                <div className="hashtags">
+                  {user.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="tag-clickable"
+                      onClick={() => handleTagClick(tag)}
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <button
+                className="whatsapp-btn"
+                onClick={() => handleContactClick(user)}
+              >
+                <i className="fab fa-whatsapp"></i>
+                Entrar em Contato
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default FeedScreen
