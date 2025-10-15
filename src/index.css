@@ -364,17 +364,17 @@ body::before {
 }
 
 .hero-brand {
-  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif;
   font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: 3px;
+  font-weight: 700;
+  letter-spacing: 1px;
   background: linear-gradient(135deg, #FFD700, #00FFFF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
   line-height: 1;
-  text-transform: uppercase;
+  text-transform: none;
   filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
 }
 
