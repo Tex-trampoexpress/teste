@@ -43,67 +43,74 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   return (
     <div className="hero-container">
-      <div className="tex-logo-container-inside">
-        <div className="tex-logo-text-inside">TEX</div>
-      </div>
+      <header className="hero-header">
+        <div className="tex-logo-container-inside">
+          <div className="tex-logo-text-inside">TEX</div>
+        </div>
+        <p className="hero-tagline">Do trampo ao encontro</p>
+      </header>
 
-      <h1>
-        Do trampo
-        <span>ao encontro</span>
-      </h1>
+      <main className="hero-main">
+        <div className="search-section">
+          <SearchInput
+            value={searchTerm}
+            onChange={onSearchTermChange}
+            onEnter={onSearchEnter}
+            placeholder="Buscar profissionais, serviços ou locais..."
+          />
+        </div>
 
-      <div className="trampoexpress-subtitle">TrampoExpress</div>
-
-      <div className="search-box">
-        <SearchInput
-          value={searchTerm}
-          onChange={onSearchTermChange}
-          onEnter={onSearchEnter}
-          placeholder="Buscar profissionais, serviços ou localização..."
-        />
-
-        <button
-          className="explore-btn"
-          onClick={() => navigateTo('feed')}
-        >
-          <i className="fas fa-search"></i>
-          Explorar Profissionais
-        </button>
-      </div>
-
-      <div className="location-status">
-        {locationStatus === 'idle' && (
-          <button className="location-enable-btn" onClick={requestLocation}>
-            <i className="fas fa-map-marker-alt"></i>
-            Ativar Localização
+        <div className="cta-section">
+          <button
+            className="explore-btn primary"
+            onClick={() => navigateTo('feed')}
+          >
+            <i className="fas fa-compass"></i>
+            Explorar Profissionais Próximos
           </button>
-        )}
-        {locationStatus === 'requesting' && (
-          <button className="location-enable-btn" disabled>
-            <i className="fas fa-spinner fa-spin"></i>
-            Obtendo localização...
-          </button>
-        )}
-        {locationStatus === 'granted' && (
-          <p style={{ color: 'var(--cyan)', textAlign: 'center' }}>
-            <i className="fas fa-check-circle"></i>
-            Localização ativada
-          </p>
-        )}
-      </div>
+        </div>
 
-      {renderProfileHeader()}
+        <div className="actions-section">
+          <div className="location-toggle">
+            {locationStatus === 'idle' && (
+              <button className="toggle-btn" onClick={requestLocation}>
+                <i className="fas fa-globe"></i>
+                <span>Ativar Localização</span>
+                <div className="toggle-indicator off"></div>
+              </button>
+            )}
+            {locationStatus === 'requesting' && (
+              <button className="toggle-btn loading" disabled>
+                <i className="fas fa-spinner fa-spin"></i>
+                <span>Obtendo localização...</span>
+                <div className="toggle-indicator loading"></div>
+              </button>
+            )}
+            {locationStatus === 'granted' && (
+              <div className="toggle-btn active">
+                <i className="fas fa-globe"></i>
+                <span>Localização Ativada</span>
+                <div className="toggle-indicator on"></div>
+              </div>
+            )}
+          </div>
 
-      <div className="hero-footer-info">
+          {renderProfileHeader()}
+        </div>
+      </main>
+
+      <footer className="hero-footer">
         <nav className="hero-footer-nav">
           <button onClick={() => navigateTo('about')}>Sobre</button>
+          <span className="footer-separator">•</span>
           <button onClick={() => navigateTo('terms')}>Termos</button>
+          <span className="footer-separator">•</span>
           <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
         </nav>
         <div className="hero-copyright">
-          © 2025 TrampoExpress. Conectando talentos.
+          © 2025 TrampoExpress
         </div>
-      </div>
+      </footer>
     </div>
   )
 }
