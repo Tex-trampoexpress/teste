@@ -368,14 +368,14 @@ body::before {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: 1px;
-  background: linear-gradient(90deg, #FFEB3B, #4DD0E1);
+  background: linear-gradient(90deg, #7ED957, #26C6DA);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
   line-height: 1;
   text-transform: none;
-  filter: drop-shadow(0 0 10px rgba(255, 235, 59, 0.3));
+  filter: drop-shadow(0 0 10px rgba(126, 217, 87, 0.3));
 }
 
 h1 {
