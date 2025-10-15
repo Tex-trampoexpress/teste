@@ -487,36 +487,37 @@ input:-webkit-autofill:active {
 
 .explore-btn.primary {
   width: 100%;
-  padding: 1.4rem 2rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #FFD700, #00FFFF);
-  color: var(--black);
+  padding: 1.2rem 1.8rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #FFD700 0%, #FFC700 50%, #00FFFF 100%);
+  color: #000000;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  text-transform: none;
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+  gap: 0.6rem;
+  box-shadow: 0 2px 12px rgba(255, 215, 0, 0.25);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .explore-btn.primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 30px rgba(255, 215, 0, 0.5);
-  background: linear-gradient(135deg, #00FFFF, #FFD700);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+  background: linear-gradient(135deg, #00FFFF 0%, #FFC700 50%, #FFD700 100%);
 }
 
 .explore-btn.primary:active {
-  transform: translateY(-1px);
+  transform: translateY(0);
 }
 
 .explore-btn.primary i {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 /* Actions Section */
