@@ -106,7 +106,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           <span className="footer-separator">•</span>
           <button onClick={() => navigateTo('terms')}>Termos</button>
           <span className="footer-separator">•</span>
-          <a href="#" onClick={(e) => e.preventDefault()}>Contato</a>
+          <a href="https://wa.me/5548996357648?text=Olá,%20preciso%20de%20suporte%20com%20o%20TrampoExpress" target="_blank" rel="noopener noreferrer">Suporte</a>
         </nav>
         <div className="hero-copyright">
           © 2025 TrampoExpress
