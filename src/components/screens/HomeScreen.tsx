@@ -67,7 +67,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className="location-toggle">
             {locationStatus === 'idle' && (
               <button className="toggle-btn-medium" onClick={requestLocation}>
-                <i className="fas fa-globe"></i>
+                <i className="fas fa-map-marker-alt"></i>
                 <span>Ativar Localização</span>
                 <div className="toggle-indicator off"></div>
               </button>
@@ -81,7 +81,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             )}
             {locationStatus === 'granted' && (
               <div className="toggle-btn-medium active">
-                <i className="fas fa-globe"></i>
+                <i className="fas fa-map-marker-alt"></i>
                 <span>Localização Ativada</span>
                 <div className="toggle-indicator on"></div>
               </div>
