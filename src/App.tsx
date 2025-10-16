@@ -488,7 +488,7 @@ function App() {
     if (!isLoggedIn || !currentUser) {
       return (
         <div className="login-section">
-          <button className="whatsapp-login-btn" onClick={() => navigateTo('verify')}>
+          <button className="whatsapp-login-btn-large" onClick={() => navigateTo('verify')}>
             <i className="fab fa-whatsapp"></i>
             Entrar com WhatsApp
           </button>

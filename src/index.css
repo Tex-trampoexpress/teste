@@ -410,7 +410,8 @@ h1 span {
   display: flex;
   flex-direction: column;
   padding: 2rem 1.5rem;
-  gap: 1.5rem;
+  gap: 1.8rem;
+  justify-content: center;
 }
 
 /* Search Section */
@@ -492,6 +493,139 @@ input:-webkit-autofill:active {
   width: 100%;
 }
 
+/* =================== NOVOS BOTÕES REDESENHADOS =================== */
+
+/* Botão Explorar Profissionais - GRANDE */
+.explore-btn-large.primary {
+  width: 100%;
+  min-height: 90px;
+  padding: 1.5rem 2rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #FFC107 0%, #4CAF50 100%);
+  color: #000000;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.explore-btn-large.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+  background: linear-gradient(135deg, #4CAF50 0%, #FFC107 100%);
+}
+
+.explore-btn-large.primary:active {
+  transform: translateY(0);
+}
+
+.explore-btn-large.primary i {
+  font-size: 1.15rem;
+}
+
+/* Botão Ativar Localização - MÉDIO */
+.toggle-btn-medium {
+  width: 100%;
+  min-height: 70px;
+  background: linear-gradient(135deg, #00BCD4 0%, #2196F3 100%);
+  border: none;
+  border-radius: 15px;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-btn-medium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+  background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+}
+
+.toggle-btn-medium:active {
+  transform: translateY(0);
+}
+
+.toggle-btn-medium.active {
+  background: linear-gradient(135deg, #4CAF50 0%, #00BCD4 100%);
+}
+
+.toggle-btn-medium.loading {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+.toggle-btn-medium i {
+  font-size: 1.3rem;
+}
+
+.toggle-btn-medium span {
+  flex: 1;
+  text-align: left;
+}
+
+/* Botão WhatsApp Login - GRANDE */
+.whatsapp-login-btn-large {
+  width: 100%;
+  min-height: 90px;
+  padding: 1.5rem 2rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #25D366 0%, #20BA5A 100%);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.whatsapp-login-btn-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+  background: linear-gradient(135deg, #20BA5A 0%, #25D366 100%);
+}
+
+.whatsapp-login-btn-large:active {
+  transform: translateY(0);
+}
+
+.whatsapp-login-btn-large i {
+  font-size: 1.4rem;
+}
+
+/* Legenda Cadastre-se */
+.login-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-weight: 400;
+}
+
+/* =================== BOTÕES ANTIGOS (MANTER PARA OUTRAS TELAS) =================== */
+
 .explore-btn.primary {
   width: 100%;
   padding: 1.2rem 1.8rem;
@@ -532,7 +666,15 @@ input:-webkit-autofill:active {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.8rem;
+}
+
+/* Login Section - WhatsApp Button Container */
+.login-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 /* Location Toggle */

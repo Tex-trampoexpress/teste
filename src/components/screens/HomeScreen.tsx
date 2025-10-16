@@ -52,21 +52,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       </header>
 
       <main className="hero-main">
-        <div className="search-section">
-          <SearchInput
-            value={searchTerm}
-            onChange={onSearchTermChange}
-            onEnter={onSearchEnter}
-            placeholder="Ex: pintor, encanador, eletricista..."
-          />
-        </div>
-
         <div className="cta-section">
           <button
-            className="explore-btn primary"
+            className="explore-btn-large primary"
             onClick={() => navigateTo('feed')}
           >
-            <i className="fas fa-compass"></i>
+            <i className="fas fa-search"></i>
             Explorar Profissionais Próximos
           </button>
         </div>
@@ -74,21 +65,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="actions-section">
           <div className="location-toggle">
             {locationStatus === 'idle' && (
-              <button className="toggle-btn" onClick={requestLocation}>
+              <button className="toggle-btn-medium" onClick={requestLocation}>
                 <i className="fas fa-globe"></i>
                 <span>Ativar Localização</span>
                 <div className="toggle-indicator off"></div>
               </button>
             )}
             {locationStatus === 'requesting' && (
-              <button className="toggle-btn loading" disabled>
+              <button className="toggle-btn-medium loading" disabled>
                 <i className="fas fa-spinner fa-spin"></i>
                 <span>Obtendo localização...</span>
                 <div className="toggle-indicator loading"></div>
               </button>
             )}
             {locationStatus === 'granted' && (
-              <div className="toggle-btn active">
+              <div className="toggle-btn-medium active">
                 <i className="fas fa-globe"></i>
                 <span>Localização Ativada</span>
                 <div className="toggle-indicator on"></div>
