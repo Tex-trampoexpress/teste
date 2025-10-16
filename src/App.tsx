@@ -441,10 +441,13 @@ function App() {
   const renderProfileHeader = () => {
     if (!isLoggedIn || !currentUser) {
       return (
-        <button className="whatsapp-login-btn" onClick={() => navigateTo('verify')}>
-          <i className="fab fa-whatsapp"></i>
-          Entrar com WhatsApp
-        </button>
+        <div className="login-section">
+          <button className="whatsapp-login-btn" onClick={() => navigateTo('verify')}>
+            <i className="fab fa-whatsapp"></i>
+            Entrar com WhatsApp
+          </button>
+          <p className="login-subtitle">Cadastre seus serviços gratuitamente</p>
+        </div>
       )
     }
     return (
