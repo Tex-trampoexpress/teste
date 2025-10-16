@@ -114,7 +114,7 @@ function App() {
 
   const goBack = () => {
     if (navigationHistory.length > 1) {
-      // Check if user is on profile-setup screen with unsaved data
+      // Check if user is on profile-setup screen
       if (currentScreen === 'profile-setup') {
         const hasUnsavedData =
           profileForm.nome.trim() !== '' ||
@@ -132,7 +132,14 @@ function App() {
           }
         }
 
-        // Reset profile form when leaving
+        // Clear temporary user data when leaving profile-setup without saving
+        console.log('🔄 Voltando da criação de perfil - limpando dados temporários')
+        setCurrentUser(null)
+        setIsLoggedIn(false)
+        setWhatsappNumber('')
+        localStorage.removeItem('tex-current-user')
+
+        // Reset profile form
         setProfileForm({
           nome: '',
           descricao: '',
@@ -196,10 +203,25 @@ function App() {
     console.log('🔐 Verificando número WhatsApp:', fullNumber)
 
     try {
+      // Clear any existing temporary data
+      setCurrentUser(null)
+      setIsLoggedIn(false)
+      setProfileForm({
+        nome: '',
+        descricao: '',
+        tags: [],
+        foto_url: '',
+        localizacao: '',
+        status: 'available',
+        latitude: null,
+        longitude: null
+      })
+
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(fullNumber)
 
       if (existingUser) {
         console.log('✅ Usuário encontrado - fazendo login automático')
+        console.log('📊 Dados do usuário:', existingUser)
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
@@ -207,7 +229,7 @@ function App() {
         toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
         navigateTo('feed')
       } else {
-        console.log('❌ Número não encontrado - criando novo perfil')
+        console.log('❌ Número não encontrado - preparando criação de perfil')
         const newUserId = crypto.randomUUID()
         const newUser: Partial<Usuario> = {
           id: newUserId,
@@ -226,16 +248,7 @@ function App() {
 
         setCurrentUser(newUser as Usuario)
         setIsLoggedIn(true)
-        setProfileForm({
-          nome: '',
-          descricao: '',
-          tags: [],
-          foto_url: '',
-          localizacao: '',
-          status: 'available',
-          latitude: null,
-          longitude: null
-        })
+        // DO NOT save to localStorage until profile is complete
 
         toast.success('Vamos criar seu perfil!')
         navigateTo('profile-setup')
