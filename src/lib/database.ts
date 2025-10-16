@@ -47,7 +47,7 @@ export class DatabaseService {
   // Create new user profile
   static async createUsuario(userData: CreateUsuarioData): Promise<Usuario> {
     console.log('🔄 Criando usuário:', userData)
-    
+
     try {
       // Validar dados obrigatórios
       if (!userData.nome?.trim()) {
@@ -61,6 +61,14 @@ export class DatabaseService {
       }
       if (!userData.tags || userData.tags.length === 0) {
         throw new Error('Pelo menos uma especialidade é obrigatória')
+      }
+
+      // ✅ PREVENT DUPLICATES - Check if WhatsApp already exists
+      console.log('🔍 Verificando se WhatsApp já existe:', userData.whatsapp)
+      const existingUser = await this.getUsuarioByWhatsApp(userData.whatsapp.trim())
+      if (existingUser) {
+        console.error('❌ WhatsApp já cadastrado:', userData.whatsapp)
+        throw new Error('Este número de WhatsApp já está cadastrado')
       }
 
       // Preparar dados para inserção

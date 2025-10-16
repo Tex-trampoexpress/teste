@@ -114,6 +114,37 @@ function App() {
 
   const goBack = () => {
     if (navigationHistory.length > 1) {
+      // Check if user is on profile-setup screen with unsaved data
+      if (currentScreen === 'profile-setup') {
+        const hasUnsavedData =
+          profileForm.nome.trim() !== '' ||
+          profileForm.descricao.trim() !== '' ||
+          profileForm.tags.length > 0 ||
+          profileForm.foto_url !== '' ||
+          profileForm.localizacao.trim() !== ''
+
+        if (hasUnsavedData) {
+          const confirmLeave = window.confirm(
+            'Você tem alterações não salvas. Tem certeza que deseja voltar? As alterações serão perdidas.'
+          )
+          if (!confirmLeave) {
+            return // User cancelled, don't go back
+          }
+        }
+
+        // Reset profile form when leaving
+        setProfileForm({
+          nome: '',
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available',
+          latitude: null,
+          longitude: null
+        })
+      }
+
       const newHistory = navigationHistory.slice(0, -1)
       const previousState = newHistory[newHistory.length - 1]
       setNavigationHistory(newHistory)
@@ -152,27 +183,31 @@ function App() {
       toast.error('Digite seu número do WhatsApp')
       return
     }
+
     const formattedNumber = whatsappNumber.replace(/\D/g, '')
     if (formattedNumber.length < 10) {
       toast.error('Número do WhatsApp inválido')
       return
     }
+
     const fullNumber = formattedNumber.startsWith('55') ? `+${formattedNumber}` : `+55${formattedNumber}`
+
     setIsVerifying(true)
+    console.log('🔐 Verificando número WhatsApp:', fullNumber)
+
     try {
       const existingUser = await DatabaseService.getUsuarioByWhatsApp(fullNumber)
+
       if (existingUser) {
+        console.log('✅ Usuário encontrado - fazendo login automático')
         setCurrentUser(existingUser)
         setIsLoggedIn(true)
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
-        DatabaseService.updateLastAccess(existingUser.id)
+        await DatabaseService.updateLastAccess(existingUser.id)
         toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        if (existingUser.perfil_completo) {
-          navigateTo('feed')
-        } else {
-          navigateTo('profile-setup')
-        }
+        navigateTo('feed')
       } else {
+        console.log('❌ Número não encontrado - criando novo perfil')
         const newUserId = crypto.randomUUID()
         const newUser: Partial<Usuario> = {
           id: newUserId,
@@ -188,14 +223,25 @@ function App() {
           perfil_completo: false,
           verificado: false
         }
+
         setCurrentUser(newUser as Usuario)
         setIsLoggedIn(true)
-        setProfileForm(prev => ({ ...prev, status: 'available' }))
+        setProfileForm({
+          nome: '',
+          descricao: '',
+          tags: [],
+          foto_url: '',
+          localizacao: '',
+          status: 'available',
+          latitude: null,
+          longitude: null
+        })
+
         toast.success('Vamos criar seu perfil!')
         navigateTo('profile-setup')
       }
     } catch (error) {
-      console.error('WhatsApp verification error:', error)
+      console.error('❌ Erro na verificação do WhatsApp:', error)
       toast.error('Erro ao verificar WhatsApp. Tente novamente.')
     } finally {
       setIsVerifying(false)
