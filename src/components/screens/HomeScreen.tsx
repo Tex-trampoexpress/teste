@@ -60,6 +60,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             <i className="fas fa-search"></i>
             Explorar Profissionais Próximos
           </button>
+          <p className="explore-subtitle">Encontre prestadores de serviço perto de você agora!</p>
         </div>
 
         <div className="actions-section">
