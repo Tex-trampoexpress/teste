@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -85,6 +86,37 @@ serve(async (req) => {
     console.log('🔍 Payment ID:', responseData.id)
     console.log('🔍 Status:', responseData.status)
     console.log('🔍 QR Code gerado:', !!qrCode)
+
+    // ✅ SALVAR TRANSAÇÃO NO BANCO DE DADOS
+    console.log('💾 Salvando transação no banco de dados...')
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+
+      const { data: transaction, error: dbError } = await supabase
+        .from('transacoes')
+        .insert({
+          cliente_id: requestData.cliente_id,
+          prestador_id: requestData.prestador_id,
+          mp_payment_id: responseData.id.toString(),
+          status: responseData.status,
+          amount: 2.02
+        })
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error('❌ Erro ao salvar no banco:', dbError)
+        // Não bloquear o fluxo, apenas logar o erro
+      } else {
+        console.log('✅ Transação salva no banco:', transaction.id)
+      }
+    } catch (dbError) {
+      console.error('❌ Erro ao conectar com banco:', dbError)
+      // Não bloquear o fluxo, apenas logar o erro
+    }
 
     // Resposta de sucesso
     const paymentData = {

@@ -43,6 +43,19 @@ export interface UpdateUsuarioData {
   longitude?: number | null
 }
 
+export interface Transacao {
+  id: string
+  cliente_id: string
+  prestador_id: string
+  mp_payment_id: string
+  status: string
+  amount: number
+  created_at: string
+  updated_at: string
+  cliente?: Usuario
+  prestador?: Usuario
+}
+
 export class DatabaseService {
   // Create new user profile
   static async createUsuario(userData: CreateUsuarioData): Promise<Usuario> {
@@ -668,6 +681,245 @@ export class DatabaseService {
   // Verify user profile
   static async verifyUser(id: string): Promise<Usuario> {
     return this.updateUsuario(id, { verificado: true })
+  }
+
+  // ============================================
+  // TRANSACTION MANAGEMENT (MERCADO PAGO)
+  // ============================================
+
+  // Get transactions by user (as client or provider)
+  static async getTransacoesByUsuario(
+    userId: string,
+    role: 'cliente' | 'prestador' | 'all' = 'all'
+  ): Promise<Transacao[]> {
+    try {
+      console.log(`🔍 Buscando transações para usuário ${userId} como ${role}`)
+
+      let query = supabase
+        .from('transacoes')
+        .select(`
+          *,
+          cliente:usuarios!cliente_id(id, nome, whatsapp, foto_url),
+          prestador:usuarios!prestador_id(id, nome, whatsapp, foto_url)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (role === 'cliente') {
+        query = query.eq('cliente_id', userId)
+      } else if (role === 'prestador') {
+        query = query.eq('prestador_id', userId)
+      } else {
+        query = query.or(`cliente_id.eq.${userId},prestador_id.eq.${userId}`)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('❌ Erro ao buscar transações:', error)
+        return []
+      }
+
+      console.log(`✅ ${data?.length || 0} transações encontradas`)
+      return data || []
+    } catch (error) {
+      console.error('❌ Erro ao buscar transações:', error)
+      return []
+    }
+  }
+
+  // Get transaction by Mercado Pago payment ID
+  static async getTransacaoByPaymentId(paymentId: string): Promise<Transacao | null> {
+    try {
+      console.log('🔍 Buscando transação por Payment ID:', paymentId)
+
+      const { data, error } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          cliente:usuarios!cliente_id(id, nome, whatsapp, foto_url),
+          prestador:usuarios!prestador_id(id, nome, whatsapp, foto_url)
+        `)
+        .eq('mp_payment_id', paymentId)
+        .maybeSingle()
+
+      if (error) {
+        console.error('❌ Erro ao buscar transação:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('❌ Erro ao buscar transação:', error)
+      return null
+    }
+  }
+
+  // Get approved transactions (successful payments)
+  static async getTransacoesAprovadas(userId?: string): Promise<Transacao[]> {
+    try {
+      console.log('🔍 Buscando transações aprovadas')
+
+      let query = supabase
+        .from('transacoes')
+        .select(`
+          *,
+          cliente:usuarios!cliente_id(id, nome, whatsapp, foto_url),
+          prestador:usuarios!prestador_id(id, nome, whatsapp, foto_url)
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+
+      if (userId) {
+        query = query.or(`cliente_id.eq.${userId},prestador_id.eq.${userId}`)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('❌ Erro ao buscar transações aprovadas:', error)
+        return []
+      }
+
+      console.log(`✅ ${data?.length || 0} transações aprovadas encontradas`)
+      return data || []
+    } catch (error) {
+      console.error('❌ Erro ao buscar transações aprovadas:', error)
+      return []
+    }
+  }
+
+  // Get sales report for provider (services hired)
+  static async getRelatorioVendas(
+    prestadorId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    total: number
+    approved: number
+    pending: number
+    rejected: number
+    totalAmount: number
+    transactions: Transacao[]
+  }> {
+    try {
+      console.log('📊 Gerando relatório de vendas para prestador:', prestadorId)
+
+      let query = supabase
+        .from('transacoes')
+        .select(`
+          *,
+          cliente:usuarios!cliente_id(id, nome, whatsapp, foto_url)
+        `)
+        .eq('prestador_id', prestadorId)
+        .order('created_at', { ascending: false })
+
+      if (startDate) {
+        query = query.gte('created_at', startDate)
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('❌ Erro ao gerar relatório:', error)
+        return {
+          total: 0,
+          approved: 0,
+          pending: 0,
+          rejected: 0,
+          totalAmount: 0,
+          transactions: []
+        }
+      }
+
+      const transactions = data || []
+      const approved = transactions.filter(t => t.status === 'approved').length
+      const pending = transactions.filter(t => t.status === 'pending' || t.status === 'in_process').length
+      const rejected = transactions.filter(t => t.status === 'rejected' || t.status === 'cancelled').length
+      const totalAmount = transactions
+        .filter(t => t.status === 'approved')
+        .reduce((sum, t) => sum + Number(t.amount), 0)
+
+      console.log(`✅ Relatório gerado: ${transactions.length} transações, R$ ${totalAmount.toFixed(2)}`)
+
+      return {
+        total: transactions.length,
+        approved,
+        pending,
+        rejected,
+        totalAmount,
+        transactions
+      }
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório:', error)
+      return {
+        total: 0,
+        approved: 0,
+        pending: 0,
+        rejected: 0,
+        totalAmount: 0,
+        transactions: []
+      }
+    }
+  }
+
+  // Get purchase history for client
+  static async getHistoricoCompras(clienteId: string): Promise<Transacao[]> {
+    try {
+      console.log('🛒 Buscando histórico de compras para cliente:', clienteId)
+
+      const { data, error } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          prestador:usuarios!prestador_id(id, nome, whatsapp, foto_url, descricao, tags)
+        `)
+        .eq('cliente_id', clienteId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Erro ao buscar histórico:', error)
+        return []
+      }
+
+      console.log(`✅ ${data?.length || 0} compras encontradas`)
+      return data || []
+    } catch (error) {
+      console.error('❌ Erro ao buscar histórico:', error)
+      return []
+    }
+  }
+
+  // Check if client already paid for provider access
+  static async verificarPagamentoExistente(
+    clienteId: string,
+    prestadorId: string
+  ): Promise<boolean> {
+    try {
+      console.log('🔍 Verificando pagamento existente:', { clienteId, prestadorId })
+
+      const { data, error } = await supabase
+        .from('transacoes')
+        .select('id, status')
+        .eq('cliente_id', clienteId)
+        .eq('prestador_id', prestadorId)
+        .eq('status', 'approved')
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ Erro ao verificar pagamento:', error)
+        return false
+      }
+
+      const exists = !!data
+      console.log(exists ? '✅ Pagamento aprovado encontrado' : 'ℹ️ Nenhum pagamento aprovado')
+      return exists
+    } catch (error) {
+      console.error('❌ Erro ao verificar pagamento:', error)
+      return false
+    }
   }
 
   // Test database connection
