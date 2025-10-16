@@ -193,7 +193,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
             value={searchTerm}
             onChange={onSearchTermChange}
             onEnter={onSearchUsersEnter}
-            placeholder="Buscar serviços..."
+            placeholder="Ex: pintor, encanador, eletricista..."
           />
           {searchTerm && (
             <button className="clear-search" onClick={() => onSearchTermChange('')}>

@@ -57,7 +57,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             value={searchTerm}
             onChange={onSearchTermChange}
             onEnter={onSearchEnter}
-            placeholder="Buscar profissionais, serviços ou locais..."
+            placeholder="Ex: pintor, encanador, eletricista..."
           />
         </div>
 

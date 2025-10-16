@@ -353,7 +353,7 @@ export class DatabaseService {
     return this.getUsuariosSimple(filters)
   }
 
-  // Fallback simple search
+  // Fallback simple search with intelligent scoring
   private static async getUsuariosSimple(filters?: {
     status?: 'available' | 'busy'
     search?: string
@@ -373,13 +373,20 @@ export class DatabaseService {
         .select('*', { count: 'exact' })
         .eq('status', filters?.status || 'available')
         .eq('perfil_completo', true)
-        .order('criado_em', { ascending: false })
-        .range(from, to)
 
+      // Intelligent multi-field search
       if (filters?.search?.trim()) {
         const searchTerm = filters.search.trim()
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%`)
+        console.log(`🔎 Busca inteligente aplicada: "${searchTerm}"`)
+
+        // Search in: name, description, location, and tags (using contains operator)
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,localizacao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
+      } else {
+        // No search term - order by creation date
+        query = query.order('criado_em', { ascending: false })
       }
+
+      query = query.range(from, to)
 
       const { data, error, count } = await query
 
@@ -388,7 +395,25 @@ export class DatabaseService {
         throw error
       }
 
-      const users = data || []
+      let users = data || []
+
+      // Apply intelligent scoring if search term exists
+      if (filters?.search?.trim()) {
+        const term = filters.search.trim()
+
+        // Add match score to each user
+        const usersWithScore = users.map(user => ({
+          ...user,
+          matchScore: this.calculateMatchScore(user, term)
+        }))
+
+        // Sort by match score (descending)
+        usersWithScore.sort((a, b) => b.matchScore - a.matchScore)
+
+        users = usersWithScore
+        console.log(`🎯 ${users.length} usuários ordenados por relevância`)
+      }
+
       const total = count || 0
       const loadedSoFar = from + users.length
       const hasMore = loadedSoFar < total
@@ -402,7 +427,43 @@ export class DatabaseService {
     }
   }
 
-  // Get users by proximity
+  // Calculate match score for intelligent search
+  private static calculateMatchScore(user: Usuario, searchTerm: string): number {
+    const term = searchTerm.toLowerCase()
+    let score = 0
+
+    // Exact match in tags (highest priority)
+    if (user.tags?.some(tag => tag.toLowerCase() === term)) {
+      score += 5
+    }
+    // Partial match in tags
+    else if (user.tags?.some(tag => tag.toLowerCase().includes(term))) {
+      score += 3
+    }
+
+    // Match in service title (descricao inicio)
+    if (user.descricao?.toLowerCase().startsWith(term)) {
+      score += 2
+    }
+    // Partial match in description
+    else if (user.descricao?.toLowerCase().includes(term)) {
+      score += 1
+    }
+
+    // Match in name
+    if (user.nome?.toLowerCase().includes(term)) {
+      score += 1
+    }
+
+    // Match in location
+    if (user.localizacao?.toLowerCase().includes(term)) {
+      score += 0.5
+    }
+
+    return score
+  }
+
+  // Get users by proximity with intelligent search
   static async getUsersByProximity(
     latitude: number,
     longitude: number,
@@ -430,15 +491,40 @@ export class DatabaseService {
         distancia: user.distance_km
       }))
 
+      // Intelligent search with scoring
       if (searchTerm?.trim()) {
         const term = searchTerm.trim().toLowerCase()
+        console.log(`🔍 Aplicando busca inteligente para termo: "${term}"`)
+
+        // Filter users that match the search term
         users = users.filter((user: Usuario) => {
-          const matchesDescription = user.descricao?.toLowerCase().includes(term)
           const matchesTags = user.tags?.some(tag => tag.toLowerCase().includes(term))
+          const matchesDescription = user.descricao?.toLowerCase().includes(term)
           const matchesName = user.nome?.toLowerCase().includes(term)
           const matchesLocation = user.localizacao?.toLowerCase().includes(term)
-          return matchesDescription || matchesTags || matchesName || matchesLocation
+
+          return matchesTags || matchesDescription || matchesName || matchesLocation
         })
+
+        // Calculate match scores
+        const usersWithScore = users.map(user => ({
+          ...user,
+          matchScore: this.calculateMatchScore(user, term)
+        }))
+
+        // Sort by match score (descending), then by distance (ascending)
+        usersWithScore.sort((a, b) => {
+          if (b.matchScore !== a.matchScore) {
+            return b.matchScore - a.matchScore
+          }
+          return (a.distancia || 0) - (b.distancia || 0)
+        })
+
+        users = usersWithScore
+        console.log(`🎯 ${users.length} usuários encontrados e ordenados por relevância`)
+      } else {
+        // No search term - sort only by distance
+        users.sort((a, b) => (a.distancia || 0) - (b.distancia || 0))
       }
 
       console.log(`✅ Encontrados ${users.length} usuários próximos`)
