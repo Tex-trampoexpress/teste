@@ -276,11 +276,9 @@ body::before {
 /* Back Button - POSICIONADO NO CANTO SUPERIOR ESQUERDO */
 .back-button-container {
   width: 100%;
-  margin-bottom: 0.5rem;
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  right: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  position: relative;
   z-index: 10;
 }
 
@@ -1387,12 +1385,17 @@ input:-webkit-autofill:active {
 .feed {
   width: 100%;
   max-width: 600px;
-  margin-top: 1rem;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Search Header */
 .search-header {
   margin-bottom: 2rem;
+  padding: 0 0.5rem;
+  position: relative;
+  z-index: 5;
 }
 
 .search-bar {
