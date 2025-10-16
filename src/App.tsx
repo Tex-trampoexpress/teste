@@ -95,11 +95,61 @@ function App() {
   }
 
   const setupBackButtonHandler = () => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault()
+
       if (navigationHistory.length > 1) {
-        goBack()
+        // Prevent default browser back behavior
+        const newHistory = navigationHistory.slice(0, -1)
+        const previousState = newHistory[newHistory.length - 1]
+
+        // Handle profile-setup screen cleanup
+        if (currentScreen === 'profile-setup') {
+          const hasUnsavedData =
+            profileForm.nome.trim() !== '' ||
+            profileForm.descricao.trim() !== '' ||
+            profileForm.tags.length > 0 ||
+            profileForm.foto_url !== '' ||
+            profileForm.localizacao.trim() !== ''
+
+          if (hasUnsavedData) {
+            const confirmLeave = window.confirm(
+              'Você tem alterações não salvas. Tem certeza que deseja voltar? As alterações serão perdidas.'
+            )
+            if (!confirmLeave) {
+              // User cancelled, push state back
+              window.history.pushState({ screen: currentScreen }, '', `#${currentScreen}`)
+              return
+            }
+          }
+
+          // Clear temporary user data
+          console.log('🔄 Botão nativo: Voltando da criação de perfil')
+          setCurrentUser(null)
+          setIsLoggedIn(false)
+          setWhatsappNumber('')
+          localStorage.removeItem('tex-current-user')
+          setProfileForm({
+            nome: '',
+            descricao: '',
+            tags: [],
+            foto_url: '',
+            localizacao: '',
+            status: 'available',
+            latitude: null,
+            longitude: null
+          })
+        }
+
+        setNavigationHistory(newHistory)
+        setCurrentScreen(previousState.screen)
+        setShowProfileMenu(false)
+      } else {
+        // If we're at the home screen, let the browser handle it (close app)
+        console.log('🏠 Na tela inicial - permitindo fechar app')
       }
     }
+
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }
