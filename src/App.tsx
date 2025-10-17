@@ -324,6 +324,14 @@ function App() {
       toast.error('Adicione pelo menos uma especialidade')
       return
     }
+    if (!profileForm.foto_url.trim()) {
+      toast.error('Foto é obrigatória')
+      return
+    }
+    if (!profileForm.localizacao.trim()) {
+      toast.error('Localização é obrigatória')
+      return
+    }
     try {
       const profileData: CreateUsuarioData = {
         id: currentUser!.id,
@@ -331,8 +339,8 @@ function App() {
         whatsapp: currentUser!.whatsapp,
         descricao: profileForm.descricao.trim(),
         tags: profileForm.tags,
-        foto_url: profileForm.foto_url || undefined,
-        localizacao: profileForm.localizacao.trim() || undefined,
+        foto_url: profileForm.foto_url,
+        localizacao: profileForm.localizacao.trim(),
         status: profileForm.status,
         latitude: profileForm.latitude,
         longitude: profileForm.longitude
