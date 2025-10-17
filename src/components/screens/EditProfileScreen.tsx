@@ -71,6 +71,15 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   navigateTo,
   renderBackButton
 }) => {
+  const [tagInput, setTagInput] = React.useState('')
+
+  const handleAddTag = () => {
+    if (tagInput.trim()) {
+      addTag(tagInput)
+      setTagInput('')
+    }
+  }
+
   return (
     <div className="form-container profile-setup">
       {renderBackButton()}
@@ -119,19 +128,29 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       <div className="form-group">
         <label>Especialidades *</label>
         <div className="tags-input">
-          <input
-            type="text"
-            placeholder="Digite uma especialidade e pressione Enter"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                const input = e.currentTarget
-                addTag(input.value)
-                input.value = ''
-              }
-            }}
-            autoComplete="off"
-          />
+          <div className="tags-input-wrapper">
+            <input
+              type="text"
+              placeholder="Digite uma especialidade"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddTag()
+                }
+              }}
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              className="add-tag-btn"
+              onClick={handleAddTag}
+              disabled={!tagInput.trim()}
+            >
+              <i className="fas fa-plus"></i>
+            </button>
+          </div>
           <div className="tags-container">
             {profileForm.tags.map((tag, index) => (
               <div key={index} className="tag">
