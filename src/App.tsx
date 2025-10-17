@@ -252,10 +252,10 @@ function App() {
       return
     }
 
-    const fullNumber = formattedNumber.startsWith('55') ? `+${formattedNumber}` : `+55${formattedNumber}`
+    const cleanNumber = formattedNumber.startsWith('55') ? formattedNumber.substring(2) : formattedNumber
 
     setIsVerifying(true)
-    console.log('🔐 Verificando número WhatsApp:', fullNumber)
+    console.log('🔐 Verificando número WhatsApp (sem +55):', cleanNumber)
 
     try {
       // Clear any existing temporary data
@@ -272,7 +272,7 @@ function App() {
         longitude: null
       })
 
-      const existingUser = await DatabaseService.getUsuarioByWhatsApp(fullNumber)
+      const existingUser = await DatabaseService.getUsuarioByWhatsApp(cleanNumber)
 
       if (existingUser) {
         console.log('✅ Usuário encontrado - fazendo login automático')
@@ -288,7 +288,7 @@ function App() {
         const newUserId = crypto.randomUUID()
         const newUser: Partial<Usuario> = {
           id: newUserId,
-          whatsapp: fullNumber,
+          whatsapp: cleanNumber,
           nome: '',
           descricao: '',
           tags: [],
