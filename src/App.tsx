@@ -66,10 +66,15 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (currentScreen === 'feed' && !proximityEnabled) {
-      if (userLocation) {
-        setProximityEnabled(true)
-        setProximityRadius(100)
+    if (currentScreen === 'feed') {
+      const shouldAutoLoad = users.length === 0
+      if (shouldAutoLoad) {
+        console.log('🚀 Feed aberto - iniciando carregamento automático')
+        if (userLocation) {
+          setProximityEnabled(true)
+          setProximityRadius(100)
+        }
+        searchUsers()
       }
     }
   }, [currentScreen])

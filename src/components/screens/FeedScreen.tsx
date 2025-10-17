@@ -97,15 +97,8 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   }, [])
 
   useEffect(() => {
-    if (userLocation && !proximityEnabled) {
-      setProximityEnabled(true)
-      searchUsers()
-    }
-  }, [userLocation])
-
-  useEffect(() => {
     const currentTarget = observerTarget.current
-    if (!currentTarget) return
+    if (!currentTarget || users.length === 0) return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -117,7 +110,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           loadMoreUsers()
         }
       },
-      { threshold: 0.1, rootMargin: '200px' }
+      { threshold: 0.1, rootMargin: '100px' }
     )
 
     observer.observe(currentTarget)
@@ -127,7 +120,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
       observer.disconnect()
       console.log('👁️ Observer desconectado')
     }
-  }, [hasMore, isLoadingMore, loading])
+  }, [hasMore, isLoadingMore, loading, users.length])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
