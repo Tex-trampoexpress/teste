@@ -211,21 +211,45 @@ export class DatabaseService {
       })
 
       // Buscar TODOS os usuários com perfil completo e localização
-      let query = supabase
-        .from('usuarios')
-        .select('*')
-        .eq('perfil_completo', true)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
+      let data: any[] = []
+      let error: any = null
 
-      // Aplicar filtro de busca se houver
       if (searchTerm?.trim()) {
-        const term = searchTerm.trim()
+        const term = searchTerm.trim().toLowerCase()
         console.log('🔎 Aplicando filtro de busca:', term)
-        query = query.or(`nome.ilike.%${term}%,descricao.ilike.%${term}%`)
-      }
 
-      const { data, error } = await query
+        // Buscar todos os usuários primeiro
+        const { data: allUsers, error: fetchError } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('perfil_completo', true)
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null)
+
+        if (fetchError) {
+          error = fetchError
+        } else {
+          // Filtrar manualmente por nome, descrição OU tags
+          data = (allUsers || []).filter(user => {
+            const nomeMatch = user.nome?.toLowerCase().includes(term)
+            const descricaoMatch = user.descricao?.toLowerCase().includes(term)
+            const tagsMatch = user.tags?.some((tag: string) => tag.toLowerCase().includes(term))
+            return nomeMatch || descricaoMatch || tagsMatch
+          })
+          console.log(`📋 Filtro aplicado: ${data.length} de ${allUsers?.length} usuários correspondem a "${term}"`)
+        }
+      } else {
+        // Sem filtro, buscar todos
+        const result = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('perfil_completo', true)
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null)
+
+        data = result.data || []
+        error = result.error
+      }
 
       if (error) {
         console.error('❌ Erro na busca no banco:', error)
