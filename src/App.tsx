@@ -419,7 +419,17 @@ function App() {
       if (resetPage) {
         setUsers(response.users)
       } else {
-        setUsers(prev => [...prev, ...response.users])
+        setUsers(prev => {
+          const combined = [...prev, ...response.users]
+          if (userLocation && (combined.some(u => typeof u.distancia === 'number'))) {
+            return combined.sort((a, b) => {
+              const distA = typeof a.distancia === 'number' ? a.distancia : Infinity
+              const distB = typeof b.distancia === 'number' ? b.distancia : Infinity
+              return distA - distB
+            })
+          }
+          return combined
+        })
       }
 
       setHasMore(response.hasMore)
