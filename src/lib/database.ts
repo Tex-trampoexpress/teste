@@ -423,7 +423,8 @@ export class DatabaseService {
       let users = data || []
 
       // Calculate distance if user location is provided
-      if (filters?.userLatitude && filters?.userLongitude) {
+      const hasUserLocation = !!(filters?.userLatitude && filters?.userLongitude)
+      if (hasUserLocation) {
         users = users.map(user => {
           if (user.latitude && user.longitude) {
             const distance = this.calculateDistance(
