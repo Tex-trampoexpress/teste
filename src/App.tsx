@@ -397,11 +397,11 @@ function App() {
       let hasMoreResults = false
       let total = 0
 
-      if (proximityEnabled && userLocation) {
+      if (userLocation) {
         results = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
-          proximityRadius,
+          proximityEnabled ? proximityRadius : 1000,
           searchTerm
         )
         hasMoreResults = false
@@ -411,9 +411,7 @@ function App() {
           search: searchTerm,
           status: 'available',
           limit: 20,
-          page: resetPage ? 1 : page,
-          userLatitude: userLocation?.latitude,
-          userLongitude: userLocation?.longitude
+          page: resetPage ? 1 : page
         })
         results = response.users
         hasMoreResults = response.hasMore

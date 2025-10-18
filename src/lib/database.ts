@@ -370,8 +370,6 @@ export class DatabaseService {
     search?: string
     limit?: number
     page?: number
-    userLatitude?: number
-    userLongitude?: number
   }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     return this.getUsuariosSimple(filters)
   }
@@ -382,8 +380,6 @@ export class DatabaseService {
     search?: string
     limit?: number
     page?: number
-    userLatitude?: number
-    userLongitude?: number
   }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
       const limitResults = filters?.limit || 20
@@ -422,50 +418,20 @@ export class DatabaseService {
 
       let users = data || []
 
-      // Calculate distance if user location is provided
-      const hasUserLocation = !!(filters?.userLatitude && filters?.userLongitude)
-      if (hasUserLocation) {
-        users = users.map(user => {
-          if (user.latitude && user.longitude) {
-            const distance = this.calculateDistance(
-              filters.userLatitude!,
-              filters.userLongitude!,
-              user.latitude,
-              user.longitude
-            )
-            return { ...user, distancia: distance }
-          }
-          return user
-        })
-        console.log(`📍 Distância calculada para ${users.filter(u => u.distancia).length} usuários`)
-      }
-
       // Apply intelligent scoring if search term exists
-      const hasSearchTerm = !!filters?.search?.trim()
-      if (hasSearchTerm) {
-        const term = filters.search!.trim()
+      if (filters?.search?.trim()) {
+        const term = filters.search.trim()
 
         // Add match score to each user
-        users = users.map(user => ({
+        const usersWithScore = users.map(user => ({
           ...user,
           matchScore: this.calculateMatchScore(user, term)
         }))
-      }
 
-      // Sort users: ALWAYS by distance first if available
-      if (hasUserLocation && users.some(u => u.distancia !== undefined)) {
-        users.sort((a, b) => {
-          // Users without location go to the end
-          if (a.distancia === undefined) return 1
-          if (b.distancia === undefined) return -1
+        // Sort by match score (descending)
+        usersWithScore.sort((a, b) => b.matchScore - a.matchScore)
 
-          // Primary sort: DISTANCE (closer first)
-          return a.distancia - b.distancia
-        })
-        console.log(`📍 ${users.length} usuários ordenados por distância`)
-      } else if (hasSearchTerm) {
-        // Sort by match score only if no location
-        users.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+        users = usersWithScore
         console.log(`🎯 ${users.length} usuários ordenados por relevância`)
       }
 
@@ -516,19 +482,6 @@ export class DatabaseService {
     }
 
     return score
-  }
-
-  // Calculate distance between two points using Haversine formula
-  private static calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371
-    const dLat = (lat2 - lat1) * Math.PI / 180
-    const dLon = (lon2 - lon1) * Math.PI / 180
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
   }
 
   // Get users by proximity with intelligent search using SQL function
