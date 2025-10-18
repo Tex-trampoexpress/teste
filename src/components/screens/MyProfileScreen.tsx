@@ -45,7 +45,15 @@ const MyProfileScreen: React.FC<MyProfileScreenProps> = ({
 
   return (
     <div className="my-profile-content">
-      {renderBackButton()}
+      <div className="home-button-header">
+        <button
+          className="home-button-back"
+          onClick={() => navigateTo('home')}
+        >
+          <i className="fas fa-home"></i>
+          <span>Início</span>
+        </button>
+      </div>
 
       <div className="profile-card">
         <div className="profile-header">
@@ -156,17 +164,6 @@ const MyProfileScreen: React.FC<MyProfileScreenProps> = ({
         <button className="delete-profile-btn" onClick={handleDeleteProfile}>
           <i className="fas fa-trash"></i>
           Excluir Perfil
-        </button>
-      </div>
-
-      <div className="home-button-container">
-        <button
-          className="home-button-floating"
-          onClick={() => navigateTo('home')}
-          aria-label="Voltar para início"
-        >
-          <i className="fas fa-home"></i>
-          <span>Início</span>
         </button>
       </div>
     </div>
