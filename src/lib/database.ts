@@ -200,50 +200,70 @@ export class DatabaseService {
     offset: number = 0
   ): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
-      console.log('📍 Buscando usuários com distância:', { latitude, longitude, radiusKm, searchTerm, limit, offset })
+      console.log('📍 Buscando usuários próximos:', { latitude, longitude, radiusKm, searchTerm, limit, offset })
 
-      const latRange = radiusKm / 111.0
-      const lngRange = radiusKm / (111.0 * Math.cos(latitude * Math.PI / 180))
-
+      // Buscar TODOS os usuários com perfil completo e localização
       let query = supabase
         .from('usuarios')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('perfil_completo', true)
-        .eq('status', 'available')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-        .gte('latitude', latitude - latRange)
-        .lte('latitude', latitude + latRange)
-        .gte('longitude', longitude - lngRange)
-        .lte('longitude', longitude + lngRange)
 
+      // Aplicar filtro de busca se houver
       if (searchTerm?.trim()) {
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
+        const term = searchTerm.trim()
+        query = query.or(`nome.ilike.%${term}%,descricao.ilike.%${term}%`)
       }
 
-      const { data, error, count } = await query
+      const { data, error } = await query
 
       if (error) {
         console.error('❌ Erro na busca:', error)
         return { users: [], hasMore: false, total: 0 }
       }
 
-      const users = (data || []).map(user => {
-        const latDiff = user.latitude! - latitude
-        const lngDiff = user.longitude! - longitude
-        const distancia = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111
+      console.log(`📊 Total de usuários no banco: ${data?.length || 0}`)
+
+      // Calcular distância usando fórmula de Haversine (mais precisa)
+      const toRad = (value: number) => (value * Math.PI) / 180
+
+      const usersWithDistance = (data || []).map(user => {
+        const R = 6371 // Raio da Terra em km
+        const dLat = toRad(user.latitude! - latitude)
+        const dLon = toRad(user.longitude! - longitude)
+
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(latitude)) *
+            Math.cos(toRad(user.latitude!)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2)
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        const distancia = R * c
+
         return { ...user, distancia }
       })
 
-      const filteredUsers = users.filter(u => u.distancia! <= radiusKm)
+      // Filtrar por raio
+      const filteredUsers = usersWithDistance.filter(u => u.distancia <= radiusKm)
 
-      filteredUsers.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
+      console.log(`🎯 Usuários dentro do raio de ${radiusKm}km: ${filteredUsers.length}`)
 
+      // Ordenar por distância
+      filteredUsers.sort((a, b) => a.distancia - b.distancia)
+
+      // Aplicar paginação DEPOIS de filtrar
       const paginatedUsers = filteredUsers.slice(offset, offset + limit)
-      const hasMore = (offset + paginatedUsers.length) < filteredUsers.length
+      const hasMore = (offset + limit) < filteredUsers.length
 
-      console.log(`✅ Encontrados ${filteredUsers.length} usuários em ${radiusKm}km`)
-      console.log('🗺️ Ordenados por distância:', paginatedUsers.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
+      if (paginatedUsers.length > 0) {
+        console.log('🗺️ Primeiros resultados:')
+        paginatedUsers.slice(0, 5).forEach(u => {
+          console.log(`   - ${u.nome}: ${u.distancia.toFixed(2)}km (${u.status})`)
+        })
+      }
 
       return {
         users: paginatedUsers,
