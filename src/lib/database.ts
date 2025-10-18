@@ -535,6 +535,7 @@ export class DatabaseService {
       const hasMore = (offset + users.length) < total
 
       console.log(`✅ Encontrados ${users.length} usuários | Total: ${total} | Mais: ${hasMore}`)
+      console.log('🗺️ Usuários com distância:', users.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
       return { users, hasMore, total }
     } catch (error) {
       console.error('❌ Erro na busca com distância:', error)
