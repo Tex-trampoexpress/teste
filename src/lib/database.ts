@@ -484,7 +484,7 @@ export class DatabaseService {
     return score
   }
 
-  // Get users by proximity with intelligent search using SQL function
+  // Get users by proximity with intelligent search
   static async getUsersByProximity(
     latitude: number,
     longitude: number,
@@ -492,45 +492,66 @@ export class DatabaseService {
     searchTerm?: string
   ): Promise<Usuario[]> {
     try {
-      console.log('📍 Buscando usuários com distância:', { latitude, longitude, radiusKm, searchTerm })
+      console.log('📍 Buscando usuários por proximidade:', { latitude, longitude, radiusKm, searchTerm })
 
       const { data, error } = await supabase
-        .rpc('search_users_with_distance', {
+        .rpc('get_users_by_proximity', {
           user_lat: latitude,
           user_lon: longitude,
-          search_term: searchTerm || null,
           radius_km: radiusKm
         })
 
       if (error) {
-        console.error('❌ Erro na busca com distância:', error)
+        console.error('❌ Erro na busca por proximidade:', error)
         const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20 })
         return fallbackResponse.users
       }
 
-      const users = (data || []).map((user: any) => ({
-        id: user.id,
-        nome: user.nome,
-        whatsapp: user.whatsapp,
-        descricao: user.descricao,
-        tags: user.tags,
-        foto_url: user.foto_url,
-        localizacao: user.localizacao,
-        status: user.status,
-        latitude: user.latitude,
-        longitude: user.longitude,
-        criado_em: user.criado_em,
-        atualizado_em: user.atualizado_em,
-        ultimo_acesso: user.ultimo_acesso,
-        perfil_completo: user.perfil_completo,
-        verificado: user.verificado,
+      let users = (data || []).map((user: any) => ({
+        ...user,
         distancia: user.distance_km
       }))
 
-      console.log(`✅ Encontrados ${users.length} usuários com distância calculada`)
+      // Intelligent search with scoring
+      if (searchTerm?.trim()) {
+        const term = searchTerm.trim().toLowerCase()
+        console.log(`🔍 Aplicando busca inteligente para termo: "${term}"`)
+
+        // Filter users that match the search term
+        users = users.filter((user: Usuario) => {
+          const matchesTags = user.tags?.some(tag => tag.toLowerCase().includes(term))
+          const matchesDescription = user.descricao?.toLowerCase().includes(term)
+          const matchesName = user.nome?.toLowerCase().includes(term)
+          const matchesLocation = user.localizacao?.toLowerCase().includes(term)
+
+          return matchesTags || matchesDescription || matchesName || matchesLocation
+        })
+
+        // Calculate match scores
+        const usersWithScore = users.map(user => ({
+          ...user,
+          matchScore: this.calculateMatchScore(user, term)
+        }))
+
+        // Sort by match score (descending), then by distance (ascending)
+        usersWithScore.sort((a, b) => {
+          if (b.matchScore !== a.matchScore) {
+            return b.matchScore - a.matchScore
+          }
+          return (a.distancia || 0) - (b.distancia || 0)
+        })
+
+        users = usersWithScore
+        console.log(`🎯 ${users.length} usuários encontrados e ordenados por relevância`)
+      } else {
+        // No search term - sort only by distance
+        users.sort((a, b) => (a.distancia || 0) - (b.distancia || 0))
+      }
+
+      console.log(`✅ Encontrados ${users.length} usuários próximos`)
       return users
     } catch (error) {
-      console.error('❌ Erro na busca com distância:', error)
+      console.error('❌ Erro na busca por proximidade:', error)
       const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20 })
       return fallbackResponse.users
     }
