@@ -418,15 +418,18 @@ function App() {
 
       if (resetPage) {
         setUsers(response.users)
+        console.log('✅ Primeira página ordenada:', response.users.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
       } else {
         setUsers(prev => {
           const combined = [...prev, ...response.users]
           if (userLocation && (combined.some(u => typeof u.distancia === 'number'))) {
-            return combined.sort((a, b) => {
+            const sorted = combined.sort((a, b) => {
               const distA = typeof a.distancia === 'number' ? a.distancia : Infinity
               const distB = typeof b.distancia === 'number' ? b.distancia : Infinity
               return distA - distB
             })
+            console.log('🔄 Array reordenado após scroll:', sorted.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
+            return sorted
           }
           return combined
         })
