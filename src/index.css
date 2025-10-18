@@ -1511,8 +1511,13 @@ input:-webkit-autofill:active {
   width: 100%;
   max-width: 600px;
   padding-top: 1rem;
+  padding-bottom: 2rem;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Search Header */
