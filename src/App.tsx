@@ -62,8 +62,12 @@ function App() {
 
   useEffect(() => {
     initializeApp()
-    setupBackButtonHandler()
   }, [])
+
+  useEffect(() => {
+    const cleanup = setupBackButtonHandler()
+    return cleanup
+  }, [navigationHistory, currentScreen, profileForm])
 
   useEffect(() => {
     if (currentScreen === 'feed') {
@@ -100,13 +104,19 @@ function App() {
   }
 
   const setupBackButtonHandler = () => {
-    const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault()
+    console.log('🔧 Configurando handler do botão voltar')
+
+    const handlePopState = () => {
+      console.log('⬅️ Botão voltar pressionado')
+      console.log('📱 Tela atual:', currentScreen)
+      console.log('📚 Histórico:', navigationHistory.length)
 
       if (navigationHistory.length > 1) {
-        // Prevent default browser back behavior
+        // Navigate back in app history
         const newHistory = navigationHistory.slice(0, -1)
         const previousState = newHistory[newHistory.length - 1]
+
+        console.log('🔙 Voltando para:', previousState.screen)
 
         // Handle profile-setup screen cleanup
         if (currentScreen === 'profile-setup') {
@@ -122,14 +132,13 @@ function App() {
               'Você tem alterações não salvas. Tem certeza que deseja voltar? As alterações serão perdidas.'
             )
             if (!confirmLeave) {
-              // User cancelled, push state back
+              console.log('❌ Usuário cancelou voltar')
               window.history.pushState({ screen: currentScreen }, '', `#${currentScreen}`)
               return
             }
           }
 
-          // Clear temporary user data
-          console.log('🔄 Botão nativo: Voltando da criação de perfil')
+          console.log('🧹 Limpando dados de perfil não salvos')
           setCurrentUser(null)
           setIsLoggedIn(false)
           setWhatsappNumber('')
@@ -150,13 +159,26 @@ function App() {
         setCurrentScreen(previousState.screen)
         setShowProfileMenu(false)
       } else {
-        // If we're at the home screen, let the browser handle it (close app)
-        console.log('🏠 Na tela inicial - permitindo fechar app')
+        console.log('🏠 Já na tela inicial - permitindo sair do app')
       }
     }
 
+    const handleBackButton = (e: Event) => {
+      e.preventDefault()
+      console.log('📱 Android back button detectado')
+      window.history.back()
+    }
+
     window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    document.addEventListener('backbutton', handleBackButton, false)
+
+    window.history.pushState({ screen: currentScreen }, '', `#${currentScreen}`)
+
+    return () => {
+      console.log('🧹 Limpando event listeners')
+      window.removeEventListener('popstate', handlePopState)
+      document.removeEventListener('backbutton', handleBackButton, false)
+    }
   }
 
   const navigateTo = (screen: Screen, data?: any) => {
