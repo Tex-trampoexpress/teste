@@ -24,6 +24,7 @@ body {
   background-color: var(--black);
   color: var(--white);
   min-height: 100vh;
+  min-height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -33,6 +34,13 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  height: -webkit-fill-available;
+  overflow-x: hidden;
 }
 
 /* Força orientação vertical em todos os dispositivos */
@@ -494,10 +502,28 @@ input:-webkit-autofill:active {
 
 /* Correções para mobile */
 @media (max-width: 768px) {
-  input, textarea {
+  input, textarea, select {
     padding: 0.8rem 1rem;
-    font-size: 16px; /* Previne zoom no iOS */
+    font-size: 16px !important; /* Previne zoom no iOS */
     border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 

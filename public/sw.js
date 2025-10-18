@@ -1,5 +1,5 @@
 // Service Worker para PWA - Versão Otimizada
-const CACHE_NAME = 'tex-v1.0.1'
+const CACHE_NAME = 'tex-v1.0.2'
 const STATIC_CACHE_URLS = [
   '/',
   '/index.html',
@@ -50,34 +50,52 @@ self.addEventListener('activate', (event) => {
 
 // Interceptar requisições
 self.addEventListener('fetch', (event) => {
-  // Estratégia: Network First, fallback para Cache
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Se a requisição foi bem-sucedida, clone e cache
-        if (response.status === 200) {
-          const responseClone = response.clone()
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseClone)
+  const { request } = event
+  const url = new URL(request.url)
+
+  // Ignorar requisições de APIs externas e Supabase
+  if (url.origin.includes('supabase') || url.origin.includes('mercadopago')) {
+    return
+  }
+
+  // Estratégia: Network First para HTML, Cache First para assets
+  if (request.destination === 'document') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 200) {
+            const responseClone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone)
             })
-        }
-        return response
-      })
-      .catch(() => {
-        // Se falhou, tenta buscar no cache
-        return caches.match(event.request)
-          .then((response) => {
-            if (response) {
-              return response
-            }
-            // Se não tem no cache, retorna página offline
-            if (event.request.destination === 'document') {
-              return caches.match('/')
-            }
+          }
+          return response
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            return cached || caches.match('/')
           })
+        })
+    )
+  } else {
+    // Cache First para assets (imagens, CSS, JS)
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) {
+          return cached
+        }
+        return fetch(request).then((response) => {
+          if (response.status === 200) {
+            const responseClone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone)
+            })
+          }
+          return response
+        })
       })
-  )
+    )
+  }
 })
 
 // Notificações Push (futuro)

@@ -3,7 +3,7 @@
   <head>
     <title>TEX - Cadastrar Serviços Grátis e Encontrar Clientes</title>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="screen-orientation" content="portrait" />
     <meta name="mobile-web-app-orientation" content="portrait" />
 
@@ -118,6 +118,51 @@
 
     <!-- Styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Compatibility Script - Carregado antes de tudo -->
+    <script>
+      // Detectar suporte a recursos do navegador
+      (function() {
+        // Polyfill para env() no CSS
+        if (!CSS.supports('padding-top', 'env(safe-area-inset-top)')) {
+          document.documentElement.style.setProperty('--sat', '0px');
+          document.documentElement.style.setProperty('--sar', '0px');
+          document.documentElement.style.setProperty('--sab', '0px');
+          document.documentElement.style.setProperty('--sal', '0px');
+        }
+
+        // Prevenir bounce no iOS
+        document.addEventListener('touchmove', function(e) {
+          if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            const scrollableParent = e.target.closest('.scrollable');
+            if (!scrollableParent) {
+              e.preventDefault();
+            }
+          }
+        }, { passive: false });
+
+        // Fix de altura para iOS
+        const setVH = () => {
+          const vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        setVH();
+        window.addEventListener('resize', setVH);
+        window.addEventListener('orientationchange', setVH);
+
+        // Debug info
+        console.log('📱 Device Info:', {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
+          standalone: window.navigator.standalone,
+          displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
