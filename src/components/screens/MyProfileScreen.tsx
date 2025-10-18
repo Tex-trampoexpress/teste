@@ -158,6 +158,17 @@ const MyProfileScreen: React.FC<MyProfileScreenProps> = ({
           Excluir Perfil
         </button>
       </div>
+
+      <div className="home-button-container">
+        <button
+          className="home-button-floating"
+          onClick={() => navigateTo('home')}
+          aria-label="Voltar para início"
+        >
+          <i className="fas fa-home"></i>
+          <span>Início</span>
+        </button>
+      </div>
     </div>
   )
 }

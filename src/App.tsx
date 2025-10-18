@@ -282,7 +282,7 @@ function App() {
         localStorage.setItem('tex-current-user', JSON.stringify(existingUser))
         await DatabaseService.updateLastAccess(existingUser.id)
         toast.success(`Bem-vindo de volta, ${existingUser.nome}!`)
-        navigateTo('feed')
+        navigateTo('my-profile')
       } else {
         console.log('❌ Número não encontrado - preparando criação de perfil')
         const newUserId = crypto.randomUUID()
