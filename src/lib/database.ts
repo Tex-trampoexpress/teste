@@ -370,8 +370,55 @@ export class DatabaseService {
     search?: string
     limit?: number
     page?: number
+    userLocation?: { latitude: number, longitude: number }
   }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
+    // Se tiver localização do usuário E termo de busca, usar função otimizada
+    if (filters?.userLocation && filters?.search?.trim()) {
+      return this.getUsuariosComDistancia(filters)
+    }
     return this.getUsuariosSimple(filters)
+  }
+
+  // Busca com distância usando função SQL otimizada
+  private static async getUsuariosComDistancia(filters: {
+    status?: 'available' | 'busy'
+    search?: string
+    limit?: number
+    page?: number
+    userLocation: { latitude: number, longitude: number }
+  }): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
+    try {
+      console.log('🔍 Busca com distância:', filters.search)
+
+      const { data, error } = await supabase
+        .rpc('search_users_with_distance', {
+          user_lat: filters.userLocation.latitude,
+          user_lon: filters.userLocation.longitude,
+          search_term: filters.search || '',
+          radius_km: 100
+        })
+
+      if (error) {
+        console.error('❌ Erro na busca com distância:', error)
+        return this.getUsuariosSimple(filters)
+      }
+
+      const users = (data || []).map((user: any) => ({
+        ...user,
+        distancia: user.distance_km
+      }))
+
+      console.log(`✅ ${users.length} usuários encontrados com distância`)
+
+      return {
+        users,
+        hasMore: false,
+        total: users.length
+      }
+    } catch (error) {
+      console.error('❌ Erro na busca com distância:', error)
+      return this.getUsuariosSimple(filters)
+    }
   }
 
   // Fallback simple search with intelligent scoring

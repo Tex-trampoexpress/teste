@@ -411,7 +411,8 @@ function App() {
           search: searchTerm,
           status: 'available',
           limit: 20,
-          page: resetPage ? 1 : page
+          page: resetPage ? 1 : page,
+          userLocation: userLocation || undefined
         })
         results = response.users
         hasMoreResults = response.hasMore
