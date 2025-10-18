@@ -406,6 +406,7 @@ function App() {
           20,
           offset
         )
+        console.log('🔍 Usuários retornados com distância:', response.users.map(u => ({ nome: u.nome, distancia: u.distancia })))
       } else {
         response = await DatabaseService.getUsuarios({
           search: searchTerm,

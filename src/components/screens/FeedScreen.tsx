@@ -246,7 +246,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
                 <div className="profile-info">
                   <div className="profile-name-distance">
                     <h2>{user.nome}</h2>
-                    {user.distancia !== undefined && user.distancia !== null && (
+                    {typeof user.distancia === 'number' && (
                       <span className="distance-badge">
                         <i className="fas fa-map-marker-alt"></i>
                         {user.distancia.toFixed(1)} km
