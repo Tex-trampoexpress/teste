@@ -200,7 +200,15 @@ export class DatabaseService {
     offset: number = 0
   ): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
-      console.log('📍 Buscando usuários próximos:', { latitude, longitude, radiusKm, searchTerm, limit, offset })
+      console.log('🔍 ===== INICIANDO BUSCA POR PROXIMIDADE =====')
+      console.log('📍 Parâmetros:', {
+        userLat: latitude,
+        userLng: longitude,
+        radiusKm,
+        searchTerm: searchTerm || '(sem filtro)',
+        limit,
+        offset
+      })
 
       // Buscar TODOS os usuários com perfil completo e localização
       let query = supabase
@@ -213,17 +221,21 @@ export class DatabaseService {
       // Aplicar filtro de busca se houver
       if (searchTerm?.trim()) {
         const term = searchTerm.trim()
+        console.log('🔎 Aplicando filtro de busca:', term)
         query = query.or(`nome.ilike.%${term}%,descricao.ilike.%${term}%`)
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('❌ Erro na busca:', error)
+        console.error('❌ Erro na busca no banco:', error)
         return { users: [], hasMore: false, total: 0 }
       }
 
-      console.log(`📊 Total de usuários no banco: ${data?.length || 0}`)
+      console.log(`📊 Total de usuários retornados do banco: ${data?.length || 0}`)
+      if (data && data.length > 0) {
+        console.log('👥 Usuários do banco:', data.map(u => `${u.nome} (${u.latitude?.toFixed(4)}, ${u.longitude?.toFixed(4)})`).join(', '))
+      }
 
       // Calcular distância usando fórmula de Haversine (mais precisa)
       const toRad = (value: number) => (value * Math.PI) / 180
@@ -246,10 +258,16 @@ export class DatabaseService {
         return { ...user, distancia }
       })
 
+      // Mostrar todas as distâncias calculadas
+      console.log('📏 Distâncias calculadas:')
+      usersWithDistance.forEach(u => {
+        console.log(`   ${u.nome}: ${u.distancia.toFixed(2)}km`)
+      })
+
       // Filtrar por raio
       const filteredUsers = usersWithDistance.filter(u => u.distancia <= radiusKm)
 
-      console.log(`🎯 Usuários dentro do raio de ${radiusKm}km: ${filteredUsers.length}`)
+      console.log(`\n🎯 Usuários dentro do raio de ${radiusKm}km: ${filteredUsers.length}/${usersWithDistance.length}`)
 
       // Ordenar por distância
       filteredUsers.sort((a, b) => a.distancia - b.distancia)
@@ -258,12 +276,18 @@ export class DatabaseService {
       const paginatedUsers = filteredUsers.slice(offset, offset + limit)
       const hasMore = (offset + limit) < filteredUsers.length
 
+      console.log(`📄 Paginação: offset=${offset}, limit=${limit}, retornando ${paginatedUsers.length} usuários`)
+      console.log(`✅ Tem mais páginas? ${hasMore}\n`)
+
       if (paginatedUsers.length > 0) {
-        console.log('🗺️ Primeiros resultados:')
-        paginatedUsers.slice(0, 5).forEach(u => {
-          console.log(`   - ${u.nome}: ${u.distancia.toFixed(2)}km (${u.status})`)
+        console.log('🗺️ Resultados desta página:')
+        paginatedUsers.forEach((u, i) => {
+          console.log(`   ${i + 1}. ${u.nome}: ${u.distancia.toFixed(2)}km (status: ${u.status})`)
         })
+      } else {
+        console.log('⚠️ Nenhum usuário nesta página')
       }
+      console.log('🔍 ===== FIM DA BUSCA =====')
 
       return {
         users: paginatedUsers,
