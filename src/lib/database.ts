@@ -440,19 +440,31 @@ export class DatabaseService {
       }
 
       // Apply intelligent scoring if search term exists
-      if (filters?.search?.trim()) {
-        const term = filters.search.trim()
+      const hasSearchTerm = !!filters?.search?.trim()
+      if (hasSearchTerm) {
+        const term = filters.search!.trim()
 
         // Add match score to each user
-        const usersWithScore = users.map(user => ({
+        users = users.map(user => ({
           ...user,
           matchScore: this.calculateMatchScore(user, term)
         }))
+      }
 
-        // Sort by match score (descending)
-        usersWithScore.sort((a, b) => b.matchScore - a.matchScore)
+      // Sort users: ALWAYS by distance first if available
+      if (hasUserLocation && users.some(u => u.distancia !== undefined)) {
+        users.sort((a, b) => {
+          // Users without location go to the end
+          if (a.distancia === undefined) return 1
+          if (b.distancia === undefined) return -1
 
-        users = usersWithScore
+          // Primary sort: DISTANCE (closer first)
+          return a.distancia - b.distancia
+        })
+        console.log(`📍 ${users.length} usuários ordenados por distância`)
+      } else if (hasSearchTerm) {
+        // Sort by match score only if no location
+        users.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
         console.log(`🎯 ${users.length} usuários ordenados por relevância`)
       }
 
