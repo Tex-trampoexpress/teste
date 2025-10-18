@@ -484,11 +484,11 @@ export class DatabaseService {
     return score
   }
 
-  // Get users by proximity with intelligent search using SQL function
+  // Get users by proximity - SIMPLE JavaScript calculation
   static async getUsersByProximity(
     latitude: number,
     longitude: number,
-    radiusKm: number = 10,
+    radiusKm: number = 100,
     searchTerm?: string,
     limit: number = 20,
     offset: number = 0
@@ -496,51 +496,63 @@ export class DatabaseService {
     try {
       console.log('📍 Buscando usuários com distância:', { latitude, longitude, radiusKm, searchTerm, limit, offset })
 
-      const { data, error } = await supabase
-        .rpc('search_users_by_distance', {
-          user_lat: latitude,
-          user_lon: longitude,
-          search_term: searchTerm || null,
-          radius_km: radiusKm,
-          result_limit: limit,
-          result_offset: offset
-        })
+      // Filtro geográfico aproximado (raio em graus)
+      const latRange = radiusKm / 111.0
+      const lngRange = radiusKm / (111.0 * Math.cos(latitude * Math.PI / 180))
 
-      if (error) {
-        console.error('❌ Erro na busca com distância:', error)
-        const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20, page: 1 })
-        return fallbackResponse
+      let query = supabase
+        .from('usuarios')
+        .select('*', { count: 'exact' })
+        .eq('perfil_completo', true)
+        .eq('status', 'available')
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .gte('latitude', latitude - latRange)
+        .lte('latitude', latitude + latRange)
+        .gte('longitude', longitude - lngRange)
+        .lte('longitude', longitude + lngRange)
+
+      // Filtro por texto
+      if (searchTerm?.trim()) {
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
       }
 
-      const users = (data || []).map((user: any) => ({
-        id: user.id,
-        nome: user.nome,
-        whatsapp: user.whatsapp,
-        descricao: user.descricao,
-        tags: user.tags,
-        foto_url: user.foto_url,
-        localizacao: user.localizacao,
-        status: user.status,
-        latitude: user.latitude,
-        longitude: user.longitude,
-        criado_em: user.criado_em,
-        atualizado_em: user.atualizado_em,
-        ultimo_acesso: user.ultimo_acesso,
-        perfil_completo: user.perfil_completo,
-        verificado: user.verificado,
-        distancia: user.distance_km
-      }))
+      const { data, error, count } = await query
 
-      const total = users.length > 0 ? (users[0] as any).total_count || users.length : 0
-      const hasMore = (offset + users.length) < total
+      if (error) {
+        console.error('❌ Erro na busca:', error)
+        return { users: [], hasMore: false, total: 0 }
+      }
 
-      console.log(`✅ Encontrados ${users.length} usuários | Total: ${total} | Mais: ${hasMore}`)
-      console.log('🗺️ Usuários com distância:', users.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
-      return { users, hasMore, total }
+      // Calcular distância no JavaScript
+      const users = (data || []).map(user => {
+        const latDiff = user.latitude! - latitude
+        const lngDiff = user.longitude! - longitude
+        const distancia = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111
+        return { ...user, distancia }
+      })
+
+      // Filtrar por raio exato
+      const filteredUsers = users.filter(u => u.distancia! <= radiusKm)
+
+      // ORDENAR do MAIS PERTO pro MAIS LONGE
+      filteredUsers.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
+
+      // Aplicar paginação
+      const paginatedUsers = filteredUsers.slice(offset, offset + limit)
+      const hasMore = (offset + paginatedUsers.length) < filteredUsers.length
+
+      console.log(`✅ Encontrados ${filteredUsers.length} usuários em ${radiusKm}km`)
+      console.log('🗺️ Ordenados por distância:', paginatedUsers.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
+
+      return {
+        users: paginatedUsers,
+        hasMore,
+        total: filteredUsers.length
+      }
     } catch (error) {
       console.error('❌ Erro na busca com distância:', error)
-      const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20, page: 1 })
-      return fallbackResponse
+      return { users: [], hasMore: false, total: 0 }
     }
   }
 
