@@ -393,41 +393,38 @@ function App() {
     }
 
     try {
-      let results: Usuario[] = []
-      let hasMoreResults = false
-      let total = 0
+      const currentPage = resetPage ? 1 : page
+      let response: { users: Usuario[], hasMore: boolean, total: number }
 
       if (userLocation) {
-        results = await DatabaseService.getUsersByProximity(
+        const offset = (currentPage - 1) * 20
+        response = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
-          proximityEnabled ? proximityRadius : 1000,
-          searchTerm
+          proximityEnabled ? proximityRadius : 100,
+          searchTerm,
+          20,
+          offset
         )
-        hasMoreResults = false
-        total = results.length
       } else {
-        const response = await DatabaseService.getUsuarios({
+        response = await DatabaseService.getUsuarios({
           search: searchTerm,
           status: 'available',
           limit: 20,
-          page: resetPage ? 1 : page
+          page: currentPage
         })
-        results = response.users
-        hasMoreResults = response.hasMore
-        total = response.total
       }
 
       if (resetPage) {
-        setUsers(results)
+        setUsers(response.users)
       } else {
-        setUsers(prev => [...prev, ...results])
+        setUsers(prev => [...prev, ...response.users])
       }
 
-      setHasMore(hasMoreResults)
-      setTotalUsers(total)
+      setHasMore(response.hasMore)
+      setTotalUsers(response.total)
 
-      console.log(`📊 Total: ${total}, Carregados: ${results.length}, Mais: ${hasMoreResults}`)
+      console.log(`📊 Total: ${response.total}, Carregados: ${response.users.length}, Mais: ${response.hasMore}`)
     } catch (error) {
       console.error('Search error:', error)
       toast.error('Erro na busca. Tente novamente.')
@@ -438,8 +435,8 @@ function App() {
   }
 
   const loadMoreUsers = async () => {
-    if (isLoadingMore || !hasMore || loading || proximityEnabled) {
-      console.log(`⏸️ loadMoreUsers bloqueado: isLoadingMore=${isLoadingMore}, hasMore=${hasMore}, loading=${loading}, proximity=${proximityEnabled}`)
+    if (isLoadingMore || !hasMore || loading) {
+      console.log(`⏸️ loadMoreUsers bloqueado: isLoadingMore=${isLoadingMore}, hasMore=${hasMore}, loading=${loading}`)
       return
     }
 
@@ -450,12 +447,26 @@ function App() {
     setPage(nextPage)
 
     try {
-      const response = await DatabaseService.getUsuarios({
-        search: searchTerm,
-        status: 'available',
-        limit: 20,
-        page: nextPage
-      })
+      let response: { users: Usuario[], hasMore: boolean, total: number }
+
+      if (userLocation) {
+        const offset = (nextPage - 1) * 20
+        response = await DatabaseService.getUsersByProximity(
+          userLocation.latitude,
+          userLocation.longitude,
+          proximityEnabled ? proximityRadius : 100,
+          searchTerm,
+          20,
+          offset
+        )
+      } else {
+        response = await DatabaseService.getUsuarios({
+          search: searchTerm,
+          status: 'available',
+          limit: 20,
+          page: nextPage
+        })
+      }
 
       console.log(`📦 [LOAD MORE] Resposta: ${response.users.length} usuários, hasMore=${response.hasMore}, total=${response.total}`)
 
@@ -482,6 +493,7 @@ function App() {
 
   const handleTagClick = (tag: string) => {
     setSearchTerm(tag)
+    setTimeout(() => searchUsers(), 100)
   }
 
   const addTag = (tag: string) => {

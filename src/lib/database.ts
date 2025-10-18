@@ -489,23 +489,27 @@ export class DatabaseService {
     latitude: number,
     longitude: number,
     radiusKm: number = 10,
-    searchTerm?: string
-  ): Promise<Usuario[]> {
+    searchTerm?: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
-      console.log('📍 Buscando usuários com distância:', { latitude, longitude, radiusKm, searchTerm })
+      console.log('📍 Buscando usuários com distância:', { latitude, longitude, radiusKm, searchTerm, limit, offset })
 
       const { data, error } = await supabase
-        .rpc('search_users_with_distance', {
+        .rpc('search_users_by_distance', {
           user_lat: latitude,
           user_lon: longitude,
           search_term: searchTerm || null,
-          radius_km: radiusKm
+          radius_km: radiusKm,
+          result_limit: limit,
+          result_offset: offset
         })
 
       if (error) {
         console.error('❌ Erro na busca com distância:', error)
-        const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20 })
-        return fallbackResponse.users
+        const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20, page: 1 })
+        return fallbackResponse
       }
 
       const users = (data || []).map((user: any) => ({
@@ -527,12 +531,15 @@ export class DatabaseService {
         distancia: user.distance_km
       }))
 
-      console.log(`✅ Encontrados ${users.length} usuários com distância calculada`)
-      return users
+      const total = users.length > 0 ? (users[0] as any).total_count || users.length : 0
+      const hasMore = (offset + users.length) < total
+
+      console.log(`✅ Encontrados ${users.length} usuários | Total: ${total} | Mais: ${hasMore}`)
+      return { users, hasMore, total }
     } catch (error) {
       console.error('❌ Erro na busca com distância:', error)
-      const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20 })
-      return fallbackResponse.users
+      const fallbackResponse = await this.getUsuarios({ status: 'available', limit: 20, page: 1 })
+      return fallbackResponse
     }
   }
 
@@ -543,18 +550,20 @@ export class DatabaseService {
 
   // Search users by tags
   static async searchByTags(tags: string[]): Promise<Usuario[]> {
-    return this.getUsuarios({ 
-      tags, 
-      status: 'available' 
+    const response = await this.getUsuarios({
+      search: tags[0],
+      status: 'available'
     })
+    return response.users
   }
 
   // Get users by location text search
   static async getUsersByLocation(location: string): Promise<Usuario[]> {
-    return this.getUsuarios({
+    const response = await this.getUsuarios({
       search: location,
       status: 'available'
     })
+    return response.users
   }
 
   // Check if WhatsApp number is already registered (CORRIGIDO)
