@@ -9,6 +9,10 @@ interface TermsAcceptanceModalProps {
 const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({ userType, onAccept, onDecline }) => {
   const [hasScrolled, setHasScrolled] = useState(false)
 
+  console.log('🎭 TermsAcceptanceModal renderizado!')
+  console.log('📝 Tipo de usuário:', userType)
+  console.log('📜 hasScrolled:', hasScrolled)
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement
     const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50

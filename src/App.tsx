@@ -313,17 +313,28 @@ function App() {
 
   const handleExploreClick = () => {
     console.log('🔍 Botão Explorar clicado')
+    console.log('👤 isLoggedIn:', isLoggedIn)
+    console.log('📺 currentScreen:', currentScreen)
+    console.log('🎭 showTermsModal ANTES:', showTermsModal)
 
     // Se não está logado, sempre mostrar modal de termos (forçar fluxo)
     if (!isLoggedIn) {
       console.log('👤 Usuário não logado - forçando modal de termos')
       localStorage.removeItem('tex-client-terms-accepted')
+
+      console.log('📝 Configurando modal...')
       setTermsModalType('client')
+
+      console.log('🎭 Setando showTermsModal para TRUE')
       setShowTermsModal(true)
+
+      console.log('⏳ Configurando ação pendente')
       setPendingAction(() => () => {
         console.log('🎯 Executando ação pendente: ir para feed')
         navigateTo('feed')
       })
+
+      console.log('✅ Modal configurado - NÃO vai mudar de tela')
       return
     }
 
@@ -803,6 +814,11 @@ function App() {
         return <HomeScreen searchTerm={searchTerm} onSearchTermChange={setSearchTerm} onSearchEnter={handleExploreClick} navigateTo={handleExploreClick} navigateToScreen={navigateTo} locationStatus={locationStatus} requestLocation={requestLocation} renderProfileHeader={renderProfileHeader} />
     }
   }
+
+  console.log('🎨 RENDERIZANDO APP')
+  console.log('📺 currentScreen:', currentScreen)
+  console.log('🎭 showTermsModal:', showTermsModal)
+  console.log('📝 termsModalType:', termsModalType)
 
   return (
     <div className="App">
