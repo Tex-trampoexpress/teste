@@ -205,7 +205,7 @@ export class DatabaseService {
       const latRange = radiusKm / 111.0
       const lngRange = radiusKm / (111.0 * Math.cos(latitude * Math.PI / 180))
 
-      let query = supabase
+      const query = supabase
         .from('usuarios')
         .select('*', { count: 'exact' })
         .eq('perfil_completo', true)
@@ -216,11 +216,6 @@ export class DatabaseService {
         .lte('latitude', latitude + latRange)
         .gte('longitude', longitude - lngRange)
         .lte('longitude', longitude + lngRange)
-
-      if (searchTerm?.trim()) {
-        const term = searchTerm.trim().toLowerCase()
-        query = query.or(`nome.ilike.%${term}%,descricao.ilike.%${term}%`)
-      }
 
       const { data, error, count } = await query
 
@@ -236,30 +231,48 @@ export class DatabaseService {
         return { ...user, distancia }
       })
 
+      console.log(`📦 Total de usuários retornados do banco: ${users.length}`)
+
+      const usersInRadius = users.filter(u => u.distancia! <= radiusKm)
+      console.log(`📍 Usuários dentro do raio de ${radiusKm}km: ${usersInRadius.length}`)
+
       if (searchTerm?.trim()) {
         const term = searchTerm.trim().toLowerCase()
-        users = users.filter(user => {
+        console.log(`🔍 Filtrando por termo de busca: "${term}"`)
+
+        users = usersInRadius.filter(user => {
           const nomeMatch = user.nome.toLowerCase().includes(term)
           const descricaoMatch = user.descricao.toLowerCase().includes(term)
           const tagsMatch = user.tags.some(tag => tag.toLowerCase().includes(term))
-          return nomeMatch || descricaoMatch || tagsMatch
+          const match = nomeMatch || descricaoMatch || tagsMatch
+
+          if (match) {
+            console.log(`  ✅ ${user.nome} - Distância: ${user.distancia?.toFixed(1)}km`, {
+              nomeMatch,
+              descricaoMatch,
+              tagsMatch: tagsMatch ? user.tags.filter(t => t.toLowerCase().includes(term)) : []
+            })
+          }
+
+          return match
         })
+        console.log(`✅ ${users.length} usuários encontrados após filtro de busca`)
+      } else {
+        users = usersInRadius
       }
 
-      const filteredUsers = users.filter(u => u.distancia! <= radiusKm)
+      users.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
 
-      filteredUsers.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
+      const paginatedUsers = users.slice(offset, offset + limit)
+      const hasMore = (offset + paginatedUsers.length) < users.length
 
-      const paginatedUsers = filteredUsers.slice(offset, offset + limit)
-      const hasMore = (offset + paginatedUsers.length) < filteredUsers.length
-
-      console.log(`✅ Encontrados ${filteredUsers.length} usuários em ${radiusKm}km`)
+      console.log(`📊 Retornando ${paginatedUsers.length} usuários (total: ${users.length})`)
       console.log('🗺️ Ordenados por distância:', paginatedUsers.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
 
       return {
         users: paginatedUsers,
         hasMore,
-        total: filteredUsers.length
+        total: users.length
       }
     } catch (error) {
       console.error('❌ Erro na busca com distância:', error)
