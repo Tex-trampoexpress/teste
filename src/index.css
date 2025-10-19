@@ -289,6 +289,9 @@ body::before {
   gap: 0.5rem;
   justify-content: flex-start;
   min-height: calc(100vh - 140px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .screen.active {
@@ -1514,10 +1517,6 @@ input:-webkit-autofill:active {
   padding-bottom: 2rem;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  height: 100vh;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Search Header */
