@@ -90,14 +90,6 @@ function App() {
   const initializeApp = async () => {
     console.log('🚀 Inicializando aplicação TEX...')
 
-    // Para teste: limpar termos do cliente apenas na primeira carga da sessão
-    const firstLoad = !sessionStorage.getItem('tex-app-loaded')
-    if (firstLoad) {
-      console.log('🧹 Primeira carga da sessão - limpando termos de teste')
-      localStorage.removeItem('tex-client-terms-accepted')
-      sessionStorage.setItem('tex-app-loaded', 'true')
-    }
-
     const savedUser = localStorage.getItem('tex-current-user')
     if (savedUser) {
       try {
@@ -322,7 +314,20 @@ function App() {
   const handleExploreClick = () => {
     console.log('🔍 Botão Explorar clicado')
 
-    // Limpa o cache de termos para forçar a verificação
+    // Se não está logado, sempre mostrar modal de termos (forçar fluxo)
+    if (!isLoggedIn) {
+      console.log('👤 Usuário não logado - forçando modal de termos')
+      localStorage.removeItem('tex-client-terms-accepted')
+      setTermsModalType('client')
+      setShowTermsModal(true)
+      setPendingAction(() => () => {
+        console.log('🎯 Executando ação pendente: ir para feed')
+        navigateTo('feed')
+      })
+      return
+    }
+
+    // Se está logado, verifica termos normalmente
     const termsAccepted = checkClientTermsAcceptance()
     console.log('✅ Termos aceitos?', termsAccepted)
     console.log('📦 LocalStorage:', localStorage.getItem('tex-client-terms-accepted'))
