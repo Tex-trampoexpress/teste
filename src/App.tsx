@@ -277,17 +277,27 @@ function App() {
   }
 
   const handleTermsAccept = () => {
+    console.log('✅ Termos aceitos! Tipo:', termsModalType)
+
     if (termsModalType === 'client') {
       localStorage.setItem('tex-client-terms-accepted', 'true')
+      console.log('💾 Salvando aceite de termos do cliente no localStorage')
       toast.success('Termos aceitos com sucesso!')
     } else {
       localStorage.setItem('tex-provider-terms-accepted', 'true')
+      console.log('💾 Salvando aceite de termos do prestador no localStorage')
       toast.success('Termos aceitos! Você pode continuar.')
     }
+
     setShowTermsModal(false)
+    console.log('🔒 Modal fechado')
+
     if (pendingAction) {
+      console.log('🚀 Executando ação pendente...')
       pendingAction()
       setPendingAction(null)
+    } else {
+      console.log('⚠️ Nenhuma ação pendente encontrada')
     }
   }
 
@@ -298,11 +308,20 @@ function App() {
   }
 
   const handleExploreClick = () => {
-    if (!checkClientTermsAcceptance()) {
+    console.log('🔍 Botão Explorar clicado')
+    const termsAccepted = checkClientTermsAcceptance()
+    console.log('✅ Termos aceitos?', termsAccepted)
+
+    if (!termsAccepted) {
+      console.log('📋 Mostrando modal de termos do cliente')
       setTermsModalType('client')
       setShowTermsModal(true)
-      setPendingAction(() => () => navigateTo('feed'))
+      setPendingAction(() => () => {
+        console.log('🎯 Executando ação pendente: ir para feed')
+        navigateTo('feed')
+      })
     } else {
+      console.log('✅ Termos já aceitos, indo direto para feed')
       navigateTo('feed')
     }
   }
