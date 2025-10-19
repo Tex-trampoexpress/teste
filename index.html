@@ -131,26 +131,8 @@
           document.documentElement.style.setProperty('--sal', '0px');
         }
 
-        // Prevenir bounce apenas na borda do documento
-        let lastTouchY = 0;
-        document.addEventListener('touchstart', function(e) {
-          lastTouchY = e.touches[0].clientY;
-        }, { passive: true });
-
-        document.addEventListener('touchmove', function(e) {
-          const scrollY = window.scrollY || window.pageYOffset;
-          const touchY = e.touches[0].clientY;
-          const scrollingUp = touchY > lastTouchY;
-          const scrollingDown = touchY < lastTouchY;
-
-          // Prevenir bounce apenas nas bordas
-          if ((scrollingUp && scrollY === 0) ||
-              (scrollingDown && (window.innerHeight + scrollY) >= document.body.offsetHeight)) {
-            e.preventDefault();
-          }
-
-          lastTouchY = touchY;
-        }, { passive: false });
+        // Permitir scroll nativo em Android e iOS
+        // Navegadores modernos já lidam corretamente com overscroll
 
         // Fix de altura para iOS
         const setVH = () => {
