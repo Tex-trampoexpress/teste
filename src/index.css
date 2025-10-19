@@ -25,30 +25,23 @@ body {
   color: var(--white);
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-height: 100%;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 html {
+  width: 100%;
+  height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
-}
-
-/* Força orientação vertical em todos os dispositivos */
-@media screen and (orientation: landscape) and (max-height: 600px) {
-  html {
-    transform: rotate(-90deg);
-    transform-origin: left top;
-    width: 100vh;
-    height: 100vw;
-    overflow-x: hidden;
-    position: absolute;
-    top: 100%;
-    left: 0;
-  }
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Animated background */
@@ -278,6 +271,7 @@ body::before {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 /* Screen Management */
@@ -287,10 +281,12 @@ body::before {
   flex-direction: column;
   align-items: center;
   padding: 0.5rem;
+  padding-bottom: 80px;
   margin-top: 0;
   gap: 0.5rem;
   justify-content: flex-start;
   width: 100%;
+  position: relative;
 }
 
 .screen.active {
