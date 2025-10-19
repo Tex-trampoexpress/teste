@@ -423,7 +423,7 @@ function App() {
         response = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
-          100,
+          proximityEnabled ? proximityRadius : 100,
           searchTerm,
           20,
           offset
@@ -490,7 +490,7 @@ function App() {
         response = await DatabaseService.getUsersByProximity(
           userLocation.latitude,
           userLocation.longitude,
-          100,
+          proximityEnabled ? proximityRadius : 100,
           searchTerm,
           20,
           offset

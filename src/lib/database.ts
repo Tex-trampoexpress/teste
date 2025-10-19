@@ -1,14 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
 
 export interface Usuario {
   id: string
-  whatsapp: string
   nome: string
+  whatsapp: string
   descricao: string
   tags: string[]
   foto_url: string
@@ -18,21 +22,22 @@ export interface Usuario {
   longitude: number | null
   criado_em: string
   atualizado_em: string
-  ultimo_acesso: string
-  visualizacoes: number
-  taxa_paga: boolean
+  ultimo_acesso: string | null
+  perfil_completo: boolean
+  verificado: boolean
+  distancia?: number
 }
 
 export interface CreateUsuarioData {
   whatsapp: string
-  nome: string
-  descricao: string
-  tags: string[]
-  foto_url: string
-  localizacao: string
-  status: 'available' | 'busy'
-  latitude: number | null
-  longitude: number | null
+  nome?: string
+  descricao?: string
+  tags?: string[]
+  foto_url?: string
+  localizacao?: string
+  status?: 'available' | 'busy'
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export interface UpdateUsuarioData {
@@ -44,174 +49,244 @@ export interface UpdateUsuarioData {
   status?: 'available' | 'busy'
   latitude?: number | null
   longitude?: number | null
+  perfil_completo?: boolean
 }
 
-export interface SearchFilters {
-  searchTerm?: string
-  tags?: string[]
+export interface GetUsuariosOptions {
+  search?: string
+  status?: 'available' | 'busy'
   limit?: number
-  offset?: number
-}
-
-export interface SearchResponse {
-  data: Usuario[]
-  total: number
-  hasMore: boolean
+  page?: number
+  tags?: string[]
+  userLat?: number | null
+  userLng?: number | null
 }
 
 export class DatabaseService {
-  static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
-    try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('whatsapp', whatsapp)
-        .maybeSingle()
+  static async createUsuario(data: CreateUsuarioData): Promise<Usuario> {
+    const { data: usuario, error } = await supabase
+      .from('usuarios')
+      .insert([{
+        whatsapp: data.whatsapp,
+        nome: data.nome || '',
+        descricao: data.descricao || '',
+        tags: data.tags || [],
+        foto_url: data.foto_url || '',
+        localizacao: data.localizacao || '',
+        status: data.status || 'available',
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        perfil_completo: false,
+        verificado: false
+      }])
+      .select()
+      .single()
 
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error('Error getting user by WhatsApp:', error)
-      throw error
-    }
+    if (error) throw error
+    return usuario
   }
 
-  static async createUsuario(data: CreateUsuarioData): Promise<Usuario> {
-    try {
-      const { data: usuario, error } = await supabase
-        .from('usuarios')
-        .insert([{
-          whatsapp: data.whatsapp,
-          nome: data.nome,
-          descricao: data.descricao,
-          tags: data.tags,
-          foto_url: data.foto_url,
-          localizacao: data.localizacao,
-          status: data.status,
-          latitude: data.latitude,
-          longitude: data.longitude
-        }])
-        .select()
-        .single()
+  static async getUsuarioByWhatsApp(whatsapp: string): Promise<Usuario | null> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('whatsapp', whatsapp)
+      .maybeSingle()
 
-      if (error) throw error
-      return usuario
-    } catch (error) {
-      console.error('Error creating user:', error)
-      throw error
-    }
+    if (error) throw error
+    return data
   }
 
   static async updateUsuario(id: string, data: UpdateUsuarioData): Promise<Usuario> {
-    try {
-      const { data: usuario, error } = await supabase
-        .from('usuarios')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single()
+    const { data: usuario, error } = await supabase
+      .from('usuarios')
+      .update({
+        ...data,
+        atualizado_em: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
 
-      if (error) throw error
-      return usuario
-    } catch (error) {
-      console.error('Error updating user:', error)
-      throw error
-    }
+    if (error) throw error
+    return usuario
   }
 
   static async deleteUsuario(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('usuarios')
-        .delete()
-        .eq('id', id)
+    const { error } = await supabase
+      .from('usuarios')
+      .delete()
+      .eq('id', id)
 
-      if (error) throw error
-    } catch (error) {
-      console.error('Error deleting user:', error)
-      throw error
-    }
+    if (error) throw error
   }
 
-  static async updateLastAccess(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ ultimo_acesso: new Date().toISOString() })
-        .eq('id', id)
+  static async getUsuarios(options: GetUsuariosOptions = {}): Promise<{
+    users: Usuario[]
+    hasMore: boolean
+    total: number
+  }> {
+    const {
+      search = '',
+      status,
+      limit = 20,
+      page = 1,
+      tags = [],
+      userLat = null,
+      userLng = null
+    } = options
 
-      if (error) throw error
-    } catch (error) {
-      console.error('Error updating last access:', error)
-      throw error
+    const from = (page - 1) * limit
+    const to = from + limit - 1
+
+    let query = supabase
+      .from('usuarios')
+      .select('*', { count: 'exact' })
+      .eq('perfil_completo', true)
+
+    if (status) {
+      query = query.eq('status', status)
     }
-  }
 
-  static async getUsuarios(filters: SearchFilters = {}): Promise<SearchResponse> {
-    try {
-      const { searchTerm = '', tags = [], limit = 20, offset = 0 } = filters
+    if (search) {
+      query = query.or(`nome.ilike.%${search}%,descricao.ilike.%${search}%`)
+    }
 
-      let query = supabase
-        .from('usuarios')
-        .select('*', { count: 'exact' })
-        .eq('taxa_paga', true)
-        .order('atualizado_em', { ascending: false })
+    if (tags.length > 0) {
+      query = query.contains('tags', tags)
+    }
 
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
-      }
+    if (userLat !== null && userLng !== null) {
+      query = query
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+    }
 
-      if (tags.length > 0) {
-        query = query.contains('tags', tags)
-      }
+    const { data, error, count } = await query
+      .order('atualizado_em', { ascending: false })
+      .range(from, to)
 
-      const { data, error, count } = await query.range(offset, offset + limit - 1)
+    if (error) throw error
 
-      if (error) throw error
+    let users = data || []
 
-      return {
-        data: data || [],
-        total: count || 0,
-        hasMore: (count || 0) > offset + limit
-      }
-    } catch (error) {
-      console.error('Error getting users:', error)
-      throw error
+    if (userLat !== null && userLng !== null) {
+      users = users.map(user => {
+        if (user.latitude && user.longitude) {
+          const latDiff = user.latitude - userLat
+          const lngDiff = user.longitude - userLng
+          const distancia = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111
+          return { ...user, distancia }
+        }
+        return user
+      })
+
+      users.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
+    }
+
+    return {
+      users,
+      hasMore: users.length === limit,
+      total: count || 0
     }
   }
 
   static async getUsersByProximity(
     latitude: number,
     longitude: number,
-    radiusKm: number,
-    filters: SearchFilters = {}
-  ): Promise<SearchResponse> {
+    radiusKm: number = 100,
+    searchTerm?: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{ users: Usuario[], hasMore: boolean, total: number }> {
     try {
-      const { searchTerm = '', tags = [], limit = 20, offset = 0 } = filters
+      console.log('📍 Buscando usuários com distância:', { latitude, longitude, radiusKm, searchTerm, limit, offset })
 
-      const { data, error } = await supabase.rpc('search_usuarios_by_distance', {
-        user_lat: latitude,
-        user_long: longitude,
-        radius_km: radiusKm,
-        search_term: searchTerm,
-        search_tags: tags,
-        result_limit: limit,
-        result_offset: offset
+      const latRange = radiusKm / 111.0
+      const lngRange = radiusKm / (111.0 * Math.cos(latitude * Math.PI / 180))
+
+      let query = supabase
+        .from('usuarios')
+        .select('*', { count: 'exact' })
+        .eq('perfil_completo', true)
+        .eq('status', 'available')
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .gte('latitude', latitude - latRange)
+        .lte('latitude', latitude + latRange)
+        .gte('longitude', longitude - lngRange)
+        .lte('longitude', longitude + lngRange)
+
+      if (searchTerm?.trim()) {
+        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
+      }
+
+      const { data, error, count } = await query
+
+      if (error) {
+        console.error('❌ Erro na busca:', error)
+        return { users: [], hasMore: false, total: 0 }
+      }
+
+      const users = (data || []).map(user => {
+        const latDiff = user.latitude! - latitude
+        const lngDiff = user.longitude! - longitude
+        const distancia = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111
+        return { ...user, distancia }
       })
 
-      if (error) throw error
+      const filteredUsers = users.filter(u => u.distancia! <= radiusKm)
 
-      const total = data?.length || 0
-      const hasMore = total >= limit
+      filteredUsers.sort((a, b) => (a.distancia || 999) - (b.distancia || 999))
+
+      const paginatedUsers = filteredUsers.slice(offset, offset + limit)
+      const hasMore = (offset + paginatedUsers.length) < filteredUsers.length
+
+      console.log(`✅ Encontrados ${filteredUsers.length} usuários em ${radiusKm}km`)
+      console.log('🗺️ Ordenados por distância:', paginatedUsers.map(u => `${u.nome}: ${u.distancia?.toFixed(1)}km`))
 
       return {
-        data: data || [],
-        total,
-        hasMore
+        users: paginatedUsers,
+        hasMore,
+        total: filteredUsers.length
       }
     } catch (error) {
-      console.error('Error getting users by proximity:', error)
-      throw error
+      console.error('❌ Erro na busca com distância:', error)
+      return { users: [], hasMore: false, total: 0 }
     }
+  }
+
+  static async updateStatus(id: string, status: 'available' | 'busy'): Promise<Usuario> {
+    return this.updateUsuario(id, { status })
+  }
+
+  static async updateLastAccess(id: string): Promise<void> {
+    await supabase
+      .from('usuarios')
+      .update({ ultimo_acesso: new Date().toISOString() })
+      .eq('id', id)
+  }
+
+  static calculateRelevanceScore(usuario: Usuario, searchTerm?: string): number {
+    let score = 0
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      const nome = usuario.nome.toLowerCase()
+      const descricao = usuario.descricao.toLowerCase()
+
+      if (nome.includes(term)) score += 10
+      if (descricao.includes(term)) score += 5
+
+      usuario.tags.forEach(tag => {
+        if (tag.toLowerCase().includes(term)) score += 3
+      })
+    }
+
+    if (usuario.verificado) score += 5
+    if (usuario.foto_url) score += 2
+    if (usuario.status === 'available') score += 3
+
+    return score
   }
 }
