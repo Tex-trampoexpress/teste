@@ -88,6 +88,16 @@ function App() {
   }, [currentScreen])
 
   const initializeApp = async () => {
+    console.log('🚀 Inicializando aplicação TEX...')
+
+    // Para teste: limpar termos do cliente apenas na primeira carga da sessão
+    const firstLoad = !sessionStorage.getItem('tex-app-loaded')
+    if (firstLoad) {
+      console.log('🧹 Primeira carga da sessão - limpando termos de teste')
+      localStorage.removeItem('tex-client-terms-accepted')
+      sessionStorage.setItem('tex-app-loaded', 'true')
+    }
+
     const savedUser = localStorage.getItem('tex-current-user')
     if (savedUser) {
       try {
@@ -105,6 +115,8 @@ function App() {
         localStorage.removeItem('tex-current-user')
       }
     }
+
+    console.log('✅ Aplicação inicializada')
   }
 
   const setupBackButtonHandler = () => {
@@ -309,8 +321,11 @@ function App() {
 
   const handleExploreClick = () => {
     console.log('🔍 Botão Explorar clicado')
+
+    // Limpa o cache de termos para forçar a verificação
     const termsAccepted = checkClientTermsAcceptance()
     console.log('✅ Termos aceitos?', termsAccepted)
+    console.log('📦 LocalStorage:', localStorage.getItem('tex-client-terms-accepted'))
 
     if (!termsAccepted) {
       console.log('📋 Mostrando modal de termos do cliente')
