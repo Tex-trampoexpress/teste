@@ -57,7 +57,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="cta-section">
           <button
             className="explore-btn-large primary"
-            onClick={navigateTo}
+            onClick={() => navigateTo()}
           >
             <i className="fas fa-search"></i>
             Explorar Profissionais Próximos
