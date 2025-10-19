@@ -4,7 +4,8 @@ interface HomeScreenProps {
   searchTerm: string
   onSearchTermChange: (value: string) => void
   onSearchEnter: () => void
-  navigateTo: (screen: string) => void
+  navigateTo: () => void
+  navigateToScreen: (screen: string) => void
   locationStatus: 'idle' | 'requesting' | 'granted' | 'denied'
   requestLocation: () => void
   renderProfileHeader: () => React.ReactNode
@@ -37,6 +38,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onSearchTermChange,
   onSearchEnter,
   navigateTo,
+  navigateToScreen,
   locationStatus,
   requestLocation,
   renderProfileHeader
@@ -55,7 +57,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="cta-section">
           <button
             className="explore-btn-large primary"
-            onClick={() => navigateTo('feed')}
+            onClick={navigateTo}
           >
             <i className="fas fa-search"></i>
             Explorar Profissionais Próximos
@@ -94,9 +96,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
       <footer className="hero-footer">
         <nav className="hero-footer-nav">
-          <button onClick={() => navigateTo('about')}>Sobre</button>
+          <button onClick={() => navigateToScreen('about')}>Sobre</button>
           <span className="footer-separator">•</span>
-          <button onClick={() => navigateTo('terms')}>Termos</button>
+          <button onClick={() => navigateToScreen('terms')}>Termos</button>
           <span className="footer-separator">•</span>
           <a href="https://wa.me/5548996357648?text=Olá,%20preciso%20de%20suporte%20com%20o%20TrampoExpress" target="_blank" rel="noopener noreferrer">Suporte</a>
         </nav>

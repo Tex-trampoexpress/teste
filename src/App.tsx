@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import { DatabaseService, type Usuario, type CreateUsuarioData, type UpdateUsuarioData } from './lib/database'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
+import TermsAcceptanceModal from './components/TermsAcceptanceModal'
 import HomeScreen from './components/screens/HomeScreen'
 import VerifyScreen from './components/screens/VerifyScreen'
 import ProfileSetupScreen from './components/screens/ProfileSetupScreen'
@@ -59,6 +60,9 @@ function App() {
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [totalUsers, setTotalUsers] = useState(0)
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [termsModalType, setTermsModalType] = useState<'client' | 'provider'>('client')
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
 
   useEffect(() => {
     initializeApp()
@@ -262,6 +266,47 @@ function App() {
     )
   }
 
+  const checkClientTermsAcceptance = () => {
+    const clientTermsAccepted = localStorage.getItem('tex-client-terms-accepted')
+    return clientTermsAccepted === 'true'
+  }
+
+  const checkProviderTermsAcceptance = () => {
+    const providerTermsAccepted = localStorage.getItem('tex-provider-terms-accepted')
+    return providerTermsAccepted === 'true'
+  }
+
+  const handleTermsAccept = () => {
+    if (termsModalType === 'client') {
+      localStorage.setItem('tex-client-terms-accepted', 'true')
+      toast.success('Termos aceitos com sucesso!')
+    } else {
+      localStorage.setItem('tex-provider-terms-accepted', 'true')
+      toast.success('Termos aceitos! Você pode continuar.')
+    }
+    setShowTermsModal(false)
+    if (pendingAction) {
+      pendingAction()
+      setPendingAction(null)
+    }
+  }
+
+  const handleTermsDecline = () => {
+    toast.error('Você precisa aceitar os termos para continuar')
+    setShowTermsModal(false)
+    setPendingAction(null)
+  }
+
+  const handleExploreClick = () => {
+    if (!checkClientTermsAcceptance()) {
+      setTermsModalType('client')
+      setShowTermsModal(true)
+      setPendingAction(() => () => navigateTo('feed'))
+    } else {
+      navigateTo('feed')
+    }
+  }
+
   const handleWhatsAppVerification = async () => {
     if (!whatsappNumber.trim()) {
       toast.error('Digite seu número do WhatsApp')
@@ -276,6 +321,17 @@ function App() {
 
     const cleanNumber = formattedNumber.startsWith('55') ? formattedNumber.substring(2) : formattedNumber
 
+    if (!checkProviderTermsAcceptance()) {
+      setTermsModalType('provider')
+      setShowTermsModal(true)
+      setPendingAction(() => () => proceedWithWhatsAppVerification(cleanNumber))
+      return
+    }
+
+    proceedWithWhatsAppVerification(cleanNumber)
+  }
+
+  const proceedWithWhatsAppVerification = async (cleanNumber: string) => {
     setIsVerifying(true)
     console.log('🔐 Verificando número WhatsApp (sem +55):', cleanNumber)
 
@@ -705,7 +761,7 @@ function App() {
       case 'payment':
         return <PaymentScreenWrapper navigationHistory={navigationHistory} goBack={goBack} handlePaymentSuccess={handlePaymentSuccess} />
       default:
-        return <HomeScreen searchTerm={searchTerm} onSearchTermChange={setSearchTerm} onSearchEnter={() => navigateTo('feed')} navigateTo={navigateTo} locationStatus={locationStatus} requestLocation={requestLocation} renderProfileHeader={renderProfileHeader} />
+        return <HomeScreen searchTerm={searchTerm} onSearchTermChange={setSearchTerm} onSearchEnter={handleExploreClick} navigateTo={handleExploreClick} navigateToScreen={navigateTo} locationStatus={locationStatus} requestLocation={requestLocation} renderProfileHeader={renderProfileHeader} />
     }
   }
 
@@ -714,6 +770,13 @@ function App() {
       <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: 'rgba(0, 0, 0, 0.8)', color: 'white', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', backdropFilter: 'blur(10px)' } }} />
       <div className="screen active">{renderCurrentScreen()}</div>
       <PWAInstallPrompt />
+      {showTermsModal && (
+        <TermsAcceptanceModal
+          userType={termsModalType}
+          onAccept={handleTermsAccept}
+          onDecline={handleTermsDecline}
+        />
+      )}
     </div>
   )
 }
