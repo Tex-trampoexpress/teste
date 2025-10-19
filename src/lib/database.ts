@@ -218,7 +218,8 @@ export class DatabaseService {
         .lte('longitude', longitude + lngRange)
 
       if (searchTerm?.trim()) {
-        query = query.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
+        const term = searchTerm.trim().toLowerCase()
+        query = query.or(`nome.ilike.%${term}%,descricao.ilike.%${term}%`)
       }
 
       const { data, error, count } = await query
@@ -228,12 +229,22 @@ export class DatabaseService {
         return { users: [], hasMore: false, total: 0 }
       }
 
-      const users = (data || []).map(user => {
+      let users = (data || []).map(user => {
         const latDiff = user.latitude! - latitude
         const lngDiff = user.longitude! - longitude
         const distancia = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111
         return { ...user, distancia }
       })
+
+      if (searchTerm?.trim()) {
+        const term = searchTerm.trim().toLowerCase()
+        users = users.filter(user => {
+          const nomeMatch = user.nome.toLowerCase().includes(term)
+          const descricaoMatch = user.descricao.toLowerCase().includes(term)
+          const tagsMatch = user.tags.some(tag => tag.toLowerCase().includes(term))
+          return nomeMatch || descricaoMatch || tagsMatch
+        })
+      }
 
       const filteredUsers = users.filter(u => u.distancia! <= radiusKm)
 
