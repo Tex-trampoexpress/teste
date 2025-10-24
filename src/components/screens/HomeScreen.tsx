@@ -49,7 +49,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="tex-logo-container-inside">
           <div className="tex-logo-text-inside">TEX</div>
         </div>
-        <p className="hero-tagline">Aproximando Clientes a Serviços num raio de 100km</p>
+        <p className="hero-tagline">Aproximando Clientes a Serviços</p>
         <p className="hero-brand">TrampoExpress</p>
       </header>
 
